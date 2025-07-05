@@ -1,9 +1,9 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { persistReducer, persistStore } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
-import {usersAPI} from "../queries/users/UserQuery.ts";
-import {loginApi} from "../features/login/loginApi.ts";
-import userSlice from "../features/login/userSlice.ts";
+import {UserQuery} from "../queries/users/UserQuery.ts";
+import {LoginQuery} from "../queries/login/LoginQuery.ts";
+import userSlice from "../queries/login/UserSlice.ts";
 
 
 const persistConfig = {
@@ -14,8 +14,8 @@ const persistConfig = {
 }
 
 const rootReducer = combineReducers({
-    [usersAPI.reducerPath]: usersAPI.reducer,
-    [loginApi.reducerPath]: loginApi.reducer,
+    [UserQuery.reducerPath]: UserQuery.reducer,
+    [LoginQuery.reducerPath]: LoginQuery.reducer,
     user: userSlice
 })
 
@@ -28,8 +28,8 @@ export const store = configureStore({
     middleware: (getDefaultMiddleware) => getDefaultMiddleware({
         serializableCheck: false
     })
-        .concat(usersAPI.middleware)
-        .concat(loginApi.middleware)
+        .concat(UserQuery.middleware)
+        .concat(LoginQuery.middleware)
 })
 
 export const persistedStore = persistStore(store);

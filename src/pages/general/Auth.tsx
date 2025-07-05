@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+// import { useNavigate } from 'react-router-dom';
 import {NavLink} from "react-router-dom";
 
 export const Auth = () => {
     const [isLoginView, setIsLoginView] = useState(true);
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     const handleGoogleOAuth = () => {
         console.log("Initiating Google OAuth...");
@@ -16,14 +16,14 @@ export const Auth = () => {
         // window.location.href = "YOUR_MICROSOFT_AUTH_ENDPOINT";
     };
 
-    const handleLogin = (e) => {
+    const handleLogin = (e: any) => {
         e.preventDefault();
         const email = e.target.email.value;
         const password = e.target.password.value;
         console.log("Attempting login with:", { email, password });
     };
 
-    const handleRegister = (e) => {
+    const handleRegister = (e: any) => {
         e.preventDefault();
         const firstName = e.target.firstName.value;
         const lastName = e.target.lastName.value;
