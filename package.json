@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "css:build": "pnpm exec tailwindcss -i ./src/index.css -o ./src/output.css --watch"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
