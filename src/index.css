@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Libertinus+Math&display=swap');
+@import "tailwindcss";
 
 @plugin "daisyui" {
     themes: false;

@@ -1,15 +1,14 @@
 export const Footer = () => {
     return (
         <>
-            <footer className="footer sm:footer-horizontal bg-base-300 text-base-content p-10">
+            <footer className="footer sm:footer-horizontal bg-my-neutral text-base-content p-10">
                 <aside>
                     <div className={"flex flex-row"}>
-                        <img src={"src/assets/react.svg"}/>
-                        <h5 className={"footer-title ml-3 mt-3"}>Tkti</h5>
+                        <img src={"src/assets/tiquet-logo-no-background.png"} className={'h-8 w-20 ml-3'}/>
                     </div>
 
                     <div>
-                        <p>Tkti is a global self-service ticketing platform for live experiences that allows <br />
+                        <p className={"text-my-base-300"}>Tkti is a global self-service ticketing platform for live experiences that allows <br />
                         anyone to create, share, find and attend events that fuel their passions and enrich their lives</p>
                     </div>
 
@@ -51,30 +50,30 @@ export const Footer = () => {
                 </aside>
 
                 <div>
-                    <h6 className="footer-title">Plan events</h6>
+                    <h6 className="footer-title text-my-base-300">Plan events</h6>
 
                     <ul>
-                        <li className="link link-hover">Create and Set up</li>
-                        <li className="link link-hover mt-2">Sell tickets</li>
-                        <li className="link link-hover mt-2">Online Rsvp</li>
-                        <li className="link link-hover mt-2">Online Events</li>
+                        <li className="link link-hover text-my-base-300">Create and Set up</li>
+                        <li className="link link-hover mt-2 text-my-base-300">Sell tickets</li>
+                        <li className="link link-hover mt-2 text-my-base-300">Online Rsvp</li>
+                        <li className="link link-hover mt-2 text-my-base-300">Online Events</li>
                     </ul>
                 </div>
 
                 <div>
-                    <h6 className="footer-title">Tkti</h6>
+                    <h6 className="footer-title text-my-base-300">Tkti</h6>
 
                     <ul>
-                        <li className="link link-hover">About Us</li>
-                        <li className="link link-hover mt-2">Contact us</li>
-                        <li className="link link-hover mt-2">Privacy</li>
-                        <li className="link link-hover mt-2">Terms</li>
+                        <li className="link link-hover text-my-base-300">About Us</li>
+                        <li className="link link-hover mt-2 text-my-base-300">Contact us</li>
+                        <li className="link link-hover mt-2 text-my-base-300">Privacy</li>
+                        <li className="link link-hover mt-2 text-my-base-300">Terms</li>
                     </ul>
                 </div>
 
                 <form>
-                    <h6 className="footer-title">Newsletter</h6>
-                    <fieldset className="w-80">
+                    <h6 className="footer-title text-my-base-300">Newsletter</h6>
+                    <fieldset className="w-80 text-my-base-300">
                         <label>Join our mailing list to stay in the loop with our latest Events and Concerts</label>
                         <div className="join">
                             <input
@@ -86,8 +85,8 @@ export const Footer = () => {
                     </fieldset>
                 </form>
             </footer>
-            <aside className="footer sm:footer-horizontal footer-center bg-base-300 text-base-content p-4">
-                <p>Copyright © {new Date().getFullYear()} - All right reserved by Le Brand Extended Events</p>
+            <aside className="footer sm:footer-horizontal footer-center bg-my-neutral border-2 border-white text-base-content p-4">
+                <p className={'text-my-base-300'}>Copyright © {new Date().getFullYear()} - All right reserved by Le Brand Extended Events</p>
             </aside>
         </>
     );

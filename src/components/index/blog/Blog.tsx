@@ -5,8 +5,8 @@ export const Blog = () => {
         <section className="py-12 bg-base-100 text-center px-4">
             {/* Heading */}
             <div className="max-w-2xl mx-auto mb-8">
-                <p className="text-3xl font-bold text-primary mb-2">Blog</p>
-                <p className="text-gray-500">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                <p className="text-3xl font-bold text-my-primary mb-2">Blog</p>
+                {/*<p className="text-gray-500">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>*/}
             </div>
 
             {/* Blog Grid */}
@@ -35,13 +35,10 @@ export const Blog = () => {
             </div>
 
             {/* Load More */}
-            <div className="mt-10">
-                <a
-                    href="#"
-                    className="btn btn-outline btn-primary px-6"
-                >
+            <div className="flex justify-center mt-10">
+                <button className="px-6 py-2 border-2 border-my-secondary text-my-primary font-semibold rounded-full hover:bg-primary hover:text-black transition">
                     Load More
-                </a>
+                </button>
             </div>
         </section>
     );

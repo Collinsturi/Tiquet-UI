@@ -14,7 +14,7 @@ export const BlogCard = ({ image, title, description, author, date }: BlogCardPr
 
             {/* Blog Content */}
             <div className="p-4">
-                <h5 className="text-md font-semibold text-gray-900 mb-2 leading-snug">{title}</h5>
+                <h5 className="text-md font-semibold text-my-accent-focus mb-2 leading-snug">{title}</h5>
                 <p className="text-gray-500 text-sm mb-4 line-clamp-3">{description}</p>
                 <p className="text-xs text-left text-gray-400">{date} – {author}</p>
             </div>

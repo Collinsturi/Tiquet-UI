@@ -90,40 +90,33 @@ export const UpcomingEvents = () => {
     ];
 
     return (
-        <section className="py-12 bg-base-200">
+        <section className="py-16 bg-white">
             <div className="max-w-6xl mx-auto px-4">
-                <div className={"flex flex-row justify-between mt-5"}>
-                    {/* Section Title */}
-                    <h3 className="text-3xl font-bold text-left mb-8 text-primary">Upcoming Events</h3>
+                {/* Heading + Filters */}
+                <div className="flex flex-col md:flex-row justify-between items-center mb-10">
+                    <h3 className="text-4xl font-extrabold text-left text-my-secondary font-display">Upcoming Events</h3>
 
-                    {/* Filter Dropdowns */}
-                    <div className="flex flex-wrap justify-center gap-4 mb-8">
-                        <select className="select select-bordered w-40">
+                    {/* Filters */}
+                    <div className="flex flex-wrap justify-center gap-3 mt-6 md:mt-0">
+                        <select className="bg-gray-100 text-sm px-4 py-2 rounded-full border border-gray-300 focus:outline-none">
                             <option disabled selected>Weekdays</option>
                             <option>Monday</option>
                             <option>Tuesday</option>
-                            <option>Wednesday</option>
-                            <option>Thursday</option>
-                            <option>Friday</option>
-                            <option>Saturday</option>
-                            <option>Sunday</option>
                         </select>
-
-                        <select className="select select-bordered w-40">
+                        <select className="bg-gray-100 text-sm px-4 py-2 rounded-full border border-gray-300 focus:outline-none">
                             <option disabled selected>Event Type</option>
                             <option>One Day event</option>
                         </select>
-
-                        <select className="select select-bordered w-40">
-                            <option disabled selected>Any category</option>
+                        <select className="bg-gray-100 text-sm px-4 py-2 rounded-full border border-gray-300 focus:outline-none">
+                            <option disabled selected>Any Category</option>
                             <option>Music</option>
                             <option>Drama</option>
                         </select>
                     </div>
                 </div>
 
-                {/* Event Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Event Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {events.map((event) => (
                         <EventCard key={event.id} event={event} />
                     ))}
@@ -131,9 +124,9 @@ export const UpcomingEvents = () => {
 
                 {/* Load More */}
                 <div className="flex justify-center mt-10">
-                    <a href="#" className="btn btn-outline btn-primary">
+                    <button className="px-6 py-2 border-2 border-my-secondary text-my-primary font-semibold rounded-full hover:bg-primary hover:text-black transition">
                         Load More
-                    </a>
+                    </button>
                 </div>
             </div>
         </section>

@@ -11,12 +11,19 @@
     "css:build": "pnpm exec tailwindcss -i ./src/index.css -o ./src/output.css --watch"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.1.1",
+    "@mui/icons-material": "^7.2.0",
+    "@mui/material": "^7.2.0",
     "@mui/x-date-pickers": "^8.7.0",
     "@reduxjs/toolkit": "^2.8.2",
     "dayjs": "^1.11.13",
+    "html2canvas-pro": "^1.5.11",
+    "jspdf": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
     "redux-persist": "^6.0.0",
     "yup": "^1.6.1"
   },
