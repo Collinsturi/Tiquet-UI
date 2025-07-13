@@ -24,6 +24,22 @@ export type TicketWithEvent = {
         createdAt: string;
         updatedAt: string;
     };
+    ticketType: {
+        "id": number,
+        "eventId": number,
+        "typeName": string,
+        "price": number,
+        "quantityAvailable": number,
+        "quantitySold": number
+    };
+    venue: {
+        "id": number,
+        "name": string,
+        "addresses": string,
+        "capacity": number,
+        "createdAt": string,
+        "updateAt": string
+    }
 };
 export const TicketQuery = createApi({
     reducerPath: 'TicketQuery',

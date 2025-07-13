@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -20,120 +20,9 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-
-// --- Dummy Data Simulation (replace with actual API calls in a real app) ---
-const CURRENT_USER_ID = 'user-001';
-
-const dummyUsers = [
-    { user_id: 'user-001', name: 'Alice Attendee', email: 'alice.attendee@example.com' },
-];
-
-const dummyEvents = [
-    {
-        event_id: 'evt-001',
-        name: 'Tech Innovators Summit 2025',
-        startDate: '2025-09-10T09:00:00Z',
-        endDate: '2025-09-12T17:00:00Z',
-        location: 'KICC, Nairobi',
-        posterImageUrl: 'https://placehold.co/400x200/ADD8E6/000000?text=Tech+Summit',
-    },
-    {
-        event_id: 'evt-002',
-        name: 'Annual Charity Gala',
-        startDate: '2025-10-22T18:00:00Z',
-        endDate: '2025-10-22T23:00:00Z',
-        location: 'Sarit Centre, Nairobi',
-        posterImageUrl: 'https://placehold.co/400x200/F08080/FFFFFF?text=Charity+Gala',
-    },
-    {
-        event_id: 'evt-003', // Past event
-        name: 'Summer Music Fest 2024',
-        startDate: '2024-07-20T12:00:00Z',
-        endDate: '2024-07-21T22:00:00Z',
-        location: 'City Park, Nairobi',
-        posterImageUrl: 'https://placehold.co/400x200/FFDAB9/000000?text=Music+Fest',
-    },
-    {
-        event_id: 'evt-004', // Very far future event
-        name: 'Future Tech Expo 2026',
-        startDate: '2026-03-01T09:00:00Z',
-        endDate: '2026-03-03T17:00:00Z',
-        location: 'Exhibition Grounds, Nairobi',
-        posterImageUrl: 'https://placehold.co/400x200/A2D9CE/000000?text=Future+Expo',
-    },
-];
-
-const dummyTickets = [
-    {
-        ticket_id: 'tkt-001-A',
-        user_id: 'user-001',
-        event_id: 'evt-001',
-        ticketTypeName: 'Standard Pass',
-        quantity: 1,
-        purchaseDate: '2025-01-15T10:00:00Z',
-        checkInStatus: 'Pending', // 'Pending', 'Checked In', 'Invalid'
-        qrCodeData: 'ticket_id=tkt-001-A&event_id=evt-001&user_id=user-001',
-    },
-    {
-        ticket_id: 'tkt-001-B',
-        user_id: 'user-001',
-        event_id: 'evt-001',
-        ticketTypeName: 'VIP Pass',
-        quantity: 1,
-        purchaseDate: '2025-01-15T10:05:00Z',
-        checkInStatus: 'Pending',
-        qrCodeData: 'ticket_id=tkt-001-B&event_id=evt-001&user_id=user-001',
-    },
-    {
-        ticket_id: 'tkt-002-A',
-        user_id: 'user-001',
-        event_id: 'evt-003', // Past event
-        ticketTypeName: 'General Admission',
-        quantity: 2,
-        purchaseDate: '2024-06-01T11:00:00Z',
-        checkInStatus: 'Checked In',
-        qrCodeData: 'ticket_id=tkt-002-A&event_id=evt-003&user_id=user-001',
-    },
-    {
-        ticket_id: 'tkt-004-A',
-        user_id: 'user-001',
-        event_id: 'evt-004',
-        ticketTypeName: 'Early Bird Pass',
-        quantity: 1,
-        purchaseDate: '2025-02-20T09:00:00Z',
-        checkInStatus: 'Pending',
-        qrCodeData: 'ticket_id=tkt-004-A&event_id=evt-004&user_id=user-001',
-    },
-    { // Ticket for a different user, should not show
-        ticket_id: 'tkt-005-A',
-        user_id: 'user-002',
-        event_id: 'evt-002',
-        ticketTypeName: 'Standard Ticket',
-        quantity: 1,
-        purchaseDate: '2025-03-01T10:00:00Z',
-        checkInStatus: 'Pending',
-        qrCodeData: 'ticket_id=tkt-005-A&event_id=evt-002&user_id=user-002',
-    },
-];
-
-// Simulate API calls
-const fetchCurrentUser = async (userId) => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(dummyUsers.find(u => u.user_id === userId)), 300);
-    });
-};
-
-const fetchUserTickets = async (userId) => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(dummyTickets.filter(t => t.user_id === userId)), 500);
-    });
-};
-
-const fetchEventDetails = async (eventId) => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(dummyEvents.find(e => e.event_id === eventId)), 200);
-    });
-};
+import {useSelector} from "react-redux";
+import type {RootState} from "../../redux/store.ts";
+import {useGetTicketsUserQuery} from '../../queries/eventAttendees/TicketQuery.ts'; // Import the RTK Query hook
 
 // Helper to generate a placeholder QR code image URL
 const generateQRCodePlaceholderUrl = (data) => {
@@ -167,85 +56,131 @@ const formatOnlyDate = (dateString) => {
 
 
 export const Tickets = () => {
-    const navigate = useNavigate(); // Initialize useNavigate hook
+    const navigate = useNavigate();
+    const user = useSelector((state: RootState) => state.user.user);
+    const userId = user?.user_id; // Get userId from Redux store
 
-    const [user, setUser] = useState(null);
-    const [tickets, setTickets] = useState([]);
+    // Use the RTK Query hook
+    const { data: ticketsData, isLoading, error } = useGetTicketsUserQuery(userId!, {
+        skip: !userId, // Skip the query if userId is not available
+    });
+
     const [upcomingTickets, setUpcomingTickets] = useState([]);
     const [pastTickets, setPastTickets] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [tabValue, setTabValue] = useState(0); // 0 for Upcoming, 1 for Past
 
     useEffect(() => {
-        const loadTicketsData = async () => {
-            try {
-                setLoading(true);
-                setMessage({ type: '', text: '' });
+        if (!userId) {
+            setMessage({ type: "error", text: "User not found. Please log in." });
+            setUpcomingTickets([]);
+            setPastTickets([]);
+            return;
+        }
 
-                const currentUser = await fetchCurrentUser(CURRENT_USER_ID);
-                if (!currentUser) {
-                    setMessage({ type: 'error', text: 'User not found. Please log in.' });
-                    setLoading(false);
-                    return;
-                }
-                setUser(currentUser);
+        // Handle loading state
+        if (isLoading) {
+            setMessage({ type: '', text: '' }); // Clear messages while loading
+            return;
+        }
 
-                const userTickets = await fetchUserTickets(CURRENT_USER_ID);
-                setTickets(userTickets);
-
-                const fetchedUpcomingTickets = [];
-                const fetchedPastTickets = [];
-                const now = new Date();
-
-                for (const ticket of userTickets) {
-                    const event = await fetchEventDetails(ticket.event_id);
-                    if (event) {
-                        const ticketWithEvent = { ...ticket, eventDetails: event };
-                        const eventEndDate = new Date(event.endDate);
-
-                        if (now < eventEndDate) {
-                            fetchedUpcomingTickets.push(ticketWithEvent);
-                        } else {
-                            fetchedPastTickets.push(ticketWithEvent);
-                        }
-                    }
-                }
-
-                // Sort upcoming tickets by event start date (soonest first)
-                fetchedUpcomingTickets.sort((a, b) => new Date(a.eventDetails.startDate).getTime() - new Date(b.eventDetails.startDate).getTime());
-                // Sort past tickets by event end date (most recent first)
-                fetchedPastTickets.sort((a, b) => new Date(b.eventDetails.endDate).getTime() - new Date(a.eventDetails.endDate).getTime());
-
-                setUpcomingTickets(fetchedUpcomingTickets);
-                setPastTickets(fetchedPastTickets);
-
-            } catch (err) {
-                console.error("Failed to load ticket data:", err);
-                setMessage({ type: 'error', text: err.message || 'Failed to load ticket information.' });
-            } finally {
-                setLoading(false);
+        // Handle error state
+        if (error) {
+            const apiErrorMessage = (error as any)?.data?.message;
+            if (apiErrorMessage && apiErrorMessage.includes("not found")) {
+                setMessage({ type: "info", text: "You currently have no tickets. Explore events and purchase your first ticket!" });
+            } else {
+                setMessage({ type: "error", text: apiErrorMessage || "Failed to fetch tickets. Please try again later." });
             }
-        };
+            setUpcomingTickets([]);
+            setPastTickets([]);
+            return;
+        }
 
-        loadTicketsData();
-    }, []);
+        // Handle successful data fetch
+        if (ticketsData && Array.isArray(ticketsData)) {
+            if (ticketsData.length === 0) {
+                setMessage({ type: "info", text: "You currently have no tickets. Explore events and purchase your first ticket!" });
+                setUpcomingTickets([]);
+                setPastTickets([]);
+                return;
+            }
+
+            const now = new Date();
+            const fetchedUpcomingTickets = [];
+            const fetchedPastTickets = [];
+
+            ticketsData.forEach((item) => {
+                const ticket = item.ticket;
+                const event = item.event;
+                const ticketType = item.ticketType;
+
+                // Derive checkInStatus from isScanned
+                const checkInStatus = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
+
+                // Combine eventDate and eventTime for a robust Date object
+                const eventDateTimeString = `${event.eventDate}T${event.eventTime}`;
+                const eventDateObj = new Date(eventDateTimeString);
+
+                // Add a default posterImageUrl if missing
+                const posterImageUrl = event.posterImageUrl || `https://placehold.co/400x200/E0E0E0/000000?text=Event+Poster`;
+
+                const ticketWithEvent = {
+                    ...ticket,
+                    checkInStatus: checkInStatus,
+                    ticketTypeName: ticketType?.typeName || 'General Ticket', // Get typeName from ticketType
+                    quantity: 1, // Assuming quantity is 1 per unique ticket entry
+                    eventDetails: {
+                        ...event,
+                        posterImageUrl: posterImageUrl,
+                        startDate: eventDateTimeString,
+                        endDate: eventDateTimeString, // Assuming endDate is derived similarly or adjusted as per API
+                    }
+                };
+
+                if (now < eventDateObj) {
+                    fetchedUpcomingTickets.push(ticketWithEvent);
+                } else {
+                    fetchedPastTickets.push(ticketWithEvent);
+                }
+            });
+
+            // Sort tickets
+            fetchedUpcomingTickets.sort((a, b) => new Date(a.eventDetails.startDate).getTime() - new Date(b.eventDetails.startDate).getTime());
+            fetchedPastTickets.sort((a, b) => new Date(b.eventDetails.startDate).getTime() - new Date(a.eventDetails.startDate).getTime());
+
+            setUpcomingTickets(fetchedUpcomingTickets);
+            setPastTickets(fetchedPastTickets);
+            setMessage({ type: '', text: '' }); // Clear message on successful data load and categorization
+        }
+    }, [ticketsData, userId, isLoading, error]); // Add all relevant dependencies
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
     };
 
-    // New function to navigate to ticket details
     const handleViewTicketDetails = (ticketId) => {
         navigate(`/attendee/tickets/${ticketId}`);
     };
 
 
-    if (loading || user === null) {
+    if (isLoading || user === null) { // Check for user being null as well
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
                 <CircularProgress />
                 <Typography sx={{ ml: 2 }}>Loading your tickets...</Typography>
+            </Box>
+        );
+    }
+
+    // If user is null (not logged in or session expired)
+    if (!user) {
+        return (
+            <Box sx={{ flexGrow: 1, p: 3 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    User not found. Please log in to view your tickets.
+                    <Button variant="contained" sx={{ mt: 2, ml: 2 }} onClick={() => navigate('/login')}>Go to Login</Button>
+                </Alert>
             </Box>
         );
     }
@@ -258,8 +193,11 @@ export const Tickets = () => {
             <Divider sx={{ mb: 3 }} />
 
             {message.text && (
-                <Alert severity={message.type} sx={{ mb: 3 }}>
+                <Alert severity={message.type === 'info' ? 'info' : 'error'} sx={{ mb: 3 }}>
                     {message.text}
+                    {message.type === 'info' && (
+                        <Button variant="contained" sx={{ mt: 2, ml: 2 }} onClick={() => navigate('/attendee/events')}>Browse Events</Button>
+                    )}
                 </Alert>
             )}
 
@@ -276,40 +214,39 @@ export const Tickets = () => {
                     <Grid container spacing={3}>
                         {upcomingTickets.length > 0 ? (
                             upcomingTickets.map(ticket => (
-                                <Grid item xs={12} md={6} key={ticket.ticket_id}>
+                                <Grid item xs={12} md={6} key={ticket.id}>
                                     <Card variant="outlined" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, p: 1 }}>
                                         <Box sx={{ flexShrink: 0, mr: { xs: 0, sm: 2 }, mb: { xs: 2, sm: 0 }, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                             <img
-                                                src={generateQRCodePlaceholderUrl(ticket.qrCodeData)}
+                                                src={generateQRCodePlaceholderUrl(ticket.uniqueCode)}
                                                 alt={`QR Code for ${ticket.ticketTypeName}`}
                                                 style={{ width: 120, height: 120, border: '1px solid #ddd', borderRadius: '8px' }}
                                             />
                                         </Box>
                                         <Box sx={{ flexGrow: 1 }}>
-                                            <Typography variant="h6" component="div">{ticket.eventDetails.name}</Typography>
+                                            <Typography variant="h6" component="div">{ticket.eventDetails.title}</Typography>
                                             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                                 <ConfirmationNumberIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {ticket.ticketTypeName} (x{ticket.quantity})
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary">
                                                 <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
-                                                {formatDate(ticket.eventDetails.startDate)} - {new Date(ticket.eventDetails.endDate).toLocaleTimeString(undefined, { hour: 'numeric', minute: 'numeric', hour12: true })}
+                                                {formatDate(ticket.eventDetails.startDate)} - {formatDate(ticket.eventDetails.endDate)}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                                 <LocationOnIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
-                                                {ticket.eventDetails.location}
+                                                {ticket.eventDetails.VenueId || 'Venue Not Specified'}
                                             </Typography>
                                             <Chip
-                                                label={ticket.checkInStatus === 'Checked In' ? 'Checked In' : 'Pending Check-in'}
+                                                label={ticket.checkInStatus}
                                                 color={ticket.checkInStatus === 'Checked In' ? 'success' : 'info'}
                                                 icon={ticket.checkInStatus === 'Checked In' ? <CheckCircleOutlineIcon /> : <HourglassEmptyIcon />}
                                                 size="small"
                                             />
-                                            {/* Updated Button to navigate */}
                                             <Button
                                                 variant="outlined"
                                                 size="small"
                                                 sx={{ ml: 1 }}
-                                                onClick={() => handleViewTicketDetails(ticket.ticket_id)}
+                                                onClick={() => handleViewTicketDetails(ticket.id)} // Use ticket.id
                                             >
                                                 View Ticket
                                             </Button>
@@ -320,7 +257,7 @@ export const Tickets = () => {
                         ) : (
                             <Grid item xs={12}>
                                 <Alert severity="info">You have no upcoming tickets. Explore events and purchase your first ticket!</Alert>
-                                <Button variant="contained" sx={{ mt: 2 }}>Browse Events</Button> {/* Placeholder for link to event Browse */}
+                                <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate('/attendee/events')}>Browse Events</Button>
                             </Grid>
                         )}
                     </Grid>
@@ -333,18 +270,18 @@ export const Tickets = () => {
                     <Grid container spacing={3}>
                         {pastTickets.length > 0 ? (
                             pastTickets.map(ticket => (
-                                <Grid item xs={12} md={6} key={ticket.ticket_id}>
+                                <Grid item xs={12} md={6} key={ticket.id}> {/* Use ticket.id */}
                                     <Card variant="outlined" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, p: 1, opacity: 0.8 }}>
                                         <Box sx={{ flexShrink: 0, mr: { xs: 0, sm: 2 }, mb: { xs: 2, sm: 0 }, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                             <img
                                                 src={ticket.eventDetails.posterImageUrl}
-                                                alt={`Event Poster for ${ticket.eventDetails.name}`}
+                                                alt={`Event Poster for ${ticket.eventDetails.title}`}
                                                 style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: '8px' }}
                                                 onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/120x120/E0E0E0/000000?text=Event"; }}
                                             />
                                         </Box>
                                         <Box sx={{ flexGrow: 1 }}>
-                                            <Typography variant="h6" component="div">{ticket.eventDetails.name}</Typography>
+                                            <Typography variant="h6" component="div">{ticket.eventDetails.title}</Typography>
                                             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                                 <ConfirmationNumberIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {ticket.ticketTypeName} (x{ticket.quantity})
                                             </Typography>
@@ -354,19 +291,18 @@ export const Tickets = () => {
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                                 <LocationOnIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
-                                                {ticket.eventDetails.location}
+                                                {ticket.eventDetails.VenueId || 'Venue Not Specified'}
                                             </Typography>
                                             <Chip
                                                 label={`Status: ${ticket.checkInStatus}`}
                                                 color={ticket.checkInStatus === 'Checked In' ? 'success' : 'default'}
                                                 size="small"
                                             />
-                                            {/* Updated Button to navigate */}
                                             <Button
                                                 variant="text"
                                                 size="small"
                                                 sx={{ ml: 1 }}
-                                                onClick={() => handleViewTicketDetails(ticket.ticket_id)}
+                                                onClick={() => handleViewTicketDetails(ticket.id)} // Use ticket.id
                                             >
                                                 View Details
                                             </Button>

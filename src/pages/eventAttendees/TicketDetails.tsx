@@ -1,99 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+    Box,
+    Typography,
+    Paper,
+    Grid,
+    CircularProgress,
+    Alert,
+    Button,
+    Chip,
+} from '@mui/material'; // Added Box, Typography, Paper, Grid, CircularProgress, Alert, Button, Chip for MUI components
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import EventIcon from '@mui/icons-material/Event';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { QRCodeCanvas } from 'qrcode.react';
 import PersonIcon from '@mui/icons-material/Person';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import DownloadIcon from '@mui/icons-material/Download';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import { useSelector } from 'react-redux'; // Import useSelector
+import type { RootState } from '../../redux/store'; // Import RootState type
+import { useGetTicketByIdQuery } from '../../queries/eventAttendees/TicketQuery.ts'; // Import the RTK Query hook
 
 // For PDF generation
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 
-// --- Dummy Data Simulation ---
-const dummyUsers = [
-    { user_id: 'user-001', name: 'Alice Attendee', email: 'alice.attendee@example.com' },
-];
-
-const dummyEvents = [
-    {
-        event_id: 'evt-001',
-        name: 'Tech Innovators Summit 2025',
-        startDate: '2025-09-10T09:00:00Z',
-        endDate: '2025-09-12T17:00:00Z',
-        location: 'KICC, Nairobi, Kenya',
-    },
-    {
-        event_id: 'evt-003',
-        name: 'Summer Music Fest 2024', // Past event
-        startDate: '2024-07-20T12:00:00Z',
-        endDate: '2024-07-21T22:00:00Z',
-        location: 'City Park, Nairobi, Kenya',
-    },
-];
-
-const dummyTickets = [
-    {
-        ticket_id: 'tkt-001-A',
-        user_id: 'user-001',
-        event_id: 'evt-001',
-        ticketTypeName: 'Standard Pass',
-        quantity: 1,
-        purchaseDate: '2025-01-15T10:00:00Z',
-        checkInStatus: 'Pending', // 'Pending', 'Checked In', 'Invalid'
-        qrCodeData: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TicketID:tkt-001-A%0AEvent:evt-001%0AUser:user-001%0AType:Standard',
-    },
-    {
-        ticket_id: 'tkt-001-B',
-        user_id: 'user-001',
-        event_id: 'evt-001',
-        ticketTypeName: 'VIP Pass',
-        quantity: 1,
-        purchaseDate: '2025-01-15T10:05:00Z',
-        checkInStatus: 'Pending',
-        qrCodeData: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TicketID:tkt-001-B%0AEvent:evt-001%0AUser:user-001%0AType:VIP',
-    },
-    {
-        ticket_id: 'tkt-002-A',
-        user_id: 'user-001',
-        event_id: 'evt-003', // Past event
-        ticketTypeName: 'General Admission',
-        quantity: 2, // Example of a ticket representing multiple entries
-        purchaseDate: '2024-06-01T11:00:00Z',
-        checkInStatus: 'Checked In',
-        qrCodeData: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TicketID:tkt-002-A%0AEvent:evt-003%0AUser:user-001%0AType:General%0AQty:2',
-    },
-];
-
-// Simulate fetching data - FIXED TO RESOLVE PROMISES
-const fetchTicketDetails = async (ticketId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(dummyTickets.find(t => t.ticket_id === ticketId));
-        }, 500);
-    });
-};
-
-const fetchEventDetails = async (eventId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(dummyEvents.find(e => e.event_id === eventId));
-        }, 300);
-    });
-};
-
-const fetchUserDetails = async (userId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(dummyUsers.find(u => u.user_id === userId));
-        }, 200);
-    });
+// Helper to generate a placeholder QR code image URL
+const generateQRCodePlaceholderUrl = (data) => {
+    const size = 150; // Size of the QR code image
+    const color = '000000'; // Black text
+    const bgColor = 'FFFFFF'; // White background
+    return `https://placehold.co/${size}x${size}/${bgColor}/${color}?text=QR+Code%0A${encodeURIComponent(data.substring(0, 30))}...`;
 };
 
 // Helper function to format dates
@@ -110,50 +49,28 @@ const formatDateTime = (dateString) => {
 export const TicketDetails = () => {
     const { ticketId } = useParams(); // Get ticketId from URL
     const navigate = useNavigate();
+    const user = useSelector((state: RootState) => state.user.user); // Get current logged-in user from Redux
 
-    const [ticket, setTicket] = useState(null);
-    const [event, setEvent] = useState(null);
-    const [attendee, setAttendee] = useState(null); // The user who owns the ticket
-    const [loading, setLoading] = useState(true);
+    // Use the RTK Query hook to fetch ticket details
+    const { data: ticketData, isLoading, error } = useGetTicketByIdQuery(parseInt(ticketId!), {
+        skip: !ticketId || isNaN(parseInt(ticketId!)), // Skip if ticketId is missing or not a number
+    });
+
     const [message, setMessage] = useState({ type: '', text: '' });
     const ticketRef = useRef(null); // Ref for the ticket content to be downloaded
 
+    // Effect to handle API response and set messages
     useEffect(() => {
-        const loadDetails = async () => {
-            try {
-                setLoading(true); // Ensure loading is true at the start of the fetch
-                setMessage({ type: '', text: '' });
-
-                const fetchedTicket = await fetchTicketDetails(ticketId);
-                if (!fetchedTicket) {
-                    setMessage({ type: 'error', text: `Ticket with ID "${ticketId}" not found.` });
-                    setLoading(false); // Stop loading if ticket not found
-                    return; // Exit if ticket isn't found
-                }
-                setTicket(fetchedTicket);
-
-                const fetchedEvent = await fetchEventDetails(fetchedTicket.event_id);
-                // Handle case where event might not be found gracefully
-                if (!fetchedEvent) {
-                    setMessage({ type: 'warning', text: `Event details for ticket ID "${ticketId}" could not be loaded.` });
-                    setEvent(null); // Keep event as null or set a placeholder
-                } else {
-                    setEvent(fetchedEvent);
-                }
-
-                const fetchedAttendee = await fetchUserDetails(fetchedTicket.user_id);
-                setAttendee(fetchedAttendee); // Can be null if user not found, render 'N/A' accordingly
-
-            } catch (err) {
-                console.error("Failed to load ticket details:", err);
-                setMessage({ type: 'error', text: err.message || 'Failed to load ticket information.' });
-            } finally {
-                setLoading(false); // Always set loading to false when all fetches (or errors) are handled
-            }
-        };
-
-        loadDetails();
-    }, [ticketId]); // Re-run effect if ticketId changes
+        if (error) {
+            const apiErrorMessage = (error as any)?.data?.message || `Failed to load ticket details for ID: ${ticketId}. Please try again.`;
+            setMessage({ type: 'error', text: apiErrorMessage });
+        } else if (ticketData && Object.keys(ticketData).length === 0) {
+            // Handle case where data is empty object (e.g., API returns {} for not found)
+            setMessage({ type: 'error', text: `Ticket with ID "${ticketId}" not found.` });
+        } else {
+            setMessage({ type: '', text: '' }); // Clear messages on successful load
+        }
+    }, [ticketData, error, ticketId]);
 
     const handleDownloadPdf = async () => {
         if (!ticketRef.current) {
@@ -187,54 +104,74 @@ export const TicketDetails = () => {
                 heightLeft -= pageHeight;
             }
 
-            pdf.save(`${ticket.event_id}-${ticket.ticket_id}-ticket.pdf`);
+            pdf.save(`${ticketData.event.title.replace(/\s/g, '_')}-${ticketData.ticket.id}-ticket.pdf`);
             setMessage({ type: 'success', text: 'Ticket downloaded successfully as PDF!' });
 
-        } catch (error) {
-            console.error("Error generating PDF:", error);
-            setMessage({ type: 'error', text: `Failed to generate PDF: ${error.message || 'An unexpected error occurred.'}` });
+        } catch (downloadError) {
+            console.error("Error generating PDF:", downloadError);
+            setMessage({ type: 'error', text: `Failed to generate PDF: ${downloadError.message || 'An unexpected error occurred.'}` });
         }
     };
 
-
-    if (loading || ticket === null || event === null) {
+    // Show loading spinner while data is being fetched
+    if (isLoading) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <span className="loading loading-spinner loading-lg"></span>
-                <p className="ml-4 text-lg">Loading ticket details...</p>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>Loading ticket details...</Typography>
+            </Box>
         );
     }
 
-    const alertClasses = message.type === 'success' ? 'alert-success' : (message.type === 'info' ? 'alert-info' : 'alert-error');
+    // If there's an error or no ticket data is found after loading
+    if (error || !ticketData || Object.keys(ticketData).length === 0) {
+        return (
+            <Box sx={{ flexGrow: 1, p: 3 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {message.text || "Could not load ticket details. Please ensure the ticket ID is valid."}
+                    <Button variant="contained" sx={{ mt: 2, ml: 2 }} onClick={() => navigate('/attendee/tickets')}>Back to My Tickets</Button>
+                </Alert>
+            </Box>
+        );
+    }
 
+    // Destructure data for easier access
+    const { ticket, event, ticketType, venue } = ticketData;
+
+    // Determine check-in status and styling
+    const checkInStatus = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
     let statusColorClass = '';
     let statusIcon = null;
-    switch (ticket.checkInStatus) {
+    switch (checkInStatus) {
         case 'Checked In':
             statusColorClass = 'badge-success';
             statusIcon = <CheckCircleOutlineIcon className="w-4 h-4 mr-1" />;
             break;
-        case 'Pending':
+        case 'Pending Check-in':
             statusColorClass = 'badge-info';
             statusIcon = <HourglassEmptyIcon className="w-4 h-4 mr-1" />;
             break;
-        case 'Invalid':
-        default:
+        default: // For any other unexpected status
             statusColorClass = 'badge-error';
             statusIcon = <CancelOutlinedIcon className="w-4 h-4 mr-1" />;
             break;
     }
 
+    // Combine event date and time for display
+    const eventStartDateTime = `${event.eventDate}T${event.eventTime}`;
+    // Assuming event has an end date/time, or use start for simplicity if not provided
+    const eventEndDateTime = event.endDate && event.endTime ? `${event.endDate}T${event.endTime}` : eventStartDateTime;
+
+
     return (
         <div className="container mx-auto p-4 md:p-8 min-h-screen">
             <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-                <ConfirmationNumberIcon className="text-4xl" /> Ticket Details
+                <ConfirmationNumberIcon className="text-4xl" /> My Ticket
             </h1>
             <hr className="my-6 border-base-content/10" />
 
             {message.text && (
-                <div role="alert" className={`alert ${alertClasses} mb-6`}>
+                <div role="alert" className={`alert ${message.type === 'success' ? 'alert-success' : (message.type === 'info' ? 'alert-info' : 'alert-error')} mb-6`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span>{message.text}</span>
                 </div>
@@ -244,9 +181,9 @@ export const TicketDetails = () => {
                 <button
                     className="btn btn-primary btn-lg"
                     onClick={handleDownloadPdf}
-                    disabled={loading}
+                    disabled={isLoading} // Disable if still loading
                 >
-                    {loading ? <span className="loading loading-spinner loading-sm mr-2"></span> : <DownloadIcon className="w-6 h-6 mr-2" />}
+                    {isLoading ? <span className="loading loading-spinner loading-sm mr-2"></span> : <DownloadIcon className="w-6 h-6 mr-2" />}
                     Download Ticket (PDF)
                 </button>
             </div>
@@ -255,13 +192,22 @@ export const TicketDetails = () => {
             <div ref={ticketRef} className="card bg-base-100 shadow-xl p-6 max-w-2xl mx-auto border border-primary/20">
                 <div className="flex flex-col items-center mb-6">
                     <QrCode2Icon className="w-24 h-24 text-primary mb-4" />
-                    <img src={ticket.qrCodeData} alt="Ticket QR Code" className="w-48 h-48 mb-4 border border-base-300 rounded-lg" />
+                    <div className="mb-4 border border-base-300 rounded-lg p-2 bg-white">
+                        <QRCodeCanvas
+                            value={ticket.uniqueCode || 'Invalid'}
+                            size={200}
+                            bgColor={"#ffffff"}
+                            fgColor={"#000000"}
+                            level={"H"}
+                            includeMargin={true}
+                        />
+                    </div>
                     <h2 className="text-2xl font-bold text-center mb-2">
-                        {ticket.event_id === 'evt-001' ? 'Tech Innovators Summit 2025 Ticket' : event.name}
+                        {event.title}
                     </h2>
                     <div className={`badge ${statusColorClass} text-sm p-3 gap-1`}>
                         {statusIcon}
-                        Status: {ticket.checkInStatus}
+                        Status: {checkInStatus}
                     </div>
                 </div>
 
@@ -270,16 +216,16 @@ export const TicketDetails = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base-content/80">
                     <div>
                         <p className="font-semibold text-lg mb-2 flex items-center gap-2"><EventIcon className="w-5 h-5" /> Event Details</p>
-                        <p><strong>Name:</strong> {event.name}</p>
-                        <p><strong>Dates:</strong> {formatDateTime(event.startDate)} - {formatDateTime(event.endDate)}</p>
-                        <p><strong>Location:</strong> {event.location}</p>
+                        <p><strong>Name:</strong> {event.title}</p>
+                        <p><strong>Dates:</strong> {formatDateTime(eventStartDateTime)} - {formatDateTime(eventEndDateTime)}</p>
+                        <p><strong>Location:</strong> {venue.name || 'Venue Not Specified'}</p> {/* Using VenueId as location */}
                     </div>
                     <div>
                         <p className="font-semibold text-lg mb-2 flex items-center gap-2"><ConfirmationNumberIcon className="w-5 h-5" /> Ticket Info</p>
-                        <p><strong>Ticket ID:</strong> {ticket.ticket_id}</p>
-                        <p><strong>Type:</strong> {ticket.ticketTypeName}</p>
-                        <p><strong>Quantity:</strong> {ticket.quantity}</p>
-                        <p><strong>Purchased On:</strong> {formatDateTime(ticket.purchaseDate)}</p>
+                        {/*<p><strong>Ticket ID:</strong> {ticket.id}</p>*/}
+                        <p><strong>Type:</strong> {ticketType?.typeName || 'N/A'}</p>
+                        <p><strong>Quantity:</strong> {ticket.quantity || 1}</p> {/* Default to 1 if quantity is not provided */}
+                        <p><strong>Purchased On:</strong> {formatDateTime(ticket.purchaseDate || event.createdAt)}</p> {/* Use purchaseDate or event createdAt */}
                     </div>
                 </div>
 
@@ -287,8 +233,9 @@ export const TicketDetails = () => {
 
                 <div className="text-center text-base-content/70 text-sm">
                     <p className="font-semibold mb-2 flex items-center justify-center gap-2"><PersonIcon className="w-5 h-5" /> Attendee Details</p>
-                    <p><strong>Name:</strong> {attendee?.name || 'N/A'}</p>
-                    <p><strong>Email:</strong> {attendee?.email || 'N/A'}</p>
+                    {/* Assuming the logged-in user is the attendee for this ticket */}
+                    <p><strong>Name:</strong> {user?.first_name} {user?.last_name || 'N/A'}</p>
+                    <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
                     <p className="mt-4">Please present this QR code at the event entrance for quick check-in.</p>
                 </div>
             </div>

@@ -201,7 +201,7 @@ export const Dashboard = () => {
                 <Alert severity={message.type === 'info' ? 'info' : 'error'} sx={{ mb: 2 }}>
                     {message.text}
                     {message.type === 'info' && ( // Add browse events button only for info message (no tickets)
-                        <Button variant="contained" sx={{ mt: 2, ml: 2 }} onClick={() => navigate('/events')}>Browse Events</Button>
+                        <Button variant="contained" sx={{ mt: 2, ml: 2 }} onClick={() => navigate('/attendee/events')}>Browse Events</Button>
                     )}
                 </Alert>
             )}
@@ -282,7 +282,7 @@ export const Dashboard = () => {
                     ) : (
                         <Grid item xs={12}>
                             <Alert severity="info">You have no upcoming tickets. Explore events and purchase your first ticket!</Alert>
-                            <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate('/events')}>Browse Events</Button>
+                            <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate('/attendee/events')}>Browse Events</Button>
                         </Grid>
                     )}
                 </Grid>
