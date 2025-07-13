@@ -4,6 +4,7 @@ import storage from 'redux-persist/lib/storage'
 import {AuthQuery} from "../queries/general/AuthQuery.ts";
 import ApplicationUserSlice from "../queries/general/ApplicationUserSlice.ts";
 import {TicketQuery} from "../queries/eventAttendees/TicketQuery.ts";
+import {EventQuery} from "../queries/general/EventQuery.ts"
 
 const persistConfig = {
     key: 'root',
@@ -15,6 +16,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
     [AuthQuery.reducerPath]: AuthQuery.reducer,
     [TicketQuery.reducerPath]: TicketQuery.reducer,
+    [EventQuery.reducerPath]: EventQuery.reducer,
     user: ApplicationUserSlice
 })
 
@@ -29,6 +31,7 @@ export const store = configureStore({
     })
         .concat(AuthQuery.middleware)
         .concat(TicketQuery.middleware)
+        .concat(EventQuery.middleware)
 })
 
 export const persistedStore = persistStore(store);
