@@ -6,7 +6,10 @@ import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import BarcodeScannerIcon from '@mui/icons-material/QrCodeScanner'; // Icon for scanning
-import { useNavigate } from 'react-router-dom'; // For navigation
+import { useNavigate } from 'react-router-dom';
+import {useSelector} from "react-redux";
+import type {RootState} from "../../redux/store.ts"; // For navigation
+import {useGetStaffAssignedEventsQuery, useGetStaffScannedEventsQuery} from "../../queries/checkInStaff/StaffScannedQuery.ts"
 
 // --- Dummy Data Simulation ---
 // In a real app, this would come from an API based on staff ID
@@ -53,54 +56,54 @@ const dummyEvents = [
         totalTicketsSold: 500,
     }
 ];
+//
+// // Simulate check-in records for staff-001
+// const dummyCheckInRecords = [
+//     { checkin_id: 'chk-001', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-A', timestamp: '2025-09-10T09:30:00Z' },
+//     { checkin_id: 'chk-002', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-C', timestamp: '2025-09-10T09:35:00Z' },
+//     { checkin_id: 'chk-003', staff_id: 'staff-001', event_id: 'evt-003', ticket_id: 'tkt-002-A', timestamp: '2024-07-20T13:00:00Z' },
+//     // Add more check-ins for evt-001 for staff-001 to show 'Tickets Scanned'
+//     { checkin_id: 'chk-004', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-D', timestamp: '2025-09-10T09:40:00Z' },
+//     { checkin_id: 'chk-005', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-E', timestamp: '2025-09-10T09:45:00Z' },
+// ];
+//
+// // --- Simulate API Calls ---
+// const fetchAssignedEvents = async (staffId) => {
+//     return new Promise(resolve => {
+//         setTimeout(() => {
+//             const assignedEventIds = dummyStaffAssignments
+//                 .filter(assignment => assignment.staff_id === staffId)
+//                 .map(assignment => assignment.event_id);
+//             const events = dummyEvents.filter(event => assignedEventIds.includes(event.event_id));
+//             resolve(events);
+//         }, 500);
+//     });
+// };
 
-// Simulate check-in records for staff-001
-const dummyCheckInRecords = [
-    { checkin_id: 'chk-001', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-A', timestamp: '2025-09-10T09:30:00Z' },
-    { checkin_id: 'chk-002', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-C', timestamp: '2025-09-10T09:35:00Z' },
-    { checkin_id: 'chk-003', staff_id: 'staff-001', event_id: 'evt-003', ticket_id: 'tkt-002-A', timestamp: '2024-07-20T13:00:00Z' },
-    // Add more check-ins for evt-001 for staff-001 to show 'Tickets Scanned'
-    { checkin_id: 'chk-004', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-D', timestamp: '2025-09-10T09:40:00Z' },
-    { checkin_id: 'chk-005', staff_id: 'staff-001', event_id: 'evt-001', ticket_id: 'tkt-001-E', timestamp: '2025-09-10T09:45:00Z' },
-];
-
-// --- Simulate API Calls ---
-const fetchAssignedEvents = async (staffId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const assignedEventIds = dummyStaffAssignments
-                .filter(assignment => assignment.staff_id === staffId)
-                .map(assignment => assignment.event_id);
-            const events = dummyEvents.filter(event => assignedEventIds.includes(event.event_id));
-            resolve(events);
-        }, 500);
-    });
-};
-
-const fetchCheckInCounts = async (eventId, staffId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const scannedByThisStaff = dummyCheckInRecords.filter(
-                record => record.event_id === eventId && record.staff_id === staffId
-            ).length;
-
-            const totalScannedForEvent = dummyCheckInRecords.filter(
-                record => record.event_id === eventId
-            ).length;
-
-            const eventDetails = dummyEvents.find(e => e.event_id === eventId);
-            const totalExpectedAttendees = eventDetails ? eventDetails.totalTicketsSold : 0;
-            const ticketsRemaining = totalExpectedAttendees - totalScannedForEvent;
-
-            resolve({
-                scannedByThisStaff,
-                totalScannedForEvent,
-                totalExpectedAttendees,
-                ticketsRemaining: Math.max(0, ticketsRemaining) // Ensure not negative
-            });
-        }, 400);
-    });
-};
+// const fetchCheckInCounts = async (eventId, staffId) => {
+//     return new Promise(resolve => {
+//         setTimeout(() => {
+//             const scannedByThisStaff = dummyCheckInRecords.filter(
+//                 record => record.event_id === eventId && record.staff_id === staffId
+//             ).length;
+//
+//             const totalScannedForEvent = dummyCheckInRecords.filter(
+//                 record => record.event_id === eventId
+//             ).length;
+//
+//             const eventDetails = dummyEvents.find(e => e.event_id === eventId);
+//             const totalExpectedAttendees = eventDetails ? eventDetails.totalTicketsSold : 0;
+//             const ticketsRemaining = totalExpectedAttendees - totalScannedForEvent;
+//
+//             resolve({
+//                 scannedByThisStaff,
+//                 totalScannedForEvent,
+//                 totalExpectedAttendees,
+//                 ticketsRemaining: Math.max(0, ticketsRemaining) // Ensure not negative
+//             });
+//         }, 400);
+//     });
+// };
 
 // --- Helper Functions ---
 const formatDateRange = (startDate, endDate) => {
@@ -137,67 +140,66 @@ const getEventStatus = (event) => {
 export const CheckInStaffDashboard = () => {
     const navigate = useNavigate();
 
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [assignedEvents, setAssignedEvents] = useState([]);
+    // Get user email from Redux root state
+    // Assuming RootState and user slice are correctly configured in Redux
+    // For demonstration, if user.user or user.user.email is null, a default will be used.
+    const userEmail = useSelector((state) => state.user.user?.email || 'default@example.com'); // Replace with your actual RootState type if needed
+
+    // State for managing selected event and its summary
     const [selectedEventId, setSelectedEventId] = useState(null);
     const [currentEventSummary, setCurrentEventSummary] = useState(null);
 
+    // Fetch assigned events using RTK Query
+    const { data: assignedEventsData, isLoading: isLoadingAssignedEvents, isError: isErrorAssignedEvents, error: errorAssignedEvents } = useGetStaffAssignedEventsQuery(userEmail);
+
+    // Fetch scanned events using RTK Query
+    const { data: scannedEventsData, isLoading: isLoadingScannedEvents, isError: isErrorScannedEvents, error: errorScannedEvents } = useGetStaffScannedEventsQuery(userEmail);
+
+    // Combine loading and error states
+    const isLoading = isLoadingAssignedEvents || isLoadingScannedEvents;
+    const error = isErrorAssignedEvents ? errorAssignedEvents : isErrorScannedEvents ? errorScannedEvents : null;
+
+    // Effect to set initial selected event and update assigned events list
     useEffect(() => {
-        const loadDashboardData = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+        if (assignedEventsData && assignedEventsData.length > 0) {
+            // Automatically select the first upcoming/active event, or just the first event
+            const now = new Date();
+            const activeOrUpcomingEvent = assignedEventsData.find(event => {
+                const endDate = new Date(event.endDate);
+                return now < endDate; // Event is not yet over
+            });
 
-                const events = await fetchAssignedEvents(DUMMY_STAFF_ID);
-                setAssignedEvents(events);
-
-                // Automatically select the first upcoming/active event, or just the first event
-                const now = new Date();
-                const activeOrUpcomingEvent = events.find(event => {
-                    const endDate = new Date(event.endDate);
-                    return now < endDate; // Event is not yet over
-                });
-
-                if (activeOrUpcomingEvent) {
-                    setSelectedEventId(activeOrUpcomingEvent.event_id);
-                } else if (events.length > 0) {
-                    setSelectedEventId(events[0].event_id); // Fallback to first event if no active/upcoming
-                }
-
-            } catch (err) {
-                console.error("Error loading assigned events:", err);
-                setError("Failed to load assigned events. Please try again.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadDashboardData();
-    }, []);
-
-    useEffect(() => {
-        const loadEventSummary = async () => {
-            if (selectedEventId) {
-                setLoading(true); // Indicate loading for summary too
-                setError(null);
-                try {
-                    const summary = await fetchCheckInCounts(selectedEventId, DUMMY_STAFF_ID);
-                    const eventDetails = assignedEvents.find(e => e.event_id === selectedEventId);
-                    setCurrentEventSummary({ ...summary, name: eventDetails?.name || 'N/A' });
-                } catch (err) {
-                    console.error("Error loading event summary:", err);
-                    setError("Failed to load event summary details.");
-                } finally {
-                    setLoading(false);
-                }
+            if (activeOrUpcomingEvent) {
+                setSelectedEventId(activeOrUpcomingEvent.eventId);
             } else {
-                setCurrentEventSummary(null); // Clear summary if no event is selected
+                setSelectedEventId(assignedEventsData[0].eventId); // Fallback to first event
             }
-        };
+        } else if (assignedEventsData && assignedEventsData.length === 0) {
+            setSelectedEventId(null); // No events assigned
+        }
+    }, [assignedEventsData]); // Re-run when assignedEventsData changes
 
-        loadEventSummary();
-    }, [selectedEventId, assignedEvents]); // Re-run when selectedEventId or assignedEvents changes
+    // Effect to load current event summary based on selected event and fetched data
+    useEffect(() => {
+        if (selectedEventId && assignedEventsData && scannedEventsData) {
+            const selectedEvent = assignedEventsData.find(event => event.eventId === selectedEventId);
+            const scannedDataForSelectedEvent = scannedEventsData.find(scanned => scanned.eventId === selectedEventId);
+
+            if (selectedEvent) {
+                setCurrentEventSummary({
+                    name: selectedEvent.title,
+                    totalExpectedAttendees: selectedEvent.ticketsSold,
+                    totalScannedForEvent: scannedDataForSelectedEvent?.ticketScanned || 0,
+                    // scannedByThisStaff: 'N/A', // This data is not available from the new API structure
+                    ticketsRemaining: selectedEvent.ticketsRemaining,
+                });
+            } else {
+                setCurrentEventSummary(null);
+            }
+        } else {
+            setCurrentEventSummary(null); // Clear summary if no event is selected or data not ready
+        }
+    }, [selectedEventId, assignedEventsData, scannedEventsData]); // Re-run when dependencies change
 
     const handleStartScanning = (eventId) => {
         navigate(`/staff/checkin/${eventId}`); // Navigate to the check-in scanning page
@@ -207,7 +209,7 @@ export const CheckInStaffDashboard = () => {
         setSelectedEventId(eventId);
     };
 
-    const sortedAssignedEvents = [...assignedEvents].sort((a, b) => {
+    const sortedAssignedEvents = assignedEventsData ? [...assignedEventsData].sort((a, b) => {
         const statusA = getEventStatus(a).label;
         const statusB = getEventStatus(b).label;
 
@@ -218,9 +220,9 @@ export const CheckInStaffDashboard = () => {
         }
         // For same status, sort by date
         return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-    });
+    }) : [];
 
-    if (loading && assignedEvents.length === 0) { // Only show full-screen loader on initial data fetch
+    if (isLoading && !assignedEventsData) { // Only show full-screen loader on initial data fetch
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
                 <CircularProgress />
@@ -238,7 +240,7 @@ export const CheckInStaffDashboard = () => {
 
             {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
-                    {error}
+                    Failed to load data: {error.message || 'Unknown error'}
                 </Alert>
             )}
 
@@ -250,16 +252,16 @@ export const CheckInStaffDashboard = () => {
                             <EventIcon /> Assigned Events
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
-                        {assignedEvents.length === 0 ? (
+                        {sortedAssignedEvents.length === 0 ? (
                             <Alert severity="info">No events assigned to you yet.</Alert>
                         ) : (
                             <Box>
                                 {sortedAssignedEvents.map(event => {
                                     const status = getEventStatus(event);
-                                    const isSelected = selectedEventId === event.event_id;
+                                    const isSelected = selectedEventId === event.eventId;
                                     return (
                                         <Card
-                                            key={event.event_id}
+                                            key={event.eventId}
                                             variant="outlined"
                                             sx={{
                                                 mb: 2,
@@ -270,10 +272,10 @@ export const CheckInStaffDashboard = () => {
                                                     boxShadow: 3,
                                                 }
                                             }}
-                                            onClick={() => handleEventSelection(event.event_id)}
+                                            onClick={() => handleEventSelection(event.eventId)}
                                         >
                                             <CardContent>
-                                                <Typography variant="h6" component="div">{event.name}</Typography>
+                                                <Typography variant="h6" component="div">{event.title}</Typography>
                                                 <Typography variant="body2" color="text.secondary">
                                                     <LocationOnIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.location}
                                                 </Typography>
@@ -287,7 +289,7 @@ export const CheckInStaffDashboard = () => {
                                                             variant="contained"
                                                             size="small"
                                                             startIcon={<BarcodeScannerIcon />}
-                                                            onClick={(e) => { e.stopPropagation(); handleStartScanning(event.event_id); }}
+                                                            onClick={(e) => { e.stopPropagation(); handleStartScanning(event.eventId); }}
                                                         >
                                                             Start Scanning
                                                         </Button>
@@ -328,7 +330,7 @@ export const CheckInStaffDashboard = () => {
                             <ConfirmationNumberIcon /> Current Event Summary
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
-                        {loading && selectedEventId && !currentEventSummary ? (
+                        {isLoading && selectedEventId && !currentEventSummary ? (
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
                                 <CircularProgress />
                                 <Typography sx={{ ml: 2 }}>Loading summary...</Typography>
@@ -359,16 +361,7 @@ export const CheckInStaffDashboard = () => {
                                             </CardContent>
                                         </Card>
                                     </Grid>
-                                    <Grid item xs={12} sm={6}>
-                                        <Card variant="outlined">
-                                            <CardContent>
-                                                <Typography variant="subtitle1" color="text.secondary">Scanned by You:</Typography>
-                                                <Typography variant="h5" color="info.main">
-                                                    {currentEventSummary.scannedByThisStaff}
-                                                </Typography>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
+                                    {/* Removed "Scanned by You" as this data is not provided by the new API structure */}
                                     <Grid item xs={12} sm={6}>
                                         <Card variant="outlined">
                                             <CardContent>
@@ -387,7 +380,7 @@ export const CheckInStaffDashboard = () => {
                                     fullWidth
                                     sx={{ mt: 'auto' }} // Push button to bottom
                                     onClick={() => handleStartScanning(selectedEventId)}
-                                    disabled={getEventStatus(assignedEvents.find(e => e.event_id === selectedEventId)).label !== 'Active'}
+                                    disabled={getEventStatus(assignedEventsData.find(e => e.eventId === selectedEventId)).label !== 'Active'}
                                 >
                                     Continue Scanning for {currentEventSummary.name}
                                 </Button>
