@@ -110,9 +110,11 @@ export const CheckInStaffLayout = () => {
         <div>
             <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 {drawerOpen && (
-                    <Typography variant="h6" noWrap>
-                        Tkti
-                    </Typography>
+                    <img
+                        src={"/src/assets/tiquet-logo.png"}
+                        alt={"Logo"}
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                    />
                 )}
                 {/* The chevron button for closing/opening the drawer, only visible when drawer is open on large screens */}
                 {/* On large screens, the hamburger in AppBar will handle the initial toggle */}
@@ -188,7 +190,8 @@ export const CheckInStaffLayout = () => {
     return (
         <Box sx={{ display: 'flex' }}>
             <CssBaseline />
-            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 , backgroundColor: 'var(--color-my-primary)'}
+            }>
                 <Toolbar>
                     {/* Hamburger button for mobile screens */}
                     <IconButton
@@ -196,7 +199,7 @@ export const CheckInStaffLayout = () => {
                         aria-label="open mobile drawer"
                         edge="start"
                         onClick={handleMobileToggle}
-                        sx={{mr: 2, display: {sm: 'none'}}}
+                        sx={{mr: 2, display: {sm: 'none'}, }}
                     >
                         <MenuIcon/>
                     </IconButton>
@@ -212,9 +215,11 @@ export const CheckInStaffLayout = () => {
                         <MenuIcon/>
                     </IconButton>
 
-                    <Typography className={"pr-20"} variant="h6" noWrap component="div">
-                        Tkti
-                    </Typography>
+                    <img
+                        src={"/src/assets/tiquet-logo.png"}
+                        alt={"Logo"}
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                    />
 
                     {/* Hide on small screens */}
                     <Box sx={{
@@ -312,7 +317,7 @@ export const CheckInStaffLayout = () => {
                     ModalProps={{ keepMounted: true }}
                     sx={{
                         display: { xs: 'block', sm: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, backgroundColor: 'var(--color-my-primary)'},
                     }}
                 >
                     {drawer}
@@ -329,6 +334,7 @@ export const CheckInStaffLayout = () => {
                             width: drawerOpen ? drawerWidth : 60,
                             transition: 'width 0.3s',
                             overflowX: 'hidden',
+                            backgroundColor: 'var(--color-my-primary)'
                         },
                     }}
                 >

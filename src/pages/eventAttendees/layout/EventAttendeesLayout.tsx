@@ -111,9 +111,11 @@ export const EventAttendeesLayout = () => {
         <div>
             <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 {drawerOpen && (
-                    <Typography variant="h6" noWrap>
-                        Tkti
-                    </Typography>
+                    <img
+                        src={"/src/assets/tiquet-logo-no-background.png"}
+                        alt={"Logo"}
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                    />
                 )}
                 {/* The chevron button for closing/opening the drawer, only visible when drawer is open on large screens */}
                 {/* On large screens, the hamburger in AppBar will handle the initial toggle */}
@@ -213,9 +215,11 @@ export const EventAttendeesLayout = () => {
                         <MenuIcon/>
                     </IconButton>
 
-                    <Typography className={"pr-20"} variant="h6" noWrap component="div">
-                        Tkti
-                    </Typography>
+                    <img
+                        src={"/src/assets/tiquet-logo-no-background.png"}
+                        alt={"Logo"}
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                    />
 
                     {/* Hide on small screens */}
                     <Box sx={{
