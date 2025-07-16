@@ -47,10 +47,22 @@ export type TVerificationResponse = {
     message: string;
 }
 
+export type ApplicationUser ={
+    id: number,
+    firstName: string,
+    lastName: string,
+    email: string,
+    contactPhone: string,
+    address: string,
+    role: string,
+    isVerified: boolean,
+    createdAt: string,
+}
+
 export const AuthQuery = createApi({
     reducerPath: 'LoginQuery',
     baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),
-    tagTypes: ['Login', 'Register', 'verification'],
+    tagTypes: ['Login', 'Register', 'verification', `ApplicationUser`],
     endpoints: (builder) => ({
         loginUser: builder.mutation<TLoginResponse, LoginRequest>({
             query: (loginData) => ({
@@ -77,6 +89,13 @@ export const AuthQuery = createApi({
                 body: verificationRequest
             }),
             invalidatesTags: ['verification']
+        }),
+        getUserDetails: builder.query<ApplicationUser, number>({
+            query: (id) =>({
+                url: `/auth/user/${id}`,
+                method: 'GET'
+            }),
+            invalidateTags: [`ApplicationUser`]
         })
     })
 })
@@ -85,4 +104,5 @@ export const {
     useLoginUserMutation,
     useRegisterUserMutation,
     useVerificationMutation,
+    useGetUserDetailsQuery,
 } = AuthQuery

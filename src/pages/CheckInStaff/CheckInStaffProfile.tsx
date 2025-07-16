@@ -28,6 +28,8 @@ import WorkIcon from '@mui/icons-material/Work';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import PhoneIcon from "@mui/icons-material/Phone";
+import {useSelector} from "react-redux";
+import {useGetUserDetailsQuery} from "../../queries/general/AuthQuery.ts"
 
 // --- Dummy Data Simulation ---
 const DUMMY_STAFF_ID = 'staff-001'; // Simulate the current logged-in staff
@@ -104,44 +106,58 @@ const updateStaffProfile = async (staffId, updatedProfile) => {
     });
 };
 
-
 export const CheckInStaffProfile = () => {
-    const [loading, setLoading] = useState(true);
+    // Get user ID from Redux root state
+    // Assuming RootState and user slice are correctly configured in Redux
+    const userId = useSelector((state) => state.user.user?.user_id); // Get user_id from the user object
+
     const [error, setError] = useState(null);
-    const [staffProfile, setStaffProfile] = useState(null);
     const [eventStats, setEventStats] = useState([]);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editedName, setEditedName] = useState('');
     const [editedContact, setEditedContact] = useState('');
 
+    // Fetch user details using RTK Query
+    const {
+        data: staffProfile,
+        isLoading: isLoadingProfile,
+        isError: isErrorProfile,
+        error: profileError
+    } = useGetUserDetailsQuery(userId, {
+        skip: !userId, // Skip the query if userId is not available
+    });
+
+    // Effect to load event stats (still using dummy data for now)
     useEffect(() => {
-        const loadProfileData = async () => {
+        const loadEventStats = async () => {
             try {
-                setLoading(true);
-                setError(null);
-
-                const profile = await fetchStaffProfile(DUMMY_STAFF_ID);
-                setStaffProfile(profile);
-                setEditedName(profile.name); // Initialize edit fields
-                setEditedContact(profile.contactNumber);
-
-                const stats = await fetchStaffEventStats(DUMMY_STAFF_ID);
-                setEventStats(stats);
-
+                // Only fetch if userId is available, though DUMMY_STAFF_ID is used for now
+                if (userId) {
+                    const stats = await fetchStaffEventStats(userId); // Use userId if your dummy function can handle it, otherwise DUMMY_STAFF_ID
+                    setEventStats(stats);
+                }
             } catch (err) {
-                console.error("Error loading staff profile:", err);
-                setError("Failed to load staff profile. Please try again.");
-            } finally {
-                setLoading(false);
+                console.error("Error loading staff event stats:", err);
+                setError("Failed to load event statistics. Please try again.");
             }
         };
 
-        loadProfileData();
-    }, []);
+        loadEventStats();
+    }, [userId]); // Re-run when userId changes
+
+    // Update editedName and editedContact when staffProfile data changes
+    useEffect(() => {
+        if (staffProfile) {
+            setEditedName(`${staffProfile.firstName || ''} ${staffProfile.lastName || ''}`.trim());
+            setEditedContact(staffProfile.contactPhone || '');
+        }
+    }, [staffProfile]);
 
     const handleOpenEditModal = () => {
-        setEditedName(staffProfile.name);
-        setEditedContact(staffProfile.contactNumber);
+        if (staffProfile) {
+            setEditedName(`${staffProfile.firstName || ''} ${staffProfile.lastName || ''}`.trim());
+            setEditedContact(staffProfile.contactPhone || '');
+        }
         setEditModalOpen(true);
     };
 
@@ -156,40 +172,49 @@ export const CheckInStaffProfile = () => {
         }
 
         try {
-            setLoading(true);
-            setError(null);
-            const result = await updateStaffProfile(DUMMY_STAFF_ID, {
-                name: editedName.trim(),
-                contactNumber: editedContact.trim(),
+            // This part still uses the dummy updateStaffProfile as no RTK Query mutation
+            // for updating user details was provided in AuthQuery.
+            // In a real app, you would use a mutation here (e.g., useUpdateUserMutation).
+            const [firstName, ...lastNameParts] = editedName.trim().split(' ');
+            const lastName = lastNameParts.join(' ');
+
+            const result = await updateStaffProfile(userId, {
+                firstName: firstName,
+                lastName: lastName,
+                contactPhone: editedContact.trim(),
             });
+
             if (result.success) {
-                setStaffProfile(result.newProfile);
+                // If a real mutation was used, RTK Query would automatically re-fetch
+                // or update the cache. For this dummy, we might need a manual refetch
+                // or local state update if the data isn't immediately consistent.
+                // For now, we rely on the `staffProfile` from `useGetUserDetailsQuery`
+                // to update if the backend actually changes.
                 handleCloseEditModal();
+                setError(null); // Clear any previous errors
             } else {
                 setError("Failed to save profile. Please try again.");
             }
         } catch (err) {
             console.error("Error saving profile:", err);
             setError("An error occurred while saving your profile.");
-        } finally {
-            setLoading(false);
         }
     };
 
-    if (loading) {
+    if (isLoadingProfile) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <CircularProgress />
-                <Typography sx={{ ml: 2 }}>Loading staff profile...</Typography>
+            <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh'}}>
+                <CircularProgress/>
+                <Typography sx={{ml: 2}}>Loading staff profile...</Typography>
             </Box>
         );
     }
 
-    if (error) {
+    if (isErrorProfile) {
         return (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-                <Alert severity="error" sx={{ mb: 3 }}>
-                    {error}
+            <Box sx={{p: 3, textAlign: 'center'}}>
+                <Alert severity="error" sx={{mb: 3}}>
+                    Failed to load staff profile: {profileError?.message || 'Unknown error'}
                 </Alert>
                 <Button variant="contained" onClick={() => window.location.reload()}>Retry</Button>
             </Box>
@@ -198,49 +223,54 @@ export const CheckInStaffProfile = () => {
 
     if (!staffProfile) {
         return (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Box sx={{p: 3, textAlign: 'center'}}>
                 <Alert severity="info">
-                    Staff profile not found. Please ensure you are logged in correctly.
+                    Staff profile not found. Please ensure you are logged in correctly or that your user ID is
+                    available.
                 </Alert>
             </Box>
         );
     }
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-            <Paper elevation={3} sx={{ p: 4, mb: 3, borderRadius: 2, bgcolor: 'background.paper' }}>
+        <Box sx={{flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: '#f0f2f5'}}>
+            <Paper elevation={3} sx={{p: 4, mb: 3, borderRadius: 2, bgcolor: 'background.paper'}}>
                 <Grid container spacing={3} alignItems="center">
                     <Grid item>
-                        <Avatar sx={{ width: 100, height: 100, bgcolor: 'primary.main' }}>
-                            <AccountCircleIcon sx={{ fontSize: 60 }} />
+                        <Avatar sx={{width: 100, height: 100, bgcolor: 'primary.main'}}>
+                            <AccountCircleIcon sx={{fontSize: 60}}/>
                         </Avatar>
                     </Grid>
                     <Grid item xs>
-                        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
-                            {staffProfile.name}
+                        <Typography variant="h4" component="h1" gutterBottom
+                                    sx={{fontWeight: 'bold', color: 'primary.dark'}}>
+                            {`${staffProfile.firstName} ${staffProfile.lastName}`}
                         </Typography>
                         <Chip
                             label={staffProfile.role}
                             color="secondary"
-                            icon={<WorkIcon />}
-                            sx={{ mb: 1 }}
+                            icon={<WorkIcon/>}
+                            sx={{mb: 1}}
                         />
-                        <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <MailOutlineIcon fontSize="small" /> {staffProfile.email}
+                        <Typography variant="body1" color="text.secondary"
+                                    sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                            <MailOutlineIcon fontSize="small"/> {staffProfile.email}
                         </Typography>
-                        <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <PhoneIcon fontSize="small" /> {staffProfile.contactNumber || 'N/A'}
+                        <Typography variant="body1" color="text.secondary"
+                                    sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                            <PhoneIcon fontSize="small"/> {staffProfile.contactPhone || 'N/A'}
                         </Typography>
-                        <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                            Staff ID: {staffProfile.id} | Last Login: {new Date(staffProfile.lastLogin).toLocaleString()}
+                        <Typography variant="body2" color="text.disabled" sx={{mt: 1}}>
+                            Staff ID: {staffProfile.id} | Created
+                            At: {new Date(staffProfile.createdAt).toLocaleString()}
                         </Typography>
                     </Grid>
                     <Grid item>
                         <Button
                             variant="contained"
-                            startIcon={<EditIcon />}
+                            startIcon={<EditIcon/>}
                             onClick={handleOpenEditModal}
-                            sx={{ bgcolor: 'info.main', '&:hover': { bgcolor: 'info.dark' } }}
+                            sx={{bgcolor: 'info.main', '&:hover': {bgcolor: 'info.dark'}}}
                         >
                             Edit Profile
                         </Button>
@@ -248,11 +278,12 @@ export const CheckInStaffProfile = () => {
                 </Grid>
             </Paper>
 
-            <Paper elevation={3} sx={{ p: 4, borderRadius: 2, bgcolor: 'background.paper' }}>
-                <Typography variant="h5" component="h2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, color: 'text.primary' }}>
-                    <EventNoteIcon /> Past Event Check-in Performance
+            <Paper elevation={3} sx={{p: 4, borderRadius: 2, bgcolor: 'background.paper'}}>
+                <Typography variant="h5" component="h2" gutterBottom
+                            sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2, color: 'text.primary'}}>
+                    <EventNoteIcon/> Past Event Check-in Performance
                 </Typography>
-                <Divider sx={{ mb: 3 }} />
+                <Divider sx={{mb: 3}}/>
 
                 {eventStats.length === 0 ? (
                     <Alert severity="info">No past event check-in data available yet.</Alert>
@@ -269,18 +300,18 @@ export const CheckInStaffProfile = () => {
                                     borderColor: 'divider',
                                     borderRadius: 1,
                                     boxShadow: 1,
-                                    '&:hover': { bgcolor: 'action.hover' }
+                                    '&:hover': {bgcolor: 'action.hover'}
                                 }}
                             >
                                 <ListItemText
                                     primary={
-                                        <Typography variant="h6" component="div" sx={{ mb: 0.5 }}>
+                                        <Typography variant="h6" component="div" sx={{mb: 0.5}}>
                                             {stat.eventName}
                                             <Chip
                                                 label={stat.status}
                                                 color={stat.status === 'Completed' ? 'success' : 'info'}
                                                 size="small"
-                                                sx={{ ml: 1, verticalAlign: 'middle' }}
+                                                sx={{ml: 1, verticalAlign: 'middle'}}
                                             />
                                         </Typography>
                                     }
@@ -289,14 +320,26 @@ export const CheckInStaffProfile = () => {
                                             <Typography variant="body2" color="text.secondary">
                                                 Date: {new Date(stat.date).toLocaleDateString()}
                                             </Typography>
-                                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-                                                <GroupIcon fontSize="small" color="action" /> Total Expected: <strong>{stat.totalExpected}</strong>
+                                            <Typography variant="body2"
+                                                        sx={{display: 'flex', alignItems: 'center', gap: 0.5, mt: 1}}>
+                                                <GroupIcon fontSize="small" color="action"/> Total
+                                                Expected: <strong>{stat.totalExpected}</strong>
                                             </Typography>
-                                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <CheckCircleOutlineIcon fontSize="small" color="success" /> Scanned by All: <strong>{stat.totalScannedByAllStaff}</strong>
+                                            <Typography variant="body2"
+                                                        sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                                                <CheckCircleOutlineIcon fontSize="small" color="success"/> Scanned by
+                                                All: <strong>{stat.totalScannedByAllStaff}</strong>
                                             </Typography>
-                                            <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, fontWeight: 'bold' }}>
-                                                <AccountCircleIcon fontSize="small" color="primary" /> Scanned by You: <span style={{ color: stat.scannedByThisStaff > 0 ? 'green' : 'text.secondary' }}>{stat.scannedByThisStaff}</span>
+                                            <Typography variant="body1" sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 0.5,
+                                                mt: 0.5,
+                                                fontWeight: 'bold'
+                                            }}>
+                                                <AccountCircleIcon fontSize="small" color="primary"/> Scanned by
+                                                You: <span
+                                                style={{color: stat.scannedByThisStaff > 0 ? 'green' : 'text.secondary'}}>{stat.scannedByThisStaff}</span>
                                             </Typography>
                                         </Box>
                                     }
@@ -321,7 +364,7 @@ export const CheckInStaffProfile = () => {
                         variant="outlined"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
-                        sx={{ mb: 2 }}
+                        sx={{mb: 2}}
                     />
                     <TextField
                         margin="dense"
@@ -339,10 +382,10 @@ export const CheckInStaffProfile = () => {
                     <Button
                         onClick={handleSaveProfile}
                         variant="contained"
-                        startIcon={<SaveIcon />}
-                        disabled={loading || !editedName.trim()} // Disable if loading or name is empty
+                        startIcon={<SaveIcon/>}
+                        disabled={isLoadingProfile || !editedName.trim()} // Disable if loading or name is empty
                     >
-                        {loading ? <CircularProgress size={24} /> : 'Save Changes'}
+                        {isLoadingProfile ? <CircularProgress size={24}/> : 'Save Changes'}
                     </Button>
                 </DialogActions>
             </Dialog>

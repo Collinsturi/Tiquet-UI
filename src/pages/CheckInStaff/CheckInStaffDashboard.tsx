@@ -143,7 +143,7 @@ export const CheckInStaffDashboard = () => {
     // Get user email from Redux root state
     // Assuming RootState and user slice are correctly configured in Redux
     // For demonstration, if user.user or user.user.email is null, a default will be used.
-    const userEmail = useSelector((state) => state.user.user?.email || 'default@example.com'); // Replace with your actual RootState type if needed
+    const userEmail = useSelector((state) => state.user.user?.email); // Replace with your actual RootState type if needed
 
     // State for managing selected event and its summary
     const [selectedEventId, setSelectedEventId] = useState(null);
