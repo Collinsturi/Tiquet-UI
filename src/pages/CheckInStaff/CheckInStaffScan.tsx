@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Howl } from 'howler';
 
 import {
@@ -51,8 +51,8 @@ let dummyEvents = [
     {
         event_id: 'evt-002',
         name: 'Annual Charity Gala',
-        startDate: '2025-10-22T18:00:00Z',
-        endDate: '2025-10-22T23:00:00Z',
+        startDate: '2025-07-16T18:00:00Z',
+        endDate: '2025-07-20T23:00:00Z',
         location: 'Sarit Centre, Nairobi, Kenya',
     },
 ];
@@ -243,39 +243,41 @@ export const CheckInStaffScan = () => {
         }
     }, []);
 
+// Scanner setup with Html5Qrcode (not the Scanner version)
     useEffect(() => {
-        // Initialize scanner only when `isScanning` is true AND the DOM element is present
-        if (isScanning && document.getElementById(qrcodeRegionId)) {
-            // Check if scanner instance already exists to avoid re-initialization
-            if (!html5QrcodeScannerRef.current) {
-                html5QrcodeScannerRef.current = new Html5QrcodeScanner(
-                    qrcodeRegionId,
+        const qrCodeRegionId = "html5qr-code-full-region";
+
+        if (isScanning && document.getElementById(qrCodeRegionId)) {
+            const html5Qr = new Html5Qrcode(qrCodeRegionId);
+
+            html5Qr
+                .start(
+                    { facingMode: "environment" },
                     {
                         fps: 10,
                         qrbox: { width: 250, height: 250 },
-                        facingMode: "environment",
-                        disableFlip: false
                     },
-                    false // This 'false' means it won't show the default UI with start/stop buttons, you control it manually
-                );
-            }
-
-            setCameraError(null); // Clear previous errors when starting to scan
-
-            // Call render without .catch() directly on it
-            html5QrcodeScannerRef.current.render(onScanSuccess, onScanError);
-            // The onScanError callback will handle any initial errors like permission denials
-            // html5QrcodeScannerRef.current.render(onScanSuccess, onScanError).catch(err => { // <--- REMOVE .catch() HERE
-            //     // ... your previous error handling logic ...
-            // });
-
-        } else if (!isScanning && html5QrcodeScannerRef.current && html5QrcodeScannerRef.current.isScanning) {
-            // Stop scanning when isScanning is false
-            html5QrcodeScannerRef.current.clear().catch(error => {
-                console.error("Failed to clear html5QrcodeScanner.", error);
-            });
-            html5QrcodeScannerRef.current = null; // Clear the ref
+                    onScanSuccess,
+                    onScanError
+                )
+                .then(() => {
+                    html5QrcodeScannerRef.current = html5Qr;
+                })
+                .catch((err) => {
+                    console.error("Failed to start scanner:", err);
+                    setCameraError(err.message || "Camera initialization failed.");
+                });
         }
+
+        return () => {
+            // Stop and clear the scanner on unmount
+            if (html5QrcodeScannerRef.current) {
+                html5QrcodeScannerRef.current
+                    .stop()
+                    .then(() => html5QrcodeScannerRef.current?.clear())
+                    .catch((err) => console.error("Scanner cleanup error:", err));
+            }
+        };
     }, [isScanning, onScanSuccess, onScanError]);
 
 

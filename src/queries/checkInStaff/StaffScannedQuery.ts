@@ -33,6 +33,13 @@ export const StaffScannedQuery = createApi({
                 url: BASE_URL + `/events/staff/scanned/${email}`,
                 method: 'GET'
             })
+        }),
+        scanTickets: builder.mutation<ScannedEvents>({
+            query: (code: string, userId: number) => ({
+                url: BASE_URL + `/tickets/${code}/scan`,
+                method: 'PUT',
+                body: Json.stringfy({scannedByUser: userId})
+            })
         })
     })
 })
@@ -41,4 +48,5 @@ export const StaffScannedQuery = createApi({
 export const {
     useGetStaffAssignedEventsQuery,
     useGetStaffScannedEventsQuery,
+    useScanTicketsQuery,
 } = StaffScannedQuery;
