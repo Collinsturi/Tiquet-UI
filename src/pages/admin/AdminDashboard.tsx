@@ -57,12 +57,13 @@ const salesData = [
     { month: 'Jun', tickets: 400 },
 ];
 
-const ticketTypeData = [
-    { name: 'Standard', value: 400 },
-    { name: 'VIP', value: 250 },
-    { name: 'Early Bird', value: 150 },
-    { name: 'Student', value: 50 },
-];
+// const ticketTypeData = [
+//     { name: 'Standard', value: 400 },
+//     { name: 'VIP', value: 250 },
+//     { name: 'Early Bird', value: 150 },
+//     { name: 'Student', value: 50 },
+// ];
+
 
 // Colors for the Pie Chart slices (matching Material-UI palette somewhat)
 const PIE_COLORS = ['#1976d2', '#ff9800', '#4caf50', '#9c27b0']; // Example: Primary, Orange, Green, Purple
@@ -127,6 +128,11 @@ export const AdminDashboard = () => {
         tickets: item.ticket_count,
     }));
 
+    const ticketTypeData = ticketTypeDistribution.map((item) => ({
+        name: item.ticketType,
+        value: item.sold,
+    }));
+
 
 
     return (
@@ -169,8 +175,7 @@ export const AdminDashboard = () => {
                         <CalendarTodayIcon color="info" sx={{ fontSize: 40, mr: 2 }} />
                         <CardContent>
                             <Typography variant="h6" color="text.secondary">Upcoming Events</Typography>
-                            <Typography variant="h4" color="info">{upcomingEvents}</Typography>
-                        </CardContent>
+                            <Typography variant="h4" color="info">{upcomingEvents.length}</Typography>                        </CardContent>
                     </Card>
                 </Grid>
             </Grid>
@@ -297,49 +302,51 @@ export const AdminDashboard = () => {
                 {/* Upcoming Events List */}
                 <Grid item xs={12}>
                     <Paper elevation={2} sx={{ p: 2 }}>
-                        <CardHeader title="Your Upcoming Events" />
-                        <List>
-                            {upcomingEventsList.map((event) => (
-                                <Box key={event.id}>
-                                    <ListItem alignItems="flex-start">
-                                        <ListItemText
-                                            primary={
-                                                <Typography variant="h6" component="div">
-                                                    {event.name}
-                                                </Typography>
-                                            }
-                                            secondary={
-                                                <Box>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.date}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        <AccessTimeIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.time}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        <LocationOnIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.location}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        Tickets Sold: {event.ticketsSold} / {event.totalTickets}
-                                                    </Typography>
-                                                </Box>
-                                            }
-                                        />
-                                        <Button
-                                            variant="outlined"
-                                            size="small"
-                                            onClick={() => navigate(`/admin/my-events/${event.id}`)}
-                                        >
-                                            View Details
-                                        </Button>
-                                    </ListItem>
-                                    <Divider component="li" sx={{ my: 1 }} />
+                        {/* Upcoming Events List */}
+                        <Grid item xs={12}>
+                            <Paper elevation={2} sx={{ p: 2 }}>
+                                <CardHeader title="Your Upcoming Events" />
+                                <List>
+                                    {upcomingEvents.map((event) => (
+                                        <Box key={event.id}>
+                                            <ListItem alignItems="flex-start">
+                                                <ListItemText
+                                                    primary={
+                                                        <Typography variant="h6" component="div">
+                                                            {event.title}
+                                                        </Typography>
+                                                    }
+                                                    secondary={
+                                                        <Box>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.date}
+                                                            </Typography>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                <AccessTimeIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.time}
+                                                            </Typography>
+                                                        </Box>
+                                                    }
+                                                />
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    onClick={() => navigate(`/admin/my-events/${event.id}`)}
+                                                >
+                                                    View Details
+                                                </Button>
+                                            </ListItem>
+                                            <Divider component="li" sx={{ my: 1 }} />
+                                        </Box>
+                                    ))}
+                                </List>
+                                <Box sx={{ mt: 2, textAlign: 'right' }}>
+                                    <Button variant="text" onClick={() => navigate('/admin/my-events')}>View All Events</Button>
                                 </Box>
-                            ))}
-                        </List>
-                        <Box sx={{ mt: 2, textAlign: 'right' }}>
-                            <Button variant="text" onClick={() => navigate('/admin/my-events')}>View All Events</Button>
-                        </Box>
+                            </Paper>
+                        </Grid>
+                        {/*<Box sx={{ mt: 2, textAlign: 'right' }}>*/}
+                        {/*    <Button variant="text" onClick={() => navigate('/admin/my-events')}>View All Events</Button>*/}
+                        {/*</Box>*/}
                     </Paper>
                 </Grid>
             </Grid>
