@@ -25,8 +25,6 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {AdminCreateEvent} from "./pages/admin/AdminCreateEvent.tsx";
 import {AdminEventAttendees} from "./pages/admin/AdminEventAttendees.tsx";
 import {AdminPromotions} from "./pages/admin/AdminPromotions.tsx";
-import {AdminCommunicationTemplates} from "./pages/admin/AdminCommunicationTemplates.tsx";
-import {AdminCommunicationLogs} from "./pages/admin/AdminCommunicationLogs.tsx";
 import {AdminScheduleCommunication} from "./pages/admin/AdminScheduleCommunication.tsx";
 import {AdminPayouts} from "./pages/admin/AdminPayouts.tsx";
 import {EventDetails} from "./pages/eventAttendees/EventDetails.tsx";
@@ -42,8 +40,7 @@ import UserManagement from "./pages/plaformAdmin/userStaffManagement/UserManagem
 import UserRoleManagement from "./pages/plaformAdmin/userStaffManagement/UserRoleManagement.tsx";
 import CheckInStaffAssignment from "./pages/plaformAdmin/userStaffManagement/CheckInStaffAssignment.tsx";
 import {Organizers} from "./pages/plaformAdmin/organizerManagement/Organizers.tsx";
-import OrganizerVerificationRequests
-    from "./pages/plaformAdmin/organizerManagement/OrganizerVerificationRequests.tsx";
+import OrganizerVerificationRequests from "./pages/plaformAdmin/organizerManagement/OrganizerVerificationRequests.tsx";
 import EventsManagement from "./pages/plaformAdmin/eventManagement/EventsManagement.tsx";
 import CategoryManagement from "./pages/plaformAdmin/eventManagement/CategoryManagement.tsx";
 import VenueManagement from "./pages/plaformAdmin/eventManagement/VenueManagement.tsx";
@@ -62,8 +59,7 @@ import AuditLog from "./pages/plaformAdmin/system/AuditLog.tsx";
 import PlatformAdminProfile from "./pages/plaformAdmin/PlatformAdminProfile.tsx";
 import {AttendeeEvents} from "./pages/eventAttendees/Events.tsx";
 import {PlatformDashboard} from "./pages/plaformAdmin/dashboard/Dashboard.tsx";
-import {EmailVerification, EmailVerificationWrapper} from "./pages/general/EmailVerification.tsx";
-import {useLocation} from "react-router";
+import { EmailVerificationWrapper} from "./pages/general/EmailVerification.tsx";
 
 export const AdminRoute = () => {
     // const user = useSelector((state: RootState) => state.user.user);
@@ -190,8 +186,6 @@ const router = createBrowserRouter([
                     { path:"attendees", Component: AdminEventAttendees},
                     { path: "create-event", Component: AdminCreateEvent},
                     { path: "Event-Promotions", Component: AdminPromotions},
-                    { path: "CommunicationTemplates", Component: AdminCommunicationTemplates},
-                    { path: "Communication-logs", Component: AdminCommunicationLogs},
                     { path: "ScheduleCommunication", Component: AdminScheduleCommunication},
                     { path: "Payout", Component: AdminPayouts}
                 ]

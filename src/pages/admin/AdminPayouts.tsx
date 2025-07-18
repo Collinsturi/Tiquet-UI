@@ -358,170 +358,170 @@ export const AdminPayouts = () => {
                 </TableContainer>
             </Paper>
 
-            {/* Request Payout Section */}
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h5" gutterBottom>Request Payout</Typography>
-                <Grid container spacing={3} alignItems="center">
-                    <Grid item xs={12} md={6}>
-                        <FormControl fullWidth margin="normal">
-                            <InputLabel>Request Payout For (Optional)</InputLabel>
-                            <Select
-                                value={selectedEventForPayout}
-                                label="Request Payout For (Optional)"
-                                onChange={handleEventForPayoutChange}
-                                disabled={payoutRequestLoading || !eventsForPayout.some(e => e.isFinalized)} // Disable if no finalized events
-                            >
-                                <MenuItem value="">
-                                    <em>Overall Available Balance</em>
-                                </MenuItem>
-                                {eventsForPayout.filter(e => e.isFinalized).map((event) => (
-                                    <MenuItem key={event.id} value={event.id}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <EventIcon sx={{ mr: 1 }} />
-                                            {event.name} (Net: ${event.netRevenue.toLocaleString()})
-                                        </Box>
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                            {(!eventsForPayout.some(e => e.isFinalized) && (
-                                <FormHelperText>No finalized events available for specific payout requests.</FormHelperText>
-                            ))}
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <TextField
-                            fullWidth
-                            label="Amount to Withdraw"
-                            type="text" // Use text to allow partial decimals during typing
-                            value={payoutAmount}
-                            onChange={handlePayoutAmountChange}
-                            variant="outlined"
-                            InputProps={{
-                                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                                inputMode: 'decimal', // Helps with mobile keyboards
-                            }}
-                            helperText={`Max: $${financials.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            disabled={payoutRequestLoading || financials?.availableBalance <= 0}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Divider sx={{ my: 2 }} />
-                        <Typography variant="h6" gutterBottom>Payout Details</Typography>
-                        <Alert severity="info" sx={{ mb: 2 }}>
-                            Payouts will be sent to the bank account details configured in your Profile. Please ensure they are correct.
-                        </Alert>
-                        {bankDetails ? (
-                            <Box>
-                                <Typography variant="body1"><strong>Bank Name:</strong> {bankDetails.bankName}</Typography>
-                                <Typography variant="body1"><strong>Account Name:</strong> {bankDetails.accountName}</Typography>
-                                <Typography variant="body1"><strong>Account Number:</strong> {bankDetails.accountNumber}</Typography>
-                            </Box>
-                        ) : (
-                            <Alert severity="warning">Bank details not found. Please set them up in your Admin Profile.</Alert>
-                        )}
-                    </Grid>
-                    <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleRequestPayoutClick}
-                            disabled={payoutRequestLoading || parseFloat(payoutAmount || '0') <= 0 || parseFloat(payoutAmount || '0') > financials?.availableBalance || !bankDetails?.accountNumber}
-                            startIcon={payoutRequestLoading ? <CircularProgress size={20} color="inherit" /> : null}
-                        >
-                            {payoutRequestLoading ? 'Submitting...' : 'Request Payout'}
-                        </Button>
-                    </Grid>
-                </Grid>
-            </Paper>
+            {/*/!* Request Payout Section *!/*/}
+            {/*<Paper elevation={3} sx={{ p: 3, mb: 4 }}>*/}
+            {/*    <Typography variant="h5" gutterBottom>Request Payout</Typography>*/}
+            {/*    <Grid container spacing={3} alignItems="center">*/}
+            {/*        <Grid item xs={12} md={6}>*/}
+            {/*            <FormControl fullWidth margin="normal">*/}
+            {/*                <InputLabel>Request Payout For (Optional)</InputLabel>*/}
+            {/*                <Select*/}
+            {/*                    value={selectedEventForPayout}*/}
+            {/*                    label="Request Payout For (Optional)"*/}
+            {/*                    onChange={handleEventForPayoutChange}*/}
+            {/*                    disabled={payoutRequestLoading || !eventsForPayout.some(e => e.isFinalized)} // Disable if no finalized events*/}
+            {/*                >*/}
+            {/*                    <MenuItem value="">*/}
+            {/*                        <em>Overall Available Balance</em>*/}
+            {/*                    </MenuItem>*/}
+            {/*                    {eventsForPayout.filter(e => e.isFinalized).map((event) => (*/}
+            {/*                        <MenuItem key={event.id} value={event.id}>*/}
+            {/*                            <Box sx={{ display: 'flex', alignItems: 'center' }}>*/}
+            {/*                                <EventIcon sx={{ mr: 1 }} />*/}
+            {/*                                {event.name} (Net: ${event.netRevenue.toLocaleString()})*/}
+            {/*                            </Box>*/}
+            {/*                        </MenuItem>*/}
+            {/*                    ))}*/}
+            {/*                </Select>*/}
+            {/*                {(!eventsForPayout.some(e => e.isFinalized) && (*/}
+            {/*                    <FormHelperText>No finalized events available for specific payout requests.</FormHelperText>*/}
+            {/*                ))}*/}
+            {/*            </FormControl>*/}
+            {/*        </Grid>*/}
+            {/*        <Grid item xs={12} md={6}>*/}
+            {/*            <TextField*/}
+            {/*                fullWidth*/}
+            {/*                label="Amount to Withdraw"*/}
+            {/*                type="text" // Use text to allow partial decimals during typing*/}
+            {/*                value={payoutAmount}*/}
+            {/*                onChange={handlePayoutAmountChange}*/}
+            {/*                variant="outlined"*/}
+            {/*                InputProps={{*/}
+            {/*                    startAdornment: <InputAdornment position="start">$</InputAdornment>,*/}
+            {/*                    inputMode: 'decimal', // Helps with mobile keyboards*/}
+            {/*                }}*/}
+            {/*                helperText={`Max: $${financials.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}*/}
+            {/*                disabled={payoutRequestLoading || financials?.availableBalance <= 0}*/}
+            {/*            />*/}
+            {/*        </Grid>*/}
+            {/*        <Grid item xs={12}>*/}
+            {/*            <Divider sx={{ my: 2 }} />*/}
+            {/*            <Typography variant="h6" gutterBottom>Payout Details</Typography>*/}
+            {/*            <Alert severity="info" sx={{ mb: 2 }}>*/}
+            {/*                Payouts will be sent to the bank account details configured in your Profile. Please ensure they are correct.*/}
+            {/*            </Alert>*/}
+            {/*            {bankDetails ? (*/}
+            {/*                <Box>*/}
+            {/*                    <Typography variant="body1"><strong>Bank Name:</strong> {bankDetails.bankName}</Typography>*/}
+            {/*                    <Typography variant="body1"><strong>Account Name:</strong> {bankDetails.accountName}</Typography>*/}
+            {/*                    <Typography variant="body1"><strong>Account Number:</strong> {bankDetails.accountNumber}</Typography>*/}
+            {/*                </Box>*/}
+            {/*            ) : (*/}
+            {/*                <Alert severity="warning">Bank details not found. Please set them up in your Admin Profile.</Alert>*/}
+            {/*            )}*/}
+            {/*        </Grid>*/}
+            {/*        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>*/}
+            {/*            <Button*/}
+            {/*                variant="contained"*/}
+            {/*                color="primary"*/}
+            {/*                onClick={handleRequestPayoutClick}*/}
+            {/*                disabled={payoutRequestLoading || parseFloat(payoutAmount || '0') <= 0 || parseFloat(payoutAmount || '0') > financials?.availableBalance || !bankDetails?.accountNumber}*/}
+            {/*                startIcon={payoutRequestLoading ? <CircularProgress size={20} color="inherit" /> : null}*/}
+            {/*            >*/}
+            {/*                {payoutRequestLoading ? 'Submitting...' : 'Request Payout'}*/}
+            {/*            </Button>*/}
+            {/*        </Grid>*/}
+            {/*    </Grid>*/}
+            {/*</Paper>*/}
 
-            {/* Payout History */}
-            <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h5" gutterBottom>Payout History</Typography>
-                <TableContainer>
-                    <Table stickyHeader>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Request ID</TableCell>
-                                <TableCell>Amount</TableCell>
-                                <TableCell>Requested For Event</TableCell>
-                                <TableCell>Request Date</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell>Completion Date</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {payoutHistory.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} align="center">No payout history found.</TableCell>
-                                </TableRow>
-                            ) : (
-                                payoutHistory.map((request) => (
-                                    <TableRow key={request.requestId}>
-                                        <TableCell>{request.requestId}</TableCell>
-                                        <TableCell>${request.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                        <TableCell>
-                                            {request.requestedForEventId ? (
-                                                eventsForPayout.find(e => e.id === request.requestedForEventId)?.name || request.requestedForEventId
-                                            ) : 'Overall'}
-                                        </TableCell>
-                                        <TableCell>{new Date(request.requestDate).toLocaleString()}</TableCell>
-                                        <TableCell>
-                                            <Alert
-                                                severity={request.status === 'Completed' ? 'success' : request.status === 'Pending' ? 'info' : 'error'}
-                                                sx={{ p: 0.5, py: 0, '& .MuiAlert-message': { mt: 0, mb: 0 } }}
-                                            >
-                                                {request.status}
-                                            </Alert>
-                                        </TableCell>
-                                        <TableCell>{request.completionDate ? new Date(request.completionDate).toLocaleString() : '-'}</TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+            {/*/!* Payout History *!/*/}
+            {/*<Paper elevation={3} sx={{ p: 3 }}>*/}
+            {/*    <Typography variant="h5" gutterBottom>Payout History</Typography>*/}
+            {/*    <TableContainer>*/}
+            {/*        <Table stickyHeader>*/}
+            {/*            <TableHead>*/}
+            {/*                <TableRow>*/}
+            {/*                    <TableCell>Request ID</TableCell>*/}
+            {/*                    <TableCell>Amount</TableCell>*/}
+            {/*                    <TableCell>Requested For Event</TableCell>*/}
+            {/*                    <TableCell>Request Date</TableCell>*/}
+            {/*                    <TableCell>Status</TableCell>*/}
+            {/*                    <TableCell>Completion Date</TableCell>*/}
+            {/*                </TableRow>*/}
+            {/*            </TableHead>*/}
+            {/*            <TableBody>*/}
+            {/*                {payoutHistory.length === 0 ? (*/}
+            {/*                    <TableRow>*/}
+            {/*                        <TableCell colSpan={6} align="center">No payout history found.</TableCell>*/}
+            {/*                    </TableRow>*/}
+            {/*                ) : (*/}
+            {/*                    payoutHistory.map((request) => (*/}
+            {/*                        <TableRow key={request.requestId}>*/}
+            {/*                            <TableCell>{request.requestId}</TableCell>*/}
+            {/*                            <TableCell>${request.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>*/}
+            {/*                            <TableCell>*/}
+            {/*                                {request.requestedForEventId ? (*/}
+            {/*                                    eventsForPayout.find(e => e.id === request.requestedForEventId)?.name || request.requestedForEventId*/}
+            {/*                                ) : 'Overall'}*/}
+            {/*                            </TableCell>*/}
+            {/*                            <TableCell>{new Date(request.requestDate).toLocaleString()}</TableCell>*/}
+            {/*                            <TableCell>*/}
+            {/*                                <Alert*/}
+            {/*                                    severity={request.status === 'Completed' ? 'success' : request.status === 'Pending' ? 'info' : 'error'}*/}
+            {/*                                    sx={{ p: 0.5, py: 0, '& .MuiAlert-message': { mt: 0, mb: 0 } }}*/}
+            {/*                                >*/}
+            {/*                                    {request.status}*/}
+            {/*                                </Alert>*/}
+            {/*                            </TableCell>*/}
+            {/*                            <TableCell>{request.completionDate ? new Date(request.completionDate).toLocaleString() : '-'}</TableCell>*/}
+            {/*                        </TableRow>*/}
+            {/*                    ))*/}
+            {/*                )}*/}
+            {/*            </TableBody>*/}
+            {/*        </Table>*/}
+            {/*    </TableContainer>*/}
+            {/*</Paper>*/}
 
-            {/* Payout Confirmation Dialog */}
-            <Dialog open={payoutDialogOpen} onClose={handlePayoutDialogClose}>
-                <DialogTitle>Confirm Payout Request</DialogTitle>
-                <DialogContent dividers>
-                    <Typography gutterBottom>
-                        You are about to request a payout of <strong>${parseFloat(payoutAmount || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>.
-                    </Typography>
-                    {selectedEventForPayout && (
-                        <Typography gutterBottom>
-                            This amount is being requested for the event: <strong>{eventsForPayout.find(evt => evt.id === selectedEventForPayout)?.name}</strong>.
-                        </Typography>
-                    )}
-                    <Typography gutterBottom>
-                        Funds will be sent to the following bank account:
-                    </Typography>
-                    {bankDetails && (
-                        <Box sx={{ ml: 2, mb: 2 }}>
-                            <Typography variant="body2"><strong>Bank Name:</strong> {bankDetails.bankName}</Typography>
-                            <Typography variant="body2"><strong>Account Name:</strong> {bankDetails.accountName}</Typography>
-                            <Typography variant="body2"><strong>Account Number:</strong> {bankDetails.accountNumber}</Typography>
-                        </Box>
-                    )}
-                    <Typography color="error">
-                        Please double-check these details as payouts cannot be reversed once processed.
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handlePayoutDialogClose} color="error" disabled={payoutRequestLoading}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleConfirmPayout}
-                        color="primary"
-                        variant="contained"
-                        disabled={payoutRequestLoading}
-                    >
-                        {payoutRequestLoading ? <CircularProgress size={24} color="inherit" /> : 'Confirm Payout'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {/*/!* Payout Confirmation Dialog *!/*/}
+            {/*<Dialog open={payoutDialogOpen} onClose={handlePayoutDialogClose}>*/}
+            {/*    <DialogTitle>Confirm Payout Request</DialogTitle>*/}
+            {/*    <DialogContent dividers>*/}
+            {/*        <Typography gutterBottom>*/}
+            {/*            You are about to request a payout of <strong>${parseFloat(payoutAmount || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>.*/}
+            {/*        </Typography>*/}
+            {/*        {selectedEventForPayout && (*/}
+            {/*            <Typography gutterBottom>*/}
+            {/*                This amount is being requested for the event: <strong>{eventsForPayout.find(evt => evt.id === selectedEventForPayout)?.name}</strong>.*/}
+            {/*            </Typography>*/}
+            {/*        )}*/}
+            {/*        <Typography gutterBottom>*/}
+            {/*            Funds will be sent to the following bank account:*/}
+            {/*        </Typography>*/}
+            {/*        {bankDetails && (*/}
+            {/*            <Box sx={{ ml: 2, mb: 2 }}>*/}
+            {/*                <Typography variant="body2"><strong>Bank Name:</strong> {bankDetails.bankName}</Typography>*/}
+            {/*                <Typography variant="body2"><strong>Account Name:</strong> {bankDetails.accountName}</Typography>*/}
+            {/*                <Typography variant="body2"><strong>Account Number:</strong> {bankDetails.accountNumber}</Typography>*/}
+            {/*            </Box>*/}
+            {/*        )}*/}
+            {/*        <Typography color="error">*/}
+            {/*            Please double-check these details as payouts cannot be reversed once processed.*/}
+            {/*        </Typography>*/}
+            {/*    </DialogContent>*/}
+            {/*    <DialogActions>*/}
+            {/*        <Button onClick={handlePayoutDialogClose} color="error" disabled={payoutRequestLoading}>*/}
+            {/*            Cancel*/}
+            {/*        </Button>*/}
+            {/*        <Button*/}
+            {/*            onClick={handleConfirmPayout}*/}
+            {/*            color="primary"*/}
+            {/*            variant="contained"*/}
+            {/*            disabled={payoutRequestLoading}*/}
+            {/*        >*/}
+            {/*            {payoutRequestLoading ? <CircularProgress size={24} color="inherit" /> : 'Confirm Payout'}*/}
+            {/*        </Button>*/}
+            {/*    </DialogActions>*/}
+            {/*</Dialog>*/}
         </Box>
     );
 };

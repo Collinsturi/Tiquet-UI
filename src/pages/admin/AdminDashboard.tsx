@@ -38,6 +38,9 @@ import {
     Pie,
     Cell,
 } from 'recharts';
+import {useSelector} from "react-redux";
+import type {RootState} from "../../redux/store.ts";
+import { useGetAdminDashboardSummaryQuery } from '../../queries/admin/adminQuery.ts';
 
 // Dummy data for demonstration
 const totalEvents = 15;
@@ -106,10 +109,30 @@ export const AdminDashboard = () => {
     const theme = useTheme();
     const navigate = useNavigate();
 
+    const user = useSelector((state: RootState) => state.user.user);
+    const { data, isLoading, isError } = useGetAdminDashboardSummaryQuery(user.email);
+
+    const {
+        totalEvents = 0,
+        totalTicketsSold = 0,
+        totalRevenue = 0,
+        upcomingEvents = [],
+        recentActivity = [],
+        monthlySales = [],
+        ticketTypeDistribution = [],
+    } = data ?? {};
+
+    const salesData = monthlySales.map((item) => ({
+        month: new Date(item.month).toLocaleString('default', { month: 'short' }),
+        tickets: item.ticket_count,
+    }));
+
+
+
     return (
         <Box sx={{ flexGrow: 1, p: 3 }}>
             <Typography variant="h4" gutterBottom>
-                Welcome, AdminUser!
+                Welcome, {user.first_name} {user.last_name}!
             </Typography>
 
             {/* Quick Stats Section */}
@@ -161,14 +184,19 @@ export const AdminDashboard = () => {
                     <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
                         <CardHeader title="Recent Activity" />
                         <List>
-                            {recentActivities.map((activity, index) => (
+                            {recentActivity.length > 0 ? recentActivity.map((activity, index) => (
                                 <Box key={index}>
                                     <ListItem>
-                                        <ListItemText primary={activity} />
+                                        <ListItemText
+                                            primary={`Buyer ${activity.buyerId} purchased ticket #${activity.ticketId} for "${activity.eventTitle}"`}
+                                            secondary={new Date(activity.createdAt).toLocaleString()}
+                                        />
                                     </ListItem>
-                                    {index < recentActivities.length - 1 && <Divider component="li" />}
+                                    {index < recentActivity.length - 1 && <Divider component="li" />}
                                 </Box>
-                            ))}
+                            )) : (
+                                <ListItem><ListItemText primary="No recent activity." /></ListItem>
+                            )}
                         </List>
                         <Box sx={{ mt: 2, textAlign: 'right' }}>
                             <Button variant="text" onClick={() => navigate('/admin/reports')}>View All Activity</Button>

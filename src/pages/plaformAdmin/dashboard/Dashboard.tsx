@@ -133,7 +133,7 @@ export const PlatformDashboard = () => {
         <ThemeProvider theme={theme}>
             <Box className="p-4 sm:p-6 md:p-8 bg-gray-100 min-h-screen">
 
-                {/* Overview & Analytics Section */}
+                {/* Overview & analytics Section */}
                 <Box className="mb-8">
                     <Typography variant="h5" className="mb-4 text-gray-700">
                         Overview & Analytics

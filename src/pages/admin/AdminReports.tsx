@@ -534,7 +534,7 @@ export const AdminReports = () => {
 
             {!loading && !error && overallAnalytics && (
                 <>
-                    {/* Overall Account Analytics Section */}
+                    {/* Overall Account analytics Section */}
                     <Paper elevation={3} sx={{ p: 3, mb: 4 }} id="overall-reports-section" ref={overallReportsRef}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h5" component="h2">
@@ -657,7 +657,7 @@ export const AdminReports = () => {
                         </Grid>
                     </Paper>
 
-                    {/* Event-Specific Analytics Section */}
+                    {/* Event-Specific analytics Section */}
                     <Paper elevation={3} sx={{ p: 3 }} id="event-specific-reports-section" ref={eventSpecificReportsRef}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h5" component="h2">
