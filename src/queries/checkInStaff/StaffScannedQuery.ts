@@ -15,31 +15,68 @@ export type AssignedEvents = {
     ticketsRemaining: number,
 }
 
+export type AssignedStaff = {
+    id: number,
+    firstName: string,
+    lastName: string,
+    email: string
+}
+
 export const StaffScannedQuery = createApi({
     reducerPath: 'StaffScannedQuery',
     baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),
-    tagTypes: ['ScannedEvents', 'AssignedEvents'],
+    tagTypes: ['ScannedEvents', 'AssignedEvents', 'AvailableStaff', 'AssignedStaff'],
     endpoints: (builder) => ({
-        getStaffAssignedEvents: builder.query<AssignedEvents, string>({
+        getStaffAssignedEvents: builder.query<AssignedEvents[], string>({
             query: (email: string) => ({
-                url: BASE_URL + `/events/staff/assigned/${email}`,
+                url: `/events/staff/assigned/${email}`,
                 method: 'GET'
             }),
-            invalidateTags: ['AssignedEvents']
+            providesTags: ['AssignedEvents']
         }),
 
-        getStaffScannedEvents: builder.query<ScannedEvents, string>({
+        getStaffForAssignedEvent: builder.query<AssignedStaff[], { organizerEmail: string, eventId: number }>({
+            query: ({ organizerEmail, eventId }) => ({
+                url: `/events/organizer/${organizerEmail}/assigned-staff?eventId=${eventId}`
+            }),
+            providesTags: [`AssignedStaff`] // Corrected typo and tag type
+        }),
+
+        getStaffScannedEvents: builder.query<ScannedEvents[], string>({
             query: (email: string) => ({
-                url: BASE_URL + `/events/staff/scanned/${email}`,
+                url: `/events/staff/scanned/${email}`,
                 method: 'GET'
             })
         }),
-        scanTickets: builder.mutation<ScannedEvents>({
-            query: (code: string, userId: number) => ({
-                url: BASE_URL + `/tickets/${code}/scan`,
+        scanTickets: builder.mutation<ScannedEvents, { code: string, userId: number }>({
+            query: ({ code, userId }) => ({
+                url: `/tickets/${code}/scan`,
                 method: 'PUT',
-                body: Json.stringfy({scannedByUser: userId})
-            })
+                body: JSON.stringify({ scannedByUser: userId })
+            }),
+            invalidatesTags: ['ScannedEvents']
+        }),
+
+        availableStaff: builder.query<AssignedStaff[], void>({
+            query: () => '/events/staff/available',
+            providesTags: ['AvailableStaff']
+        }),
+
+        assignStaffToEvent: builder.mutation<AssignedStaff, { eventId: number, staffEmail: string, organizerEmail: string }>({
+            query: ({ eventId, staffEmail, organizerEmail }) => ({
+                url: `/events/organizer/${organizerEmail}/assignStaff`,
+                method: 'POST',
+                body: { "staffEmails": [staffEmail], "eventId": eventId }
+            }),
+            invalidatesTags: ['AvailableStaff', 'AssignedEvents', 'AssignedStaff']
+        }),
+        unassignStaffFromEvent: builder.mutation<AssignedStaff, { eventId: number, staffEmail: string, organizerEmail: string }>({
+            query: ({ eventId, staffEmail, organizerEmail }) => ({
+                url: `/events/organizer/${organizerEmail}/unassign-staff`,
+                method: 'DELETE',
+                body: { "staffEmails": staffEmail, "eventId": eventId }
+            }),
+            invalidatesTags: ['AvailableStaff', 'AssignedEvents', 'AssignedStaff']
         })
     })
 })
@@ -48,5 +85,9 @@ export const StaffScannedQuery = createApi({
 export const {
     useGetStaffAssignedEventsQuery,
     useGetStaffScannedEventsQuery,
-    useScanTicketsQuery,
+    useScanTicketsMutation,
+    useAvailableStaffQuery,
+    useAssignStaffToEventMutation,
+    useUnassignStaffFromEventMutation,
+    useGetStaffForAssignedEventQuery,
 } = StaffScannedQuery;

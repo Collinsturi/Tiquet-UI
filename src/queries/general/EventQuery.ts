@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery, retry } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "../APIConfiguration";
 import type { RootState } from "../../redux/store";
+import type {AssignedEvents} from "../checkInStaff/StaffScannedQuery.ts";
 
 // === Type Definitions ===
 export type Venue = {
@@ -175,6 +176,10 @@ export const EventQuery = createApi({
                     ? [...result.map(({ event }) => ({ type: 'Events' as const, id: event.id }))]
                     : [],
         }),
+        getOrganizerEvents: builder.query<AssignedEvents[], string>({
+            query: (email) => BASE_URL + `/events/organizer/past/${email}`,
+            providesTags: ['AssignedEvents']
+        }),
     }),
 });
 
@@ -184,4 +189,5 @@ export const {
     useGetCategorizedEventsQuery,
     useGetEventByIdQuery,
     useGetAllEventsQuery,
+    useGetOrganizerEventsQuery,
 } = EventQuery;
