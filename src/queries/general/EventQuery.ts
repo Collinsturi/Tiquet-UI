@@ -61,6 +61,19 @@ export type NormalizedEvent = {
     ticketTypes: TicketType[];
 };
 
+export type OrganizerEventDetails = {
+    eventId: number;
+    title: string;
+    eventDate: string; // "YYYY-MM-DD"
+    eventTime: string; // "HH:MM:SS"
+    category: string;
+    venueName: string;
+    venueAddress: string;
+    ticketsSold: string; // These are strings in your example JSON, consider making them numbers
+    ticketsScanned: string; // Consider making them numbers
+    attendanceRate: string; // Consider making it a number (float)
+};
+
 // === Helper to normalize raw rows ===
 // This function takes an array of rows that all belong to the SAME event
 const normalizeEventData = (rows?: RawEventRow[]): NormalizedEvent | null => {
@@ -180,14 +193,36 @@ export const EventQuery = createApi({
             query: (email) => BASE_URL + `/events/organizer/past/${email}`,
             providesTags: ['AssignedEvents']
         }),
+        getDetailedUpcomingOrganizerEvents: builder.query<OrganizerEventDetails[], string>({
+            query: (organizerEmail: string) => ({
+                url: `/events/organizer/${organizerEmail}/upcoming`, // Matches route
+                method: 'GET'
+            }),
+            providesTags: ['DetailedOrganizerEvents'],
+        }),
+        getDetailedCurrentOrganizerEvents: builder.query<OrganizerEventDetails[], string>({
+            query: (organizerEmail: string) => ({
+                url: `/events/organizer/${organizerEmail}/current`, // Matches route
+                method: 'GET'
+            }),
+            providesTags: ['DetailedOrganizerEvents'],
+        }),
+        getDetailedPastOrganizerEvents: builder.query<OrganizerEventDetails[], string>({
+            query: (organizerEmail: string) => ({
+                url: `/events/organizer/${organizerEmail}/past`, // Matches route
+                method: 'GET'
+            }),
+            providesTags: ['DetailedOrganizerEvents'],
+        }),
     }),
 });
 
-// === Export Hooks ===
 export const {
-    useGetFeaturedEventsQuery,
-    useGetCategorizedEventsQuery,
-    useGetEventByIdQuery,
-    useGetAllEventsQuery,
     useGetOrganizerEventsQuery,
+    useGetDetailedUpcomingOrganizerEventsQuery,
+    useGetDetailedCurrentOrganizerEventsQuery,
+    useGetDetailedPastOrganizerEventsQuery,
+    useGetDetailedOrganizerEventsByTimeframeQuery,
+    useGetEventByIdQuery,
+    useGetAllEventsQuery
 } = EventQuery;

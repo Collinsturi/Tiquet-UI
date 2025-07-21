@@ -12,7 +12,8 @@ import {
     IconButton,
     CircularProgress,
     Alert,
-    Collapse,
+    Tab, // Added Tab and Tabs for categorization
+    Tabs,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -24,132 +25,97 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useNavigate } from 'react-router-dom';
 import { styled, alpha } from '@mui/material/styles';
+import { useSelector } from "react-redux";
+import type { RootState } from "../../redux/store.ts";
 
-// --- Dummy Data Simulation (replace with actual API calls in a real app) ---
-// In a real application, this data would come from Firestore or your backend.
+// REMOVED: RTK Query imports, as we're using placeholders for now
+// Keeping types if they are still useful for structuring dummy data
+// import { OrganizerEventDetails } from '../../queries/general/EventQuery.ts';
 
-const dummyEvents = [
+
+// --- Placeholder Data Structure mimicking backend response ---
+// This data will act as if it came from your RTK Queries
+const placeholderUpcomingEvents: any[] = [ // Use 'any[]' for flexibility with placeholder
     {
-        id: 'evt-001',
-        name: 'Tech Innovators Summit 2025',
-        organizerId: 'organizer-1',
-        startDate: '2025-09-10T09:00:00Z', // Future event
-        endDate: '2025-09-12T17:00:00Z',
-        location: 'Convention Center',
-        description: 'A summit for the brightest minds in technology.',
-        ticketsSold: 1250,
-        totalTickets: 2000,
-        revenue: 75000,
-        imageUrl: 'https://placehold.co/400x200/ADD8E6/000000?text=Tech+Summit',
+        "eventId": 4,
+        "title": "Future Tech Expo",
+        "eventDate": "2025-10-20",
+        "eventTime": "09:00:00",
+        "category": "Technology",
+        "venueName": "Innovation Hub",
+        "venueAddress": "101 Future Rd, Nairobi",
+        "ticketsSold": 50,
+        "ticketsScanned": 0,
+        "attendanceRate": 0.00
     },
     {
-        id: 'evt-002',
-        name: 'Annual Charity Gala',
-        organizerId: 'organizer-1',
-        startDate: '2025-10-22T18:00:00Z', // Future event
-        endDate: '2025-10-22T23:00:00Z',
-        location: 'Grand Ballroom',
-        description: 'An evening of elegance for a noble cause.',
-        ticketsSold: 800,
-        totalTickets: 800, // Sold out
-        revenue: 120000,
-        imageUrl: 'https://placehold.co/400x200/F08080/FFFFFF?text=Charity+Gala',
-    },
-    {
-        id: 'evt-003',
-        name: 'Local Food Festival',
-        organizerId: 'organizer-1',
-        startDate: '2025-06-15T10:00:00Z', // Ended in the past
-        endDate: '2025-06-16T18:00:00Z',
-        location: 'City Park',
-        description: 'Taste the best local delicacies.',
-        ticketsSold: 3000,
-        totalTickets: 3000,
-        revenue: 45000,
-        imageUrl: 'https://placehold.co/400x200/90EE90/000000?text=Food+Festival',
-    },
-    {
-        id: 'evt-004',
-        name: 'Winter Wonderland Market',
-        organizerId: 'organizer-1',
-        startDate: '2025-12-05T10:00:00Z', // Future event
-        endDate: '2025-12-07T20:00:00Z',
-        location: 'Winter Fairgrounds',
-        description: 'Holiday shopping and festivities.',
-        ticketsSold: 150,
-        totalTickets: 1000,
-        revenue: 7500,
-        imageUrl: 'https://placehold.co/400x200/ADD8E6/000000?text=Winter+Market',
-    },
-    {
-        id: 'evt-005',
-        name: 'Spring Art Exhibition',
-        organizerId: 'organizer-1',
-        startDate: '2025-05-01T10:00:00Z', // Ended in the past
-        endDate: '2025-05-05T17:00:00Z',
-        location: 'Art Gallery Downtown',
-        description: 'Showcasing local artistic talent.',
-        ticketsSold: 500,
-        totalTickets: 500,
-        revenue: 25000,
-        imageUrl: 'https://placehold.co/400x200/E6E6FA/000000?text=Art+Exhibition',
-    },
-    {
-        id: 'evt-006',
-        name: 'Summer Marathon',
-        organizerId: 'organizer-1',
-        startDate: '2025-07-28T07:00:00Z', // Current selling (ends in future)
-        endDate: '2025-07-28T12:00:00Z',
-        location: 'Riverside Path',
-        description: 'Challenge yourself with our annual summer marathon.',
-        ticketsSold: 700,
-        totalTickets: 1000,
-        revenue: 35000,
-        imageUrl: 'https://placehold.co/400x200/FFD700/000000?text=Summer+Marathon',
-    },
-    {
-        id: 'evt-007',
-        name: 'Community Clean-up Day',
-        organizerId: 'organizer-2', // Event by another organizer (won't show for current admin)
-        startDate: '2025-08-01T09:00:00Z',
-        endDate: '2025-08-01T14:00:00Z',
-        location: 'City Park',
-        description: 'Help make our city cleaner.',
-        ticketsSold: 0,
-        totalTickets: 50,
-        revenue: 0,
-        imageUrl: 'https://placehold.co/400x200/D3D3D3/000000?text=Clean-up+Day',
-    },
+        "eventId": 5,
+        "title": "Next Gen Music Festival",
+        "eventDate": "2025-11-05",
+        "eventTime": "14:00:00",
+        "category": "Music",
+        "venueName": "Open Air Arena",
+        "venueAddress": "202 Festival Grounds, Kisumu",
+        "ticketsSold": 150,
+        "ticketsScanned": 0,
+        "attendanceRate": 0.00
+    }
 ];
 
-// Current organizer ID (from your authentication context in a real app)
-const currentOrganizerId = 'organizer-1';
+const placeholderCurrentEvents: any[] = [
+    {
+        "eventId": 6,
+        "title": "Art & Culture Fair",
+        "eventDate": "2025-07-21", // Today's date (relative to the context)
+        "eventTime": "10:00:00", // Has already started
+        "category": "Arts",
+        "venueName": "City Exhibition Hall",
+        "venueAddress": "303 Culture Ave, Mombasa",
+        "ticketsSold": 200,
+        "ticketsScanned": 50,
+        "attendanceRate": 25.00
+    }
+];
 
-// Simulate fetching events
-const fetchOrganizerEvents = (organizerId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const now = new Date();
-            const filteredEvents = dummyEvents.filter(event => event.organizerId === organizerId);
-            const currentSelling = [];
-            const ended = [];
+const placeholderPastEvents: any[] = [
+    {
+        "eventId": 3,
+        "title": "Local Food Festival",
+        "eventDate": "2024-07-01",
+        "eventTime": "11:00:00",
+        "category": "Food & Drink",
+        "venueName": "Outdoor Amphitheater",
+        "venueAddress": "300 Green Park, Kisumu",
+        "ticketsSold": 4180,
+        "ticketsScanned": 4,
+        "attendanceRate": 0.10
+    },
+    {
+        "eventId": 2,
+        "title": "Jazz Fusion Night",
+        "eventDate": "2024-06-20",
+        "eventTime": "19:30:00",
+        "category": "Music",
+        "venueName": "City Auditorium",
+        "venueAddress": "200 Performance Blvd, Mombasa",
+        "ticketsSold": 1060,
+        "ticketsScanned": 2,
+        "attendanceRate": 0.19
+    },
+    {
+        "eventId": 1,
+        "title": "Tech Innovators Summit 2024",
+        "eventDate": "2024-05-15",
+        "eventTime": "09:00:00",
+        "category": "Technology",
+        "venueName": "Grand Convention Center",
+        "venueAddress": "100 Exhibition Way, Nairobi",
+        "ticketsSold": 2096,
+        "ticketsScanned": 4,
+        "attendanceRate": 0.19
+    }
+];
 
-            filteredEvents.forEach(event => {
-                const endDate = new Date(event.endDate);
-                const startDate = new Date(event.startDate);
-
-                // An event is 'current selling' if its end date is in the future
-                // or if it's ongoing (start date <= now and end date >= now)
-                if (endDate > now) {
-                    currentSelling.push(event);
-                } else {
-                    ended.push(event);
-                }
-            });
-            resolve({ currentSelling, ended });
-        }, 500); // Simulate network delay
-    });
-};
 
 // Styled Search Bar (reused from AdminLayout)
 const Search = styled('div')(({ theme }) => ({
@@ -166,7 +132,7 @@ const Search = styled('div')(({ theme }) => ({
         marginLeft: theme.spacing(3),
         width: 'auto',
     },
-    border: `1px solid ${theme.palette.divider}`, // Added a border for visibility
+    border: `1px solid ${theme.palette.divider}`,
 }));
 
 const SearchIconWrapper = styled('div')(({ theme }) => ({
@@ -194,68 +160,95 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 export const AdminEvents = () => {
     const navigate = useNavigate();
-    const [currentSellingEvents, setCurrentSellingEvents] = useState([]);
-    const [endedEvents, setEndedEvents] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedTab, setSelectedTab] = useState<'upcoming' | 'current' | 'past'>('upcoming');
 
+    // Simulate loading states without actual RTK Query
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const user = useSelector((state: RootState) => state.user.user);
+    // const organizerEmail = user.email; // We won't use this directly for placeholder data
+
+    // Simulate data fetching with useEffect and dummy data
     useEffect(() => {
-        const getEvents = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const { currentSelling, ended } = await fetchOrganizerEvents(currentOrganizerId);
-                setCurrentSellingEvents(currentSelling);
-                setEndedEvents(ended);
-            } catch (err) {
-                console.error("Failed to fetch events:", err);
-                setError("Failed to load events. Please try again later.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        getEvents();
-    }, []);
+        setIsLoading(true);
+        setError(null);
+        // Simulate a network delay
+        const timer = setTimeout(() => {
+            // No actual API calls, just "load" the placeholder data
+            setIsLoading(false);
+        }, 500); // Adjust delay as needed
+
+        return () => clearTimeout(timer); // Cleanup timer
+    }, [selectedTab]); // Re-run effect when tab changes
+
+    // Determine which events to display based on the selected tab
+    let eventsToDisplay: any[] = []; // Use 'any[]' for placeholder
+    if (selectedTab === 'upcoming') {
+        eventsToDisplay = placeholderUpcomingEvents;
+    } else if (selectedTab === 'current') {
+        eventsToDisplay = placeholderCurrentEvents;
+    } else if (selectedTab === 'past') {
+        eventsToDisplay = placeholderPastEvents;
+    }
+
 
     // Filter events based on search term
-    const filterEvents = (events) => {
+    const filterEvents = (events: any[]) => { // Use 'any[]' for placeholder
         if (!searchTerm) return events;
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
         return events.filter(event =>
-            event.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-            event.location.toLowerCase().includes(lowerCaseSearchTerm) ||
-            event.description.toLowerCase().includes(lowerCaseSearchTerm)
+            event.title.toLowerCase().includes(lowerCaseSearchTerm) ||
+            event.venueName.toLowerCase().includes(lowerCaseSearchTerm) ||
+            event.venueAddress.toLowerCase().includes(lowerCaseSearchTerm) ||
+            event.category.toLowerCase().includes(lowerCaseSearchTerm)
         );
     };
 
     const handleCreateEventClick = () => {
-        navigate('/admin/create-event'); // Navigate to the Create Event page
+        navigate('/admin/create-event');
     };
 
-    const handleViewDetails = (eventId) => {
-        navigate(`/admin/my-events/${eventId}`); // Navigate to the Event Details page
+    const handleViewDetails = (eventId: number) => {
+        navigate(`/admin/my-events/${eventId}`);
     };
 
-    // Helper to format dates
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
+    // Helper to format dates (assuming backend returns "YYYY-MM-DD")
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '';
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+        } catch (e) {
+            console.error("Invalid date string:", dateString);
+            return dateString;
+        }
     };
 
-    const formatTime = (dateString) => {
-        return new Date(dateString).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-        });
+    const formatTime = (timeString: string) => { // Assuming backend returns "HH:MM:SS"
+        if (!timeString) return '';
+        try {
+            const [hours, minutes, seconds] = timeString.split(':').map(Number);
+            const dummyDate = new Date();
+            dummyDate.setHours(hours, minutes, seconds || 0);
+            return dummyDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+            });
+        } catch (e) {
+            console.error("Invalid time string:", timeString);
+            return timeString;
+        }
     };
+
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 , minHeight: '100vh', height: 'auto'}}>
+        <Box sx={{ flexGrow: 1, p: 3, minHeight: '100vh', height: 'auto' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" gutterBottom component="h1">
                     My Events
@@ -283,7 +276,14 @@ export const AdminEvents = () => {
                 </Box>
             </Box>
 
-            {loading && (
+            {/* Tabs for Event Categories */}
+            <Tabs value={selectedTab} onChange={(event, newValue) => setSelectedTab(newValue)} sx={{ mb: 3 }}>
+                <Tab label="Upcoming Events" value="upcoming" icon={<EventAvailableIcon />} iconPosition="start" />
+                <Tab label="Current Events" value="current" icon={<EventAvailableIcon />} iconPosition="start" />
+                <Tab label="Past Events" value="past" icon={<EventBusyIcon />} iconPosition="start" />
+            </Tabs>
+
+            {isLoading && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                     <CircularProgress />
                     <Typography sx={{ ml: 2 }}>Loading events...</Typography>
@@ -291,140 +291,76 @@ export const AdminEvents = () => {
             )}
 
             {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+                <Alert severity="error" sx={{ mt: 2 }}>{error || "Failed to load events. Please try again later."}</Alert>
             )}
 
-            {!loading && !error && (
-                <>
-                    {/* Current Selling Events Section */}
-                    <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
-                        <EventAvailableIcon sx={{ verticalAlign: 'middle', mr: 1 }} /> Current & Upcoming Events
-                    </Typography>
-                    <Grid container spacing={3}>
-                        {filterEvents(currentSellingEvents).length > 0 ? (
-                            filterEvents(currentSellingEvents).map((event) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={event.id}>
-                                    <Card
-                                        elevation={3}
-                                        sx={{
-                                            height: '100%',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s',
-                                            '&:hover': {
-                                                transform: 'translateY(-5px)',
-                                            },
-                                        }}
-                                        onClick={() => handleViewDetails(event.id)}
-                                    >
-                                        <Box sx={{ height: 180, overflow: 'hidden' }}>
-                                            <img
-                                                src={event.imageUrl}
-                                                alt={event.name}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/400x200/E0E0E0/000000?text=No+Image"; }} // Fallback image
-                                            />
-                                        </Box>
-                                        <CardContent sx={{ flexGrow: 1 }}>
-                                            <Typography variant="h6" component="div" gutterBottom>
-                                                {event.name}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                <CalendarTodayIcon sx={{ fontSize: 16, mr: 1 }} /> {formatDate(event.startDate)} - {formatDate(event.endDate)}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                <AccessTimeIcon sx={{ fontSize: 16, mr: 1 }} /> {formatTime(event.startDate)} - {formatTime(event.endDate)}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                <LocationOnIcon sx={{ fontSize: 16, mr: 1 }} /> {event.location}
-                                            </Typography>
-                                            <Typography variant="body1" color="primary">
-                                                <SellIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: 18 }} /> Tickets Sold: {event.ticketsSold}/{event.totalTickets}
-                                            </Typography>
-                                        </CardContent>
-                                        <CardActions>
-                                            <Button size="small" onClick={(e) => { e.stopPropagation(); handleViewDetails(event.id); }}>
-                                                View Details
-                                            </Button>
-                                        </CardActions>
-                                    </Card>
-                                </Grid>
-                            ))
-                        ) : (
-                            <Grid item xs={12}>
-                                <Alert severity="info">
-                                    No current or upcoming events found.
-                                </Alert>
+            {!isLoading && !error && (
+                <Grid container spacing={3}>
+                    {filterEvents(eventsToDisplay).length > 0 ? (
+                        filterEvents(eventsToDisplay).map((event) => (
+                            <Grid item xs={12} sm={6} md={4} lg={3} key={event.eventId}>
+                                <Card
+                                    elevation={selectedTab === 'past' ? 1 : 3}
+                                    sx={{
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        opacity: selectedTab === 'past' ? 0.8 : 1,
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s',
+                                        '&:hover': {
+                                            transform: 'translateY(-5px)',
+                                        },
+                                    }}
+                                    onClick={() => handleViewDetails(event.eventId)}
+                                >
+                                    <Box sx={{ height: 180, overflow: 'hidden' }}>
+                                        <img
+                                            src={`https://via.placeholder.com/400x200?text=${encodeURIComponent(event.title)}`}
+                                            alt={event.title}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://placehold.co/400x200/E0E0E0/000000?text=No+Image"; }}
+                                        />
+                                    </Box>
+                                    <CardContent sx={{ flexGrow: 1 }}>
+                                        <Typography variant="h6" component="div" gutterBottom>
+                                            {event.title}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                            <CalendarTodayIcon sx={{ fontSize: 16, mr: 1 }} /> {formatDate(event.eventDate)}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                            <AccessTimeIcon sx={{ fontSize: 16, mr: 1 }} /> {formatTime(event.eventTime)}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                            <LocationOnIcon sx={{ fontSize: 16, mr: 1 }} /> {event.venueName}, {event.venueAddress}
+                                        </Typography>
+                                        <Typography variant="body1" color="primary">
+                                            <SellIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: 18 }} /> Tickets Sold: {event.ticketsSold}
+                                        </Typography>
+                                        <Typography variant="body1" color="text.secondary">
+                                            Tickets Scanned: {event.ticketsScanned}
+                                        </Typography>
+                                        <Typography variant="body1" color="text.secondary">
+                                            Attendance Rate: {event.attendanceRate}%
+                                        </Typography>
+                                    </CardContent>
+                                    <CardActions>
+                                        <Button size="small" onClick={(e) => { e.stopPropagation(); handleViewDetails(event.eventId); }}>
+                                            View Details
+                                        </Button>
+                                    </CardActions>
+                                </Card>
                             </Grid>
-                        )}
-                    </Grid>
-
-                    {/* Events That Have Ended Section */}
-                    <Typography variant="h5" gutterBottom sx={{ mt: 6 }}>
-                        <EventBusyIcon sx={{ verticalAlign: 'middle', mr: 1 }} /> Events That Have Ended
-                    </Typography>
-                    <Grid container spacing={3}>
-                        {filterEvents(endedEvents).length > 0 ? (
-                            filterEvents(endedEvents).map((event) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={event.id}>
-                                    <Card
-                                        elevation={1} // Slightly less elevation for ended events
-                                        sx={{
-                                            height: '100%',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            opacity: 0.8, // Slightly faded for ended events
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s',
-                                            '&:hover': {
-                                                transform: 'translateY(-3px)',
-                                            },
-                                        }}
-                                        onClick={() => handleViewDetails(event.id)}
-                                    >
-                                        <Box sx={{ height: 180, overflow: 'hidden' }}>
-                                            <img
-                                                src={event.imageUrl}
-                                                alt={event.name}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/400x200/E0E0E0/000000?text=No+Image"; }} // Fallback image
-                                            />
-                                        </Box>
-                                        <CardContent sx={{ flexGrow: 1 }}>
-                                            <Typography variant="h6" component="div" gutterBottom>
-                                                {event.name}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                <CalendarTodayIcon sx={{ fontSize: 16, mr: 1 }} /> {formatDate(event.startDate)} - {formatDate(event.endDate)}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                <AccessTimeIcon sx={{ fontSize: 16, mr: 1 }} /> {formatTime(event.startDate)} - {formatTime(event.endDate)}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                <LocationOnIcon sx={{ fontSize: 16, mr: 1 }} /> {event.location}
-                                            </Typography>
-                                            <Typography variant="body1" color="text.secondary">
-                                                <SellIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: 18 }} /> Tickets Sold: {event.ticketsSold}/{event.totalTickets}
-                                            </Typography>
-                                        </CardContent>
-                                        <CardActions>
-                                            <Button size="small" onClick={(e) => { e.stopPropagation(); handleViewDetails(event.id); }}>
-                                                View Details
-                                            </Button>
-                                        </CardActions>
-                                    </Card>
-                                </Grid>
-                            ))
-                        ) : (
-                            <Grid item xs={12}>
-                                <Alert severity="info">
-                                    No ended events found.
-                                </Alert>
-                            </Grid>
-                        )}
-                    </Grid>
-                </>
+                        ))
+                    ) : (
+                        <Grid item xs={12}>
+                            <Alert severity="info">
+                                No {selectedTab} events found.
+                            </Alert>
+                        </Grid>
+                    )}
+                </Grid>
             )}
         </Box>
     );
