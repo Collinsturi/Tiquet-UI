@@ -22,7 +22,6 @@ import SellIcon from '@mui/icons-material/Sell';
 import EventIcon from '@mui/icons-material/Event';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import DownloadIcon from '@mui/icons-material/Download';
 
 // Recharts imports
 import {
@@ -41,301 +40,62 @@ import {
     Cell,
 } from 'recharts';
 
-// For PDF generation
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+// --- RTK Query Imports ---
+import {
+    useGetAdminDashboardSummaryQuery,
+    useGetPlatformSummaryQuery,
+    useGetMonthlySalesTrendsQuery,
+    useGetTopSellingEventsQuery,
+    useGetOverallTicketScanStatusQuery,
+    useGetEventTicketSummaryQuery,
+    useGetEventScanLogQuery,
+    useGetEventScanStatusQuery,
+    useGetTicketTypeDistributionQuery,
+} from '../../queries/admin/adminQuery.ts';
 
-// --- Dummy Data Simulation (replace with actual API calls in a real app) ---
-// In a real application, this data would come from Firestore or your backend.
-
-const dummyEvents = [
-    {
-        id: 'evt-001',
-        name: 'Tech Innovators Summit 2025',
-        organizerId: 'organizer-1',
-        startDate: '2025-09-10T09:00:00Z',
-        endDate: '2025-09-12T17:00:00Z',
-        location: 'Convention Center',
-        ticketsSold: 1250,
-        totalTickets: 2000,
-        revenue: 75000, // Total revenue for this event
-        ticketTypes: {
-            'Standard Pass': { price: 50, sold: 900 },
-            'VIP Pass': { price: 150, sold: 200 },
-            'Student Discount': { price: 25, sold: 150 }
-        }
-    },
-    {
-        id: 'evt-002',
-        name: 'Annual Charity Gala',
-        organizerId: 'organizer-1',
-        startDate: '2025-10-22T18:00:00Z',
-        endDate: '2025-10-22T23:00:00Z',
-        location: 'Grand Ballroom',
-        ticketsSold: 800,
-        totalTickets: 800,
-        revenue: 120000,
-        ticketTypes: {
-            'General Admission': { price: 100, sold: 600 },
-            'Premium Seat': { price: 250, sold: 200 }
-        }
-    },
-    {
-        id: 'evt-003',
-        name: 'Local Food Festival',
-        organizerId: 'organizer-1',
-        startDate: '2025-06-15T10:00:00Z', // Ended in the past
-        endDate: '2025-06-16T18:00:00Z',
-        location: 'City Park',
-        ticketsSold: 3000,
-        totalTickets: 3000,
-        revenue: 45000,
-        ticketTypes: {
-            'Daily Pass': { price: 15, sold: 2500 },
-            'Weekend Pass': { price: 25, sold: 500 }
-        }
-    },
-    {
-        id: 'evt-004',
-        name: 'Winter Wonderland Market',
-        organizerId: 'organizer-1',
-        startDate: '2025-12-05T10:00:00Z',
-        endDate: '2025-12-07T20:00:00Z',
-        location: 'Winter Fairgrounds',
-        ticketsSold: 150,
-        totalTickets: 1000,
-        revenue: 7500,
-        ticketTypes: {
-            'Entry Ticket': { price: 10, sold: 150 }
-        }
-    },
-];
-
-const dummyScanRecords = [
-    // Event 1 scans
-    { id: 'sc-001', eventId: 'evt-001', scannedByStaffId: 'staff-1', timestamp: '2025-09-10T09:05:00Z', ticketId: 'T001', status: 'valid', ticketType: 'Standard Pass' },
-    { id: 'sc-002', eventId: 'evt-001', scannedByStaffId: 'staff-1', timestamp: '2025-09-10T09:06:00Z', ticketId: 'T002', status: 'valid', ticketType: 'Standard Pass' },
-    { id: 'sc-003', eventId: 'evt-001', scannedByStaffId: 'staff-3', timestamp: '2025-09-10T09:07:00Z', ticketId: 'T003', status: 'valid', ticketType: 'VIP Pass' },
-    { id: 'sc-004', eventId: 'evt-001', scannedByStaffId: 'staff-1', timestamp: '2025-09-10T09:08:00Z', ticketId: 'T004', status: 'duplicate', ticketType: 'Standard Pass' },
-    { id: 'sc-005', eventId: 'evt-001', scannedByStaffId: 'staff-1', timestamp: '2025-09-10T10:00:00Z', ticketId: 'T005', status: 'valid', ticketType: 'Standard Pass' },
-    { id: 'sc-006', eventId: 'evt-001', scannedByStaffId: 'staff-3', timestamp: '2025-09-10T10:01:00Z', ticketId: 'T006', status: 'valid', ticketType: 'Student Discount' },
-    { id: 'sc-007', eventId: 'evt-001', scannedByStaffId: 'staff-1', timestamp: '2025-09-11T09:30:00Z', ticketId: 'T007', status: 'valid', ticketType: 'Standard Pass' },
-    { id: 'sc-008', eventId: 'evt-001', scannedByStaffId: 'staff-3', timestamp: '2025-09-11T09:35:00Z', ticketId: 'T008', status: 'expired', ticketType: 'Standard Pass' },
-    { id: 'sc-009', eventId: 'evt-001', scannedByStaffId: 'staff-1', timestamp: '2025-09-12T11:00:00Z', ticketId: 'T009', status: 'valid', ticketType: 'VIP Pass' },
-
-    // Event 2 scans
-    { id: 'sc-010', eventId: 'evt-002', scannedByStaffId: 'staff-2', timestamp: '2025-10-22T17:30:00Z', ticketId: 'T010', status: 'valid', ticketType: 'General Admission' },
-    { id: 'sc-011', eventId: 'evt-002', scannedByStaffId: 'staff-2', timestamp: '2025-10-22T17:31:00Z', ticketId: 'T011', status: 'valid', ticketType: 'General Admission' },
-    { id: 'sc-012', eventId: 'evt-002', scannedByStaffId: 'staff-2', timestamp: '2025-10-22T17:35:00Z', ticketId: 'T012', status: 'valid', ticketType: 'Premium Seat' },
-
-    // Event 3 scans (ended event)
-    { id: 'sc-013', eventId: 'evt-003', scannedByStaffId: 'staff-1', timestamp: '2025-06-15T11:00:00Z', ticketId: 'T013', status: 'valid', ticketType: 'Daily Pass' },
-    { id: 'sc-014', eventId: 'evt-003', scannedByStaffId: 'staff-1', timestamp: '2025-06-15T11:01:00Z', ticketId: 'T014', status: 'valid', ticketType: 'Daily Pass' },
-    { id: 'sc-015', eventId: 'evt-003', scannedByStaffId: 'staff-1', timestamp: '2025-06-16T10:00:00Z', ticketId: 'T015', status: 'valid', ticketType: 'Weekend Pass' },
-];
-
-const currentOrganizerId = 'organizer-1'; // Simulating the logged-in admin's ID
+// Redux imports for user email
+import { useSelector } from 'react-redux';
+import { type RootState } from '../../redux/store'; // Adjust path as necessary
 
 // Colors for Pie Charts
 const PIE_COLORS_TICKET_TYPES = ['#1976d2', '#ff9800', '#4caf50', '#9c27b0', '#00bcd4', '#ffeb3b'];
 const PIE_COLORS_SCAN_STATUS = {
-    'valid': '#4CAF50', // Green
-    'duplicate': '#FFC107', // Amber/Yellow
-    'expired': '#F44336', // Red
-    'refunded': '#2196F3', // Blue
-    'pending': '#9E9E9E', // Grey
+    'scanned': '#4CAF50', // Green
+    'notScanned': '#F44336', // Red
+    // If your backend provides more detailed statuses like duplicate, expired, etc.,
+    // you would map them here. Assuming getEventScanStatus provides 'scanned' and 'notScanned'.
 };
 
-// --- Helper Functions (Simulating Data Processing) ---
-
-const processOverallAnalytics = (events, scans) => {
-    let totalEvents = events.length;
-    let totalTicketsSold = 0;
-    let totalRevenue = 0;
-    const monthlySales = {}; // { 'YYYY-MM': { tickets: 0, revenue: 0 } }
-    const topSellingEvents = {}; // { eventId: ticketsSold }
-    const ticketStatusCounts = { valid: 0, duplicate: 0, expired: 0, refunded: 0 }; // Initialize all possible statuses
-
-    events.forEach(event => {
-        totalTicketsSold += event.ticketsSold;
-        totalRevenue += event.revenue;
-        topSellingEvents[event.id] = event.ticketsSold;
-
-        // Populate monthly sales data from event revenue/ticket sales
-        const eventMonth = new Date(event.startDate).toISOString().substring(0, 7); // YYYY-MM
-        if (!monthlySales[eventMonth]) {
-            monthlySales[eventMonth] = { tickets: 0, revenue: 0 };
-        }
-        monthlySales[eventMonth].tickets += event.ticketsSold;
-        monthlySales[eventMonth].revenue += event.revenue;
-    });
-
-    // Process scan records for overall ticket status counts
-    scans.forEach(scan => {
-        if (ticketStatusCounts.hasOwnProperty(scan.status)) {
-            ticketStatusCounts[scan.status]++;
-        } else {
-            // Handle any unexpected statuses by counting them as 'other' or a new category
-            // For now, if status not in predefined, ignore for this specific count.
-        }
-    });
-
-    // Format monthly sales for Recharts
-    const sortedMonths = Object.keys(monthlySales).sort();
-    const monthlySalesData = sortedMonths.map(month => ({
-        month,
-        tickets: monthlySales[month].tickets,
-        revenue: monthlySales[month].revenue,
-    }));
-
-    // Format top selling events for Recharts
-    const sortedTopEvents = Object.entries(topSellingEvents)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5) // Top 5
-        .map(([eventId, tickets]) => ({
-            name: events.find(e => e.id === eventId)?.name || `Event ${eventId}`,
-            ticketsSold: tickets,
-        }));
-
-    // Format ticket status counts for Recharts Pie Chart
-    const ticketStatusPieData = Object.entries(ticketStatusCounts).map(([name, value]) => ({ name, value }));
-
-    return {
-        totalEvents,
-        totalTicketsSold,
-        totalRevenue,
-        avgTicketsPerEvent: totalEvents > 0 ? (totalTicketsSold / totalEvents).toFixed(0) : 0,
-        avgRevenuePerEvent: totalEvents > 0 ? (totalRevenue / totalEvents).toFixed(2) : 0,
-        monthlySalesData,
-        topSellingEvents: sortedTopEvents,
-        ticketStatusPieData,
-    };
-};
-
-const processEventSpecificAnalytics = (event, scans) => {
-    if (!event) return null;
-
-    const eventScans = scans.filter(s => s.eventId === event.id);
-
-    // Daily scans trend
-    const dailyScans = {};
-    eventScans.forEach(scan => {
-        const date = new Date(scan.timestamp).toISOString().substring(0, 10); // YYYY-MM-DD
-        if (!dailyScans[date]) {
-            dailyScans[date] = 0;
-        }
-        dailyScans[date]++;
-    });
-    const dailyScansData = Object.entries(dailyScans)
-        .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
-        .map(([date, scans]) => ({ date, scans }));
-
-    // Ticket type distribution for this event
-    const ticketTypeCounts = {};
-    eventScans.forEach(scan => {
-        if (scan.ticketType) {
-            if (!ticketTypeCounts[scan.ticketType]) {
-                ticketTypeCounts[scan.ticketType] = 0;
-            }
-            ticketTypeCounts[scan.ticketType]++;
-        }
-    });
-    const eventTicketTypePieData = Object.entries(ticketTypeCounts).map(([name, value]) => ({ name, value }));
-
-    // Scan status distribution for this event
-    const eventScanStatusCounts = { valid: 0, duplicate: 0, expired: 0, refunded: 0 };
-    eventScans.forEach(scan => {
-        if (eventScanStatusCounts.hasOwnProperty(scan.status)) {
-            eventScanStatusCounts[scan.status]++;
-        }
-    });
-    const eventScanStatusPieData = Object.entries(eventScanStatusCounts).map(([name, value]) => ({ name, value }));
-
-    const checkedInCount = eventScans.filter(s => s.status === 'valid').length;
-
-    return {
-        ticketsSold: event.ticketsSold,
-        totalRevenue: event.revenue,
-        attendeesCheckedIn: checkedInCount,
-        dailyScansData,
-        eventTicketTypePieData,
-        eventScanStatusPieData,
-        refundsIssued: eventScans.filter(s => s.status === 'refunded').length, // Assuming 'refunded' status for scans
-    };
-};
-
-// Simulate fetching data (replace with actual Firestore calls)
-const fetchData = async (organizerId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const organizerEvents = dummyEvents.filter(e => e.organizerId === organizerId);
-            // In a real app, you'd fetch all relevant scan records for these events
-            const relevantScans = dummyScanRecords.filter(s => organizerEvents.some(e => e.id === s.eventId));
-            resolve({ organizerEvents, relevantScans });
-        }, 800); // Simulate network delay
-    });
-};
-
-// --- PDF & Excel (CSV) Download Helpers ---
-
-// Function to download a section as PDF
-const downloadPDF = async (elementId, filename) => {
-    const element = document.getElementById(elementId);
-    if (!element) {
-        console.error(`Element with ID ${elementId} not found.`);
-        return;
-    }
-
-    // Temporarily set a wider width for better PDF rendering
-    const originalWidth = element.style.width;
-    element.style.width = 'fit-content'; // Or a specific large pixel value if content overflows
-
-    const canvas = await html2canvas(element, {
-        scale: 2, // Increase scale for better resolution
-        useCORS: true, // If images are from external sources
-    });
-
-    element.style.width = originalWidth; // Restore original width
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' for portrait, 'mm' for units, 'a4' for size
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-    }
-    pdf.save(filename);
-};
-
-// Function to download data as Excel (CSV)
-const downloadCSV = (data, filename, headers) => {
-    let csvContent = headers.join(',') + '\n'; // Add headers
-    data.forEach(row => {
-        csvContent += Object.values(row).join(',') + '\n';
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) { // Feature detection for download attribute
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+// Component to display when there's no data for a chart
+const NoDataOverlay = ({ message }: { message: string }) => {
+    const theme = useTheme(); // Access theme here to use theme-dependent styles
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100%',
+                width: '100%',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                zIndex: 10,
+                borderRadius: theme.shape.borderRadius, // Use theme.shape.borderRadius
+                flexDirection: 'column',
+                textAlign: 'center',
+                p: 2,
+            }}
+        >
+            <Typography variant="h6" color="text.secondary">
+                {message}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+                Check back later!
+            </Typography>
+        </Box>
+    );
 };
 
 
@@ -343,177 +103,149 @@ const downloadCSV = (data, filename, headers) => {
 export const AdminReports = () => {
     const theme = useTheme();
 
-    const overallReportsRef = useRef(null);
-    const eventSpecificReportsRef = useRef(null);
+    // Get current organizer email from Redux store
+    const user = useSelector((state: RootState) => state.user.user);
+    const currentOrganizerEmail = user.email;
 
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [organizerEvents, setOrganizerEvents] = useState([]);
-    const [allScanRecords, setAllScanRecords] = useState([]);
+    // --- RTK Query Hooks ---
+    const {
+        data: adminDashboardSummary,
+        isLoading: isLoadingDashboard,
+        isError: isErrorDashboard,
+        error: errorDashboard,
+    } = useGetAdminDashboardSummaryQuery(currentOrganizerEmail);
 
-    const [overallAnalytics, setOverallAnalytics] = useState(null);
-    const [selectedEventId, setSelectedEventId] = useState('');
-    const [eventSpecificAnalytics, setEventSpecificAnalytics] = useState(null);
+    const {
+        data: platformSummaryData,
+        isLoading: isLoadingPlatformSummary,
+        isError: isErrorPlatformSummary,
+        error: errorPlatformSummary,
+    } = useGetPlatformSummaryQuery();
 
-    // Fetch initial data
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const { organizerEvents: events, relevantScans: scans } = await fetchData(currentOrganizerId);
-                setOrganizerEvents(events);
-                setAllScanRecords(scans);
+    const {
+        data: monthlySalesTrends,
+        isLoading: isLoadingMonthlySales,
+        isError: isErrorMonthlySales,
+        error: errorMonthlySales,
+    } = useGetMonthlySalesTrendsQuery();
 
-                // Calculate overall analytics once data is loaded
-                const overall = processOverallAnalytics(events, scans);
-                setOverallAnalytics(overall);
+    const {
+        data: topSellingEvents,
+        isLoading: isLoadingTopSelling,
+        isError: isErrorTopSelling,
+        error: errorTopSelling,
+    } = useGetTopSellingEventsQuery();
 
-            } catch (err) {
-                console.error("Failed to load reports data:", err);
-                setError("Failed to load reports. Please try again later.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadData();
-    }, []);
+    const {
+        data: overallTicketScanStatus,
+        isLoading: isLoadingOverallScanStatus,
+        isError: isErrorOverallScanStatus,
+        error: errorOverallScanStatus,
+    } = useGetOverallTicketScanStatusQuery();
 
-    // Recalculate event-specific analytics when selectedEventId changes
-    useEffect(() => {
-        if (selectedEventId && organizerEvents.length > 0) {
-            const event = organizerEvents.find(e => e.id === selectedEventId);
-            const eventAnalytics = processEventSpecificAnalytics(event, allScanRecords);
-            setEventSpecificAnalytics(eventAnalytics);
-        } else {
-            setEventSpecificAnalytics(null);
-        }
-    }, [selectedEventId, organizerEvents, allScanRecords]);
+    const [selectedEventId, setSelectedEventId] = useState<number | string>('');
 
-    const handleEventChange = (event) => {
+    // Dynamically fetch event-specific data based on selectedEventId
+    const {
+        data: eventTicketSummary,
+        isLoading: isLoadingEventTicketSummary,
+        isError: isErrorEventTicketSummary,
+        error: errorEventTicketSummary,
+    } = useGetEventTicketSummaryQuery(selectedEventId as number, { skip: !selectedEventId || isNaN(Number(selectedEventId)) });
+
+    const {
+        data: eventScanLog,
+        isLoading: isLoadingEventScanLog,
+        isError: isErrorEventScanLog,
+        error: errorEventScanLog,
+    } = useGetEventScanLogQuery(selectedEventId as number, { skip: !selectedEventId || isNaN(Number(selectedEventId)) });
+
+    const {
+        data: eventScanStatus,
+        isLoading: isLoadingEventScanStatus,
+        isError: isErrorEventScanStatus,
+        error: errorEventScanStatus,
+    } = useGetEventScanStatusQuery(selectedEventId as number, { skip: !selectedEventId || isNaN(Number(selectedEventId)) });
+
+    const {
+        data: ticketTypeDistribution,
+        isLoading: isLoadingTicketTypeDistribution,
+        isError: isErrorTicketTypeDistribution,
+        error: errorTicketTypeDistribution,
+    } = useGetTicketTypeDistributionQuery(selectedEventId as number, { skip: !selectedEventId || isNaN(Number(selectedEventId)) });
+
+
+    // Combine all loading and error states for overall analytics
+    const overallLoading = isLoadingDashboard || isLoadingPlatformSummary || isLoadingMonthlySales || isLoadingTopSelling || isLoadingOverallScanStatus;
+    const overallError = isErrorDashboard || isErrorPlatformSummary || isErrorMonthlySales || isErrorTopSelling || isErrorOverallScanStatus;
+    const overallErrorMessage =
+        (errorDashboard as any)?.message ||
+        (errorPlatformSummary as any)?.message ||
+        (errorMonthlySales as any)?.message ||
+        (errorTopSelling as any)?.message ||
+        (errorOverallScanStatus as any)?.message ||
+        'Failed to load overall reports.';
+
+    // Combine all loading and error states for event-specific analytics
+    const eventSpecificLoading = isLoadingEventTicketSummary || isLoadingEventScanLog || isLoadingEventScanStatus || isLoadingTicketTypeDistribution;
+    const eventSpecificError = isErrorEventTicketSummary || isErrorEventScanLog || isErrorEventScanStatus || isErrorTicketTypeDistribution;
+    const eventSpecificErrorMessage =
+        (errorEventTicketSummary as any)?.message ||
+        (errorEventScanLog as any)?.message ||
+        (errorEventScanStatus as any)?.message ||
+        (errorTicketTypeDistribution as any)?.message ||
+        'Failed to load event specific reports.';
+
+    // Prepare data for charts from RTK Query responses
+    const monthlySalesChartData = monthlySalesTrends?.map(item => ({
+        month: item.month,
+        tickets: Number(item.ticketsSold), // Ensure conversion to number
+        revenue: Number(item.totalRevenue), // Ensure conversion to number
+    })) || [];
+
+    const topSellingEventsChartData = topSellingEvents?.map(item => ({
+        name: item.eventName,
+        ticketsSold: Number(item.totalTicketsSold), // Ensure conversion to number
+    })) || [];
+
+    const overallTicketScanStatusPieData = overallTicketScanStatus ? [
+        { name: 'scanned', value: Number(overallTicketScanStatus.scanned) }, // Ensure conversion to number
+        { name: 'notScanned', value: Number(overallTicketScanStatus.notScanned) }, // Ensure conversion to number
+    ] : [];
+
+    // This will be used to populate the dropdown for event selection
+    const eventOptions = adminDashboardSummary?.upcomingEvents?.map(event => ({
+        id: event.id,
+        name: event.title, // Map 'title' to 'name' for consistency
+        // Safely create Date object if 'event.date' is a string, then format
+        startDate: new Date(event.date).toLocaleDateString('en-KE', { timeZone: 'Africa/Nairobi' }),
+    })) || [];
+
+    const handleEventChange = (event: { target: { value: string | number; }; }) => {
         setSelectedEventId(event.target.value);
     };
 
-    const handleDownloadOverallPDF = () => {
-        downloadPDF('overall-reports-section', 'Overall_Event_Reports.pdf');
-    };
+    // Process event-specific chart data
+    const dailyScansChartData = eventScanLog?.dailyScans?.map(item => ({
+        date: item.scanDate,
+        scans: Number(item.scanCount), // Ensure conversion to number
+    })) || [];
 
-    const handleDownloadOverallExcel = () => {
-        // Prepare data for CSV for overall report
-        const monthlySalesHeaders = ['Month', 'Tickets Sold', 'Revenue'];
-        const monthlySalesDataForCsv = overallAnalytics.monthlySalesData.map(d => ({
-            Month: d.month,
-            "Tickets Sold": d.tickets,
-            Revenue: d.revenue,
-        }));
-        const topSellingHeaders = ['Event Name', 'Tickets Sold'];
-        const topSellingDataForCsv = overallAnalytics.topSellingEvents.map(d => ({
-            "Event Name": d.name,
-            "Tickets Sold": d.ticketsSold,
-        }));
-        const statusHeaders = ['Status', 'Count'];
-        const statusDataForCsv = overallAnalytics.ticketStatusPieData.map(d => ({
-            Status: d.name,
-            Count: d.value,
-        }));
+    const eventTicketTypePieData = ticketTypeDistribution?.map(item => ({
+        name: item.ticketType,
+        value: Number(item.countSold), // Ensure conversion to number
+    })) || [];
 
-        let csvContent = "Overall Key Metrics\n";
-        csvContent += `Total Events:,${overallAnalytics.totalEvents}\n`;
-        csvContent += `Total Tickets Sold:,${overallAnalytics.totalTicketsSold}\n`;
-        csvContent += `Total Revenue:,${overallAnalytics.totalRevenue}\n`;
-        csvContent += `Average Tickets Per Event:,${overallAnalytics.avgTicketsPerEvent}\n`;
-        csvContent += `Average Revenue Per Event:,${overallAnalytics.avgRevenuePerEvent}\n\n`;
+    const eventScanStatusPieData = eventScanStatus ? [
+        { name: 'scanned', value: Number(eventScanStatus.scannedCount) }, // Ensure conversion to number
+        { name: 'notScanned', value: Number(eventScanStatus.notScannedCount) }, // Ensure conversion to number
+    ] : [];
 
-        csvContent += "Monthly Sales Trend\n";
-        csvContent += monthlySalesHeaders.join(',') + '\n';
-        monthlySalesDataForCsv.forEach(row => {
-            csvContent += Object.values(row).join(',') + '\n';
-        });
-        csvContent += '\n';
-
-        csvContent += "Top 5 Selling Events\n";
-        csvContent += topSellingHeaders.join(',') + '\n';
-        topSellingDataForCsv.forEach(row => {
-            csvContent += Object.values(row).join(',') + '\n';
-        });
-        csvContent += '\n';
-
-        csvContent += "Ticket Status Distribution\n";
-        csvContent += statusHeaders.join(',') + '\n';
-        statusDataForCsv.forEach(row => {
-            csvContent += Object.values(row).join(',') + '\n';
-        });
-        csvContent += '\n';
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'Overall_Event_Reports.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    };
-
-
-    const handleDownloadEventPDF = () => {
-        if (selectedEventId) {
-            const eventName = organizerEvents.find(e => e.id === selectedEventId)?.name || 'Selected Event';
-            downloadPDF('event-specific-reports-section', `${eventName}_Event_Reports.pdf`);
-        }
-    };
-
-    const handleDownloadEventExcel = () => {
-        if (selectedEventId && eventSpecificAnalytics) {
-            const eventName = organizerEvents.find(e => e.id === selectedEventId)?.name || 'Selected Event';
-
-            let csvContent = `Event Specific Metrics for ${eventName}\n`;
-            csvContent += `Tickets Sold:,${eventSpecificAnalytics.ticketsSold}\n`;
-            csvContent += `Total Revenue:,${eventSpecificAnalytics.totalRevenue}\n`;
-            csvContent += `Attendees Checked In:,${eventSpecificAnalytics.attendeesCheckedIn}\n`;
-            csvContent += `Refunds Issued:,${eventSpecificAnalytics.refundsIssued}\n\n`;
-
-            csvContent += "Daily Scans Trend\n";
-            const dailyScansHeaders = ['Date', 'Scans'];
-            csvContent += dailyScansHeaders.join(',') + '\n';
-            eventSpecificAnalytics.dailyScansData.forEach(d => {
-                csvContent += `${d.date},${d.scans}\n`;
-            });
-            csvContent += '\n';
-
-            csvContent += "Ticket Type Distribution\n";
-            const ticketTypeHeaders = ['Ticket Type', 'Count'];
-            csvContent += ticketTypeHeaders.join(',') + '\n';
-            eventSpecificAnalytics.eventTicketTypePieData.forEach(d => {
-                csvContent += `${d.name},${d.value}\n`;
-            });
-            csvContent += '\n';
-
-            csvContent += "Scan Status Distribution\n";
-            const scanStatusHeaders = ['Status', 'Count'];
-            csvContent += scanStatusHeaders.join(',') + '\n';
-            eventSpecificAnalytics.eventScanStatusPieData.forEach(d => {
-                csvContent += `${d.name},${d.value}\n`;
-            });
-            csvContent += '\n';
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `${eventName}_Event_Reports.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
-    };
-
+    // Calculate event-specific key metrics from eventTicketSummary
+    const eventSpecificTicketsSold = eventTicketSummary?.reduce((acc, curr) => acc + Number(curr.totalSold), 0) || 0;
+    const eventSpecificTotalRevenue = eventTicketSummary?.reduce((acc, curr) => acc + Number(curr.totalRevenue), 0) || 0;
+    const eventSpecificAttendeesCheckedIn = eventTicketSummary?.reduce((acc, curr) => acc + Number(curr.totalScanned), 0) || 0;
+    const eventSpecificRefundsIssued = 0; // Placeholder for refunds, as it's not in provided data
 
     return (
         <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -521,42 +253,26 @@ export const AdminReports = () => {
                 Analytics & Reports
             </Typography>
 
-            {loading && (
+            {overallLoading && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                     <CircularProgress />
-                    <Typography sx={{ ml: 2 }}>Loading reports data...</Typography>
+                    <Typography sx={{ ml: 2 }}>Loading overall reports data...</Typography>
                 </Box>
             )}
 
-            {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+            {overallError && (
+                <Alert severity="error" sx={{ mt: 2 }}>{overallErrorMessage}</Alert>
             )}
 
-            {!loading && !error && overallAnalytics && (
+            {!overallLoading && !overallError && adminDashboardSummary && platformSummaryData && (
                 <>
                     {/* Overall Account analytics Section */}
-                    <Paper elevation={3} sx={{ p: 3, mb: 4 }} id="overall-reports-section" ref={overallReportsRef}>
+                    <Paper elevation={3} sx={{ p: 3, mb: 4 }} id="overall-reports-section">
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h5" component="h2">
                                 Overall Account Analytics
                             </Typography>
-                            <Box>
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<DownloadIcon />}
-                                    onClick={handleDownloadOverallPDF}
-                                    sx={{ mr: 1 }}
-                                >
-                                    Download PDF
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<DownloadIcon />}
-                                    onClick={handleDownloadOverallExcel}
-                                >
-                                    Download Excel
-                                </Button>
-                            </Box>
+                            {/* Download buttons are removed as per instruction */}
                         </Box>
                         <Divider sx={{ mb: 3 }} />
 
@@ -566,28 +282,28 @@ export const AdminReports = () => {
                                 <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.primary.light, 0.1) }}>
                                     <EventIcon color="primary" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Total Events</Typography>
-                                    <Typography variant="h4" color="primary">{overallAnalytics.totalEvents}</Typography>
+                                    <Typography variant="h4" color="primary">{platformSummaryData.totalEvents}</Typography>
                                 </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.secondary.light, 0.1) }}>
                                     <SellIcon color="secondary" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Total Tickets Sold</Typography>
-                                    <Typography variant="h4" color="secondary">{overallAnalytics.totalTicketsSold}</Typography>
+                                    <Typography variant="h4" color="secondary">{platformSummaryData.totalTicketsSold}</Typography>
                                 </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.light, 0.1) }}>
                                     <AttachMoneyIcon color="success" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Total Revenue</Typography>
-                                    <Typography variant="h4" color="success">${overallAnalytics.totalRevenue.toLocaleString()}</Typography>
+                                    <Typography variant="h4" color="success">${platformSummaryData.totalRevenue.toLocaleString()}</Typography>
                                 </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.info.light, 0.1) }}>
                                     <CheckCircleOutlineIcon color="info" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Avg. Tickets/Event</Typography>
-                                    <Typography variant="h4" color="info">{overallAnalytics.avgTicketsPerEvent}</Typography>
+                                    <Typography variant="h4" color="info">{platformSummaryData.avgTicketsPerEvent}</Typography>
                                 </Card>
                             </Grid>
                         </Grid>
@@ -598,7 +314,7 @@ export const AdminReports = () => {
                                 <Paper elevation={1} sx={{ p: 2, height: 400 }}>
                                     <Typography variant="h6" gutterBottom>Monthly Sales Trend (Tickets & Revenue)</Typography>
                                     <ResponsiveContainer width="100%" height="80%">
-                                        <LineChart data={overallAnalytics.monthlySalesData}>
+                                        <LineChart data={monthlySalesChartData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="month" />
                                             <YAxis yAxisId="left" orientation="left" stroke={theme.palette.primary.main} label={{ value: 'Tickets', angle: -90, position: 'insideLeft' }} />
@@ -612,12 +328,12 @@ export const AdminReports = () => {
                                 </Paper>
                             </Grid>
 
-                            {/* Top 5 Selling Events */}
+                            {/* Top Selling Events */}
                             <Grid item xs={12} md={6}>
                                 <Paper elevation={1} sx={{ p: 2, height: 400 }}>
-                                    <Typography variant="h6" gutterBottom>Top 5 Selling Events (Tickets)</Typography>
+                                    <Typography variant="h6" gutterBottom>Top Selling Events (Tickets)</Typography>
                                     <ResponsiveContainer width="100%" height="80%">
-                                        <BarChart data={overallAnalytics.topSellingEvents}>
+                                        <BarChart data={topSellingEventsChartData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="name" angle={-15} textAnchor="end" height={60} interval={0} />
                                             <YAxis label={{ value: 'Tickets Sold', angle: -90, position: 'insideLeft' }} />
@@ -636,7 +352,7 @@ export const AdminReports = () => {
                                     <ResponsiveContainer width="100%" height="80%">
                                         <PieChart>
                                             <Pie
-                                                data={overallAnalytics.ticketStatusPieData}
+                                                data={overallTicketScanStatusPieData}
                                                 cx="50%"
                                                 cy="50%"
                                                 outerRadius={120}
@@ -644,8 +360,8 @@ export const AdminReports = () => {
                                                 label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                                                 labelLine={false}
                                             >
-                                                {overallAnalytics.ticketStatusPieData.map((entry, index) => (
-                                                    <Cell key={`cell-overall-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name] || '#CCCCCC'} />
+                                                {overallTicketScanStatusPieData.map((entry, index) => (
+                                                    <Cell key={`cell-overall-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name as keyof typeof PIE_COLORS_SCAN_STATUS] || '#CCCCCC'} />
                                                 ))}
                                             </Pie>
                                             <Tooltip />
@@ -657,31 +373,13 @@ export const AdminReports = () => {
                         </Grid>
                     </Paper>
 
-                    {/* Event-Specific analytics Section */}
-                    <Paper elevation={3} sx={{ p: 3 }} id="event-specific-reports-section" ref={eventSpecificReportsRef}>
+                    {/* Event-Specific Analytics Section */}
+                    <Paper elevation={3} sx={{ p: 3 }} id="event-specific-reports-section">
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h5" component="h2">
                                 Event-Specific Analytics
                             </Typography>
-                            <Box>
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<DownloadIcon />}
-                                    onClick={handleDownloadEventPDF}
-                                    sx={{ mr: 1 }}
-                                    disabled={!selectedEventId}
-                                >
-                                    Download PDF
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<DownloadIcon />}
-                                    onClick={handleDownloadEventExcel}
-                                    disabled={!selectedEventId}
-                                >
-                                    Download Excel
-                                </Button>
-                            </Box>
+                            {/* Download buttons are removed as per instruction */}
                         </Box>
                         <Divider sx={{ mb: 3 }} />
 
@@ -697,46 +395,57 @@ export const AdminReports = () => {
                                 <MenuItem value="">
                                     <em>None Selected</em>
                                 </MenuItem>
-                                {organizerEvents.map((event) => (
+                                {eventOptions.map((event) => (
                                     <MenuItem key={event.id} value={event.id}>
-                                        {event.name} ({new Date(event.startDate).toLocaleDateString()})
+                                        {event.name} ({event.startDate}) {/* Display formatted date string directly */}
                                     </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
 
-                        {selectedEventId && eventSpecificAnalytics ? (
+                        {selectedEventId && eventSpecificLoading && (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                                <CircularProgress />
+                                <Typography sx={{ ml: 2 }}>Loading event-specific data...</Typography>
+                            </Box>
+                        )}
+
+                        {selectedEventId && eventSpecificError && (
+                            <Alert severity="error" sx={{ mt: 2 }}>{eventSpecificErrorMessage}</Alert>
+                        )}
+
+                        {selectedEventId && !eventSpecificLoading && !eventSpecificError && eventTicketSummary && (
                             <>
                                 <Typography variant="h6" gutterBottom color="primary">
-                                    Analytics for: {organizerEvents.find(e => e.id === selectedEventId)?.name}
+                                    Analytics for: {eventOptions.find(e => e.id === selectedEventId)?.name}
                                 </Typography>
                                 <Grid container spacing={3} mb={4}>
                                     <Grid item xs={12} sm={6} md={3}>
                                         <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.primary.light, 0.1) }}>
                                             <SellIcon color="primary" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Tickets Sold</Typography>
-                                            <Typography variant="h4" color="primary">{eventSpecificAnalytics.ticketsSold}</Typography>
+                                            <Typography variant="h4" color="primary">{eventSpecificTicketsSold}</Typography>
                                         </Card>
                                     </Grid>
                                     <Grid item xs={12} sm={6} md={3}>
                                         <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.light, 0.1) }}>
                                             <AttachMoneyIcon color="success" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Total Revenue</Typography>
-                                            <Typography variant="h4" color="success">${eventSpecificAnalytics.totalRevenue?.toLocaleString()}</Typography>
+                                            <Typography variant="h4" color="success">${eventSpecificTotalRevenue.toLocaleString()}</Typography>
                                         </Card>
                                     </Grid>
                                     <Grid item xs={12} sm={6} md={3}>
                                         <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.info.light, 0.1) }}>
                                             <CheckCircleOutlineIcon color="info" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Attendees Checked In</Typography>
-                                            <Typography variant="h4" color="info">{eventSpecificAnalytics.attendeesCheckedIn}</Typography>
+                                            <Typography variant="h4" color="info">{eventSpecificAttendeesCheckedIn}</Typography>
                                         </Card>
                                     </Grid>
                                     <Grid item xs={12} sm={6} md={3}>
                                         <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.error.light, 0.1) }}>
                                             <CancelOutlinedIcon color="error" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Refunds Issued</Typography>
-                                            <Typography variant="h4" color="error">{eventSpecificAnalytics.refundsIssued}</Typography>
+                                            <Typography variant="h4" color="error">{eventSpecificRefundsIssued}</Typography>
                                         </Card>
                                     </Grid>
                                 </Grid>
@@ -744,75 +453,93 @@ export const AdminReports = () => {
                                 <Grid container spacing={3}>
                                     {/* Daily Scans Trend */}
                                     <Grid item xs={12} md={6}>
-                                        <Paper elevation={1} sx={{ p: 2, height: 400 }}>
+                                        <Paper elevation={1} sx={{ p: 2, height: 400, position: 'relative' }}>
                                             <Typography variant="h6" gutterBottom>Daily Scans Trend</Typography>
-                                            <ResponsiveContainer width="100%" height="80%">
-                                                <LineChart data={eventSpecificAnalytics.dailyScansData}>
-                                                    <CartesianGrid strokeDasharray="3 3" />
-                                                    <XAxis dataKey="date" />
-                                                    <YAxis label={{ value: 'Scans', angle: -90, position: 'insideLeft' }} />
-                                                    <Tooltip />
-                                                    <Legend />
-                                                    <Line type="monotone" dataKey="scans" stroke={theme.palette.primary.main} name="Daily Scans" />
-                                                </LineChart>
-                                            </ResponsiveContainer>
+                                            {dailyScansChartData && dailyScansChartData.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height="80%">
+                                                    <LineChart data={dailyScansChartData}>
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis dataKey="date" />
+                                                        <YAxis label={{ value: 'Scans', angle: -90, position: 'insideLeft' }} />
+                                                        <Tooltip />
+                                                        <Legend />
+                                                        <Line type="monotone" dataKey="scans" stroke={theme.palette.primary.main} name="Daily Scans" />
+                                                    </LineChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <NoDataOverlay message="No daily scan data available for this event." />
+                                            )}
                                         </Paper>
                                     </Grid>
 
                                     {/* Event Ticket Type Distribution */}
                                     <Grid item xs={12} md={6}>
-                                        <Paper elevation={1} sx={{ p: 2, height: 400 }}>
-                                            <Typography variant="h6" gutterBottom>Event Ticket Type Distribution</Typography>
-                                            <ResponsiveContainer width="100%" height="80%">
-                                                <PieChart>
-                                                    <Pie
-                                                        data={eventSpecificAnalytics.eventTicketTypePieData}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        outerRadius={120}
-                                                        dataKey="value"
-                                                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                                                        labelLine={false}
-                                                    >
-                                                        {eventSpecificAnalytics.eventTicketTypePieData.map((entry, index) => (
-                                                            <Cell key={`cell-event-type-${index}`} fill={PIE_COLORS_TICKET_TYPES[index % PIE_COLORS_TICKET_TYPES.length]} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip />
-                                                    <Legend />
-                                                </PieChart>
-                                            </ResponsiveContainer>
+                                        <Paper elevation={1} sx={{ p: 2, height: 400, position: 'relative' }}>
+                                            <Typography variant="h6" gutterBottom>Event Ticket Type Sales Distribution</Typography>
+                                            {eventTicketTypePieData && eventTicketTypePieData.some(data => data.value > 0) ? (
+                                                <ResponsiveContainer width="100%" height="80%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={eventTicketTypePieData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            outerRadius={120}
+                                                            dataKey="value"
+                                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                            labelLine={false}
+                                                        >
+                                                            {eventTicketTypePieData.map((entry, index) => (
+                                                                <Cell key={`cell-event-type-${index}`} fill={PIE_COLORS_TICKET_TYPES[index % PIE_COLORS_TICKET_TYPES.length]} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip />
+                                                        <Legend />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <NoDataOverlay message="No ticket type sales data available for this event." />
+                                            )}
                                         </Paper>
                                     </Grid>
 
                                     {/* Event Scan Status Distribution */}
                                     <Grid item xs={12} md={6}>
-                                        <Paper elevation={1} sx={{ p: 2, height: 400 }}>
-                                            <Typography variant="h6" gutterBottom>Event Scan Status Distribution</Typography>
-                                            <ResponsiveContainer width="100%" height="80%">
-                                                <PieChart>
-                                                    <Pie
-                                                        data={eventSpecificAnalytics.eventScanStatusPieData}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        outerRadius={120}
-                                                        dataKey="value"
-                                                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                                                        labelLine={false}
-                                                    >
-                                                        {eventSpecificAnalytics.eventScanStatusPieData.map((entry, index) => (
-                                                            <Cell key={`cell-event-scan-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name] || '#CCCCCC'} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip />
-                                                    <Legend />
-                                                </PieChart>
-                                            </ResponsiveContainer>
+                                        <Paper elevation={1} sx={{ p: 2, height: 400, position: 'relative' }}>
+                                            <Typography variant="h6" gutterBottom>Event Ticket Scan Status</Typography>
+                                            {eventScanStatusPieData && eventScanStatusPieData.some(data => data.value > 0) ? ( // Check if any value is greater than 0
+                                                <ResponsiveContainer width="100%" height="80%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={eventScanStatusPieData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            outerRadius={120}
+                                                            dataKey="value"
+                                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                            labelLine={false}
+                                                        >
+                                                            {eventScanStatusPieData.map((entry, index) => (
+                                                                <Cell key={`cell-event-scan-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name as keyof typeof PIE_COLORS_SCAN_STATUS] || '#CCCCCC'} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip />
+                                                        <Legend />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <NoDataOverlay message="No ticket scan status data available for this event." />
+                                            )}
                                         </Paper>
                                     </Grid>
                                 </Grid>
                             </>
-                        ) : (
+                        )}
+                        {selectedEventId && !eventSpecificLoading && !eventSpecificError && !eventTicketSummary && (
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                No specific analytics data available for the selected event.
+                            </Alert>
+                        )}
+                        {!selectedEventId && (
                             <Alert severity="info">Please select an event from the dropdown above to view its specific analytics.</Alert>
                         )}
                     </Paper>

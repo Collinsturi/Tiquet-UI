@@ -134,52 +134,52 @@ export const AdminQuery = createApi({
         }),
 
         getPlatformSummary: builder.query<platformSummary, void>({
-            query: () => '/analytics/platform/summary',
+            query: () => '/platform/summary',
             providesTags: ['PlatformSummary'],
         }),
 
         getMonthlySalesTrends: builder.query<monthlySalesTrend[], void>({
-            query: () => '/analytics/platform/monthly-trends',
+            query: () => '/platform/monthly-trends',
             providesTags: ['MonthlyTrends'],
         }),
 
         getTopSellingEvents: builder.query<TopSellingEvents[], void>({
-            query: () => '/analytics/platform/top-events',
+            query: () => '/platform/top-events',
             providesTags: ['TopSellingEvents'],
         }),
 
         getOverallTicketScanStatus: builder.query<{ scanned: number, notScanned: number }, void>({
-            query: () => '/analytics/platform/ticket-scan-status',
+            query: () => '/platform/ticket-scan-status',
             providesTags: ['TicketScanStatus'],
         }),
 
         getEventTicketSummary: builder.query<EventTicketSummary[], number>({
-            query: (eventId) => `/analytics/event/${eventId}/summary`,
+            query: (eventId) => `/event/${eventId}/summary`,
             providesTags: (result, error, eventId) => [{ type: 'EventSummary', id: eventId }],
         }),
 
         getEventScanLog: builder.query<EventScanLog, number>({
-            query: (eventId) => `/analytics/event/${eventId}/scan-log`,
+            query: (eventId) => `/event/${eventId}/scan-log`,
             providesTags: (result, error, eventId) => [{ type: 'EventScanLog', id: eventId }],
         }),
 
         getEventScanStatus: builder.query<EventScanStatus, number>({
-            query: (eventId) => `/analytics/event/${eventId}/scan-status`,
+            query: (eventId) => `/event/${eventId}/scan-status`,
             providesTags: (result, error, eventId) => [{ type: 'EventScanStatus', id: eventId }],
         }),
 
         getTicketTypeDistribution: builder.query<TicketTypeDistribution[], number>({
-            query: (eventId) => `/analytics/event/${eventId}/ticket-distribution`,
+            query: (eventId) => `/event/${eventId}/ticket-distribution`,
             providesTags: (result, error, eventId) => [{ type: 'TicketDistribution', id: eventId }],
         }),
 
         getOrganizerEarningsSummary: builder.query<OrganizerEarningSummary, void>({
-            query: () => `/analytics/organizer/wallet`,
+            query: () => `/organizer/wallet`,
             providesTags: ['EarningsSummary'],
         }),
 
         getRevenuePerEvent: builder.query<RevenueSummaryPerEvent[], void>({
-            query: () => `/analytics/organizer/revenue`,
+            query: () => `/organizer/revenue`,
             providesTags: ['RevenuePerEvent'],
         }),
     }),
