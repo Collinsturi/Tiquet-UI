@@ -12,7 +12,7 @@ import {
     IconButton,
     CircularProgress,
     Alert,
-    Tab, // Added Tab and Tabs for categorization
+    Tab,
     Tabs,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -28,93 +28,18 @@ import { styled, alpha } from '@mui/material/styles';
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store.ts";
 
-// REMOVED: RTK Query imports, as we're using placeholders for now
-// Keeping types if they are still useful for structuring dummy data
-// import { OrganizerEventDetails } from '../../queries/general/EventQuery.ts';
+// --- START: Uncomment and import RTK Query hooks and types ---
+import {
+    useGetDetailedUpcomingOrganizerEventsQuery,
+    useGetDetailedCurrentOrganizerEventsQuery,
+    useGetDetailedPastOrganizerEventsQuery,
+    type OrganizerEventDetails // Import the type for better type safety
+} from '../../queries/general/EventQuery.ts';
+// --- END: Uncomment and import RTK Query hooks and types ---
 
 
-// --- Placeholder Data Structure mimicking backend response ---
-// This data will act as if it came from your RTK Queries
-const placeholderUpcomingEvents: any[] = [ // Use 'any[]' for flexibility with placeholder
-    {
-        "eventId": 4,
-        "title": "Future Tech Expo",
-        "eventDate": "2025-10-20",
-        "eventTime": "09:00:00",
-        "category": "Technology",
-        "venueName": "Innovation Hub",
-        "venueAddress": "101 Future Rd, Nairobi",
-        "ticketsSold": 50,
-        "ticketsScanned": 0,
-        "attendanceRate": 0.00
-    },
-    {
-        "eventId": 5,
-        "title": "Next Gen Music Festival",
-        "eventDate": "2025-11-05",
-        "eventTime": "14:00:00",
-        "category": "Music",
-        "venueName": "Open Air Arena",
-        "venueAddress": "202 Festival Grounds, Kisumu",
-        "ticketsSold": 150,
-        "ticketsScanned": 0,
-        "attendanceRate": 0.00
-    }
-];
-
-const placeholderCurrentEvents: any[] = [
-    {
-        "eventId": 6,
-        "title": "Art & Culture Fair",
-        "eventDate": "2025-07-21", // Today's date (relative to the context)
-        "eventTime": "10:00:00", // Has already started
-        "category": "Arts",
-        "venueName": "City Exhibition Hall",
-        "venueAddress": "303 Culture Ave, Mombasa",
-        "ticketsSold": 200,
-        "ticketsScanned": 50,
-        "attendanceRate": 25.00
-    }
-];
-
-const placeholderPastEvents: any[] = [
-    {
-        "eventId": 3,
-        "title": "Local Food Festival",
-        "eventDate": "2024-07-01",
-        "eventTime": "11:00:00",
-        "category": "Food & Drink",
-        "venueName": "Outdoor Amphitheater",
-        "venueAddress": "300 Green Park, Kisumu",
-        "ticketsSold": 4180,
-        "ticketsScanned": 4,
-        "attendanceRate": 0.10
-    },
-    {
-        "eventId": 2,
-        "title": "Jazz Fusion Night",
-        "eventDate": "2024-06-20",
-        "eventTime": "19:30:00",
-        "category": "Music",
-        "venueName": "City Auditorium",
-        "venueAddress": "200 Performance Blvd, Mombasa",
-        "ticketsSold": 1060,
-        "ticketsScanned": 2,
-        "attendanceRate": 0.19
-    },
-    {
-        "eventId": 1,
-        "title": "Tech Innovators Summit 2024",
-        "eventDate": "2024-05-15",
-        "eventTime": "09:00:00",
-        "category": "Technology",
-        "venueName": "Grand Convention Center",
-        "venueAddress": "100 Exhibition Way, Nairobi",
-        "ticketsSold": 2096,
-        "ticketsScanned": 4,
-        "attendanceRate": 0.19
-    }
-];
+// --- REMOVE all placeholder data (placeholderUpcomingEvents, placeholderCurrentEvents, placeholderPastEvents) ---
+// You will no longer need these static arrays as data will come from the backend.
 
 
 // Styled Search Bar (reused from AdminLayout)
@@ -163,39 +88,62 @@ export const AdminEvents = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTab, setSelectedTab] = useState<'upcoming' | 'current' | 'past'>('upcoming');
 
-    // Simulate loading states without actual RTK Query
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
     const user = useSelector((state: RootState) => state.user.user);
-    // const organizerEmail = user.email; // We won't use this directly for placeholder data
+    const organizerEmail = user?.email; // Safely get the email
 
-    // Simulate data fetching with useEffect and dummy data
-    useEffect(() => {
-        setIsLoading(true);
-        setError(null);
-        // Simulate a network delay
-        const timer = setTimeout(() => {
-            // No actual API calls, just "load" the placeholder data
-            setIsLoading(false);
-        }, 500); // Adjust delay as needed
+    // --- START: Use RTK Query hooks ---
+    // Pass organizerEmail if it exists, otherwise skip query
+    const {
+        data: upcomingEvents = [], // Default to empty array
+        isLoading: isLoadingUpcoming,
+        isError: isErrorUpcoming,
+        error: errorUpcoming
+    } = useGetDetailedUpcomingOrganizerEventsQuery(organizerEmail!, {
+        skip: !organizerEmail, // Skip query if email is not available
+    });
 
-        return () => clearTimeout(timer); // Cleanup timer
-    }, [selectedTab]); // Re-run effect when tab changes
+    const {
+        data: currentEvents = [],
+        isLoading: isLoadingCurrent,
+        isError: isErrorCurrent,
+        error: errorCurrent
+    } = useGetDetailedCurrentOrganizerEventsQuery(organizerEmail!, {
+        skip: !organizerEmail,
+    });
+
+    const {
+        data: pastEvents = [],
+        isLoading: isLoadingPast,
+        isError: isErrorPast,
+        error: errorPast
+    } = useGetDetailedPastOrganizerEventsQuery(organizerEmail!, {
+        skip: !organizerEmail,
+    });
+    // --- END: Use RTK Query hooks ---
+
 
     // Determine which events to display based on the selected tab
-    let eventsToDisplay: any[] = []; // Use 'any[]' for placeholder
+    // Now directly use the data from RTK Query hooks
+    let eventsToDisplay: OrganizerEventDetails[] = [];
+    let currentIsLoading = false;
+    let currentError: string | null = null;
+
     if (selectedTab === 'upcoming') {
-        eventsToDisplay = placeholderUpcomingEvents;
+        eventsToDisplay = upcomingEvents;
+        currentIsLoading = isLoadingUpcoming;
+        currentError = isErrorUpcoming ? (errorUpcoming as any)?.data?.message || 'Failed to load upcoming events.' : null;
     } else if (selectedTab === 'current') {
-        eventsToDisplay = placeholderCurrentEvents;
+        eventsToDisplay = currentEvents;
+        currentIsLoading = isLoadingCurrent;
+        currentError = isErrorCurrent ? (errorCurrent as any)?.data?.message || 'Failed to load current events.' : null;
     } else if (selectedTab === 'past') {
-        eventsToDisplay = placeholderPastEvents;
+        eventsToDisplay = pastEvents;
+        currentIsLoading = isLoadingPast;
+        currentError = isErrorPast ? (errorPast as any)?.data?.message || 'Failed to load past events.' : null;
     }
 
-
     // Filter events based on search term
-    const filterEvents = (events: any[]) => { // Use 'any[]' for placeholder
+    const filterEvents = (events: OrganizerEventDetails[]) => {
         if (!searchTerm) return events;
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
         return events.filter(event =>
@@ -283,18 +231,18 @@ export const AdminEvents = () => {
                 <Tab label="Past Events" value="past" icon={<EventBusyIcon />} iconPosition="start" />
             </Tabs>
 
-            {isLoading && (
+            {currentIsLoading && ( // Use currentIsLoading
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                     <CircularProgress />
                     <Typography sx={{ ml: 2 }}>Loading events...</Typography>
                 </Box>
             )}
 
-            {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>{error || "Failed to load events. Please try again later."}</Alert>
+            {currentError && ( // Use currentError
+                <Alert severity="error" sx={{ mt: 2 }}>{currentError}</Alert>
             )}
 
-            {!isLoading && !error && (
+            {!currentIsLoading && !currentError && ( // Use currentIsLoading and currentError
                 <Grid container spacing={3}>
                     {filterEvents(eventsToDisplay).length > 0 ? (
                         filterEvents(eventsToDisplay).map((event) => (
@@ -315,8 +263,9 @@ export const AdminEvents = () => {
                                     onClick={() => handleViewDetails(event.eventId)}
                                 >
                                     <Box sx={{ height: 180, overflow: 'hidden' }}>
+                                        {/* Use event.posterImageUrl if available, otherwise fallback to placeholder */}
                                         <img
-                                            src={`https://via.placeholder.com/400x200?text=${encodeURIComponent(event.title)}`}
+                                            src={event.posterImageUrl || `https://via.placeholder.com/400x200?text=${encodeURIComponent(event.title)}`}
                                             alt={event.title}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://placehold.co/400x200/E0E0E0/000000?text=No+Image"; }}

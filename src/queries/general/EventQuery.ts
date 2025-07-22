@@ -74,6 +74,29 @@ export type OrganizerEventDetails = {
     attendanceRate: string; // Consider making it a number (float)
 };
 
+export type RawEventDetailResponse = {
+    id: number;
+    title: string;
+    description: string; // Lowercase 'd'
+    eventDate: string;
+    eventTime: string;
+    category: string;
+    organizerId: number;
+    venueId: number;
+    venueName: string;      // Top-level field
+    venueAddress: string;   // Top-level field
+    venueCapacity: number;  // Top-level field
+    totalTicketsSold: string; // "0"
+    totalTicketsAvailable: string; // "30"
+    venue: Venue; // Nested venue object matching the 'Venue' type above
+    ticketTypes: TicketType[]; // Array of ticket types matching the 'TicketType' type above
+    tickets: Ticket[]; // Array of tickets matching the 'Ticket' type above
+    posterImageUrl?: string; // Add if these can be present on the top-level response
+    thumbnailImageUrl?: string; // Add if these can be present on the top-level response
+    latitude?: number | null; // Add if these can be present on the top-level response
+    longitude?: number | null; // Add if these can be present on the top-level response
+};
+
 export type CreateEventRequest = {
     category: string;
     name: string;
@@ -107,6 +130,44 @@ export type CreateEventResponse = {
     eventId: number;
 };
 
+
+export type EventDetailResponseData = {
+    id: number;
+    title: string;
+    description: string; // Lowercase 'd' as per your JSON
+    eventDate: string;
+    eventTime: string;
+    category: string; // Lowercase 'c' as per your JSON
+    organizerId: number;
+    venueId: number;
+    venueName: string;      // Top-level field
+    venueAddress: string;   // Top-level field
+    venueCapacity: number;  // Top-level field
+    totalTicketsSold: string;
+    totalTicketsAvailable: string;
+    venue: { // Nested venue object - its structure should match your 'Venue' type if possible
+        id: number;
+        name: string;
+        address: string; // Note: Your existing 'Venue' type uses 'addresses', this uses 'address'
+        capacity: number;
+        // createdAt?: string; // Add if present in the nested venue
+        // updateAt?: string;  // Add if present in the nested venue
+    };
+    ticketTypes: { // Array of ticket types
+        id: number;
+        eventId: number;
+        typeName: string | null; // Changed to 'string | null' as per your JSON sample
+        price: number;
+        quantityAvailable: number;
+        quantitySold: number;
+        description: string; // Added 'description' as per your JSON sample
+    }[];
+    tickets: Ticket[]; // Array of tickets
+    posterImageUrl?: string;
+    thumbnailImageUrl?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+};
 
 // === Helper to normalize raw rows ===
 // This function takes an array of rows that all belong to the SAME event
@@ -156,7 +217,7 @@ const staggeredBaseQuery = retry(
 export const EventQuery = createApi({
     reducerPath: 'eventApi',
     baseQuery: staggeredBaseQuery,
-    tagTypes: ['Events', 'FeaturedEventsList', 'CategorizedEventsList', 'Venues'],
+    tagTypes: ['Events', 'FeaturedEventsList', 'CategorizedEventsList', 'Venues', 'DetailedOrganizerEvents', 'AssignedEvents'],
     endpoints: (builder) => ({
         // 1. Featured Events
         getFeaturedEvents: builder.query<Event[], void>({
@@ -177,11 +238,14 @@ export const EventQuery = createApi({
         }),
 
         // 3. Get Event by ID and normalize
-        getEventById: builder.query<NormalizedEvent | null, number>({
+        getEventById: builder.query<EventDetailResponseData | null, number>({
             query: (id) => `/events/${id}`,
-            transformResponse: (response: RawEventRow[]) => normalizeEventData(response),
+            // transformResponse directly returns the raw response, typed correctly.
+            transformResponse: (response: EventDetailResponseData) => {
+                console.log("Raw API response for getEventById:", response); // For debugging
+                return response; // Return the response as is
+            },
             providesTags: (result, error, id) => [{ type: 'Events', id }],
-            // Realtime polling every 60s (optional)
             pollingInterval: 60000,
         }),
 
@@ -236,14 +300,14 @@ export const EventQuery = createApi({
         }),
         getDetailedCurrentOrganizerEvents: builder.query<OrganizerEventDetails[], string>({
             query: (organizerEmail: string) => ({
-                url: `/events/organizer/${organizerEmail}/current`, // Matches route
+                url: `/events/organizer/current/${organizerEmail}`, // Matches route
                 method: 'GET'
             }),
             providesTags: ['DetailedOrganizerEvents'],
         }),
         getDetailedPastOrganizerEvents: builder.query<OrganizerEventDetails[], string>({
             query: (organizerEmail: string) => ({
-                url: `/events/organizer/${organizerEmail}/past`, // Matches route
+                url: `/events/organizer/past/${organizerEmail}`, // Matches route
                 method: 'GET'
             }),
             providesTags: ['DetailedOrganizerEvents'],
