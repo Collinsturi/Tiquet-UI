@@ -1,4 +1,4 @@
-// AdminPayouts.jsx
+// AdminPayouts.tsx
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -25,41 +25,34 @@ import {
     DialogContent,
     DialogActions,
     InputAdornment,
-   Card, // <--- ADDED THIS IMPORT
-    CardContent, // <--- ADDED THIS IMPORT (Though not strictly needed based on current usage, good practice if using Card often)
-    FormHelperText, // <--- ADDED THIS IMPORT (Used in FormControl for helper text)
+    Card,
+    CardContent,
+    FormHelperText,
 } from '@mui/material';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import NorthEastIcon from '@mui/icons-material/NorthEast'; // For withdrawn
 import SouthWestIcon from '@mui/icons-material/SouthWest'; // For available
-import EventIcon from '@mui/icons-material/Event';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // <--- ADDED THIS IMPORT
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'; // <--- ADDED THIS IMPORT
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import { useTheme } from '@mui/material/styles';
 
-// --- Dummy Data Simulation ---
-// These values would typically be fetched from a central financial service or your backend.
-// Simulating an organizer's financial ledger.
-const dummyOrganizerFinancials = {
-    organizerId: 'organizer-1',
-    totalEarningsGross: 250000.00, // Total revenue generated across all events
-    totalPlatformFees: 25000.00, // Example 10% platform fee
-    totalRefundsProcessed: 5000.00,
-    totalWithdrawn: 100000.00, // Amount previously paid out
-    // Calculated: totalEarningsNet = totalEarningsGross - totalPlatformFees - totalRefundsProcessed
-    // Calculated: availableBalance = totalEarningsNet - totalWithdrawn
-};
+// --- RTK Query Imports ---
+import {
+    useGetOrganizerEarningsSummaryQuery,
+    useGetRevenuePerEventQuery,
+    // Assuming you will add a mutation for payout requests:
+    // useRequestPayoutMutation,
+    // Assuming you have a query for organizer profile/bank details:
+    // useGetOrganizerProfileQuery,
+} from '../../queries/admin/adminQuery.ts'; // Adjust path as necessary
 
-// Assuming net revenue per event is already calculated and ready for payout consideration
-const dummyEventsWithNetRevenue = [
-    { id: 'evt-001', name: 'Tech Innovators Summit 2025', netRevenue: 70000.00, isFinalized: true },
-    { id: 'evt-002', name: 'Annual Charity Gala', netRevenue: 108000.00, isFinalized: true },
-    { id: 'evt-003', name: 'Local Food Festival', netRevenue: 40000.00, isFinalized: true }, // Ended event
-    { id: 'evt-004', name: 'Winter Wonderland Market', netRevenue: 7000.00, isFinalized: false }, // Ongoing/not yet finalized
-];
+// Redux imports for user email and ID
+import { useSelector } from 'react-redux';
+import { type RootState } from '../../redux/store'; // Adjust path as necessary
 
-// Dummy Profile Data for bank details (matching AdminProfile structure)
+// Dummy Profile Data for bank details (This would ideally come from an RTK Query for organizer profile)
 const dummyProfileData = {
     bankDetails: {
         bankName: 'National Bank of Kenya',
@@ -68,124 +61,71 @@ const dummyProfileData = {
     },
 };
 
-// Dummy Payout Request History
-let dummyPayoutHistory = [
-    { requestId: 'payout-001', amount: 50000.00, status: 'Completed', requestDate: '2025-05-01T10:00:00Z', completionDate: '2025-05-03T11:00:00Z' },
-    { requestId: 'payout-002', amount: 50000.00, status: 'Completed', requestDate: '2025-06-10T14:30:00Z', completionDate: '2025-06-12T15:00:00Z' },
-    { requestId: 'payout-003', amount: 20000.00, status: 'Pending', requestDate: '2025-06-25T09:00:00Z', completionDate: null },
-];
-
-const CURRENT_ORGANIZER_ID = 'organizer-1'; // Simulating the logged-in admin's ID
-
-// Simulate fetching financial data
-const fetchOrganizerFinancials = async (organizerId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            // Recalculate available balance based on current dummy data for demo realism
-            const totalEarningsNet = dummyOrganizerFinancials.totalEarningsGross - dummyOrganizerFinancials.totalPlatformFees - dummyOrganizerFinancials.totalRefundsProcessed;
-            const availableBalance = totalEarningsNet - dummyOrganizerFinancials.totalWithdrawn;
-
-            resolve({
-                ...dummyOrganizerFinancials,
-                totalEarningsNet,
-                availableBalance: parseFloat(availableBalance.toFixed(2)) // Ensure float and 2 decimal places
-            });
-        }, 600);
-    });
-};
-
-const fetchOrganizerEventsForPayout = async (organizerId) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            // In a real app, you'd filter events by organizerId and check their payout status
-            resolve(dummyEventsWithNetRevenue.filter(e => e.organizerId === organizerId || true)); // For demo, assuming all dummy events are for this organizer
-        }, 400);
-    });
-};
-
-const fetchBankDetails = async (organizerId) => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(dummyProfileData.bankDetails), 300);
-    });
-};
-
-const fetchPayoutHistory = async (organizerId) => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(dummyPayoutHistory), 500);
-    });
-};
-
-// Simulate requesting a payout
-const requestPayout = async (requestData) => {
+// --- Mock Payout Request (Replace with RTK Query Mutation later) ---
+// For demonstration, this will simulate the actual request.
+// In a real app, you'd define this as a builder.mutation in adminQuery.ts
+const mockRequestPayout = async (requestData: { amount: number; bankDetails: any; requestedForEventId: string | null; }) => {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
-            // Validate against available balance (simulated)
-            const currentAvailableBalance = (dummyOrganizerFinancials.totalEarningsGross - dummyOrganizerFinancials.totalPlatformFees - dummyOrganizerFinancials.totalRefundsProcessed) - dummyOrganizerFinancials.totalWithdrawn;
-            if (requestData.amount > currentAvailableBalance) {
-                return reject(new Error("Requested amount exceeds available balance."));
-            }
-            if (requestData.amount <= 0) {
-                return reject(new Error("Requested amount must be positive."));
-            }
-
-            // Simulate deduction and addition to history
-            dummyOrganizerFinancials.totalWithdrawn += requestData.amount;
-            const newPayoutRequest = {
-                requestId: `payout-${Date.now()}`,
-                amount: requestData.amount,
-                status: 'Pending', // New requests are always pending initially
-                requestDate: new Date().toISOString(),
-                completionDate: null,
-                requestedForEventId: requestData.requestedForEventId || null,
-            };
-            dummyPayoutHistory.unshift(newPayoutRequest); // Add to the beginning
-
-            console.log("Payout requested:", requestData);
-            resolve({ success: true, message: "Payout request submitted successfully!", requestId: newPayoutRequest.requestId });
+            console.log("Mock Payout request submitted:", requestData);
+            // Simulate success
+            resolve({ success: true, message: "Payout request submitted successfully!", requestId: `payout-${Date.now()}` });
         }, 1500);
     });
 };
 
-export const AdminPayouts = () => {
-    const [financials, setFinancials] = useState(null);
-    const [eventsForPayout, setEventsForPayout] = useState([]);
-    const [bankDetails, setBankDetails] = useState(null);
-    const [payoutHistory, setPayoutHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState({ type: '', text: '' });
 
+export const AdminPayouts = () => {
+    const theme = useTheme();
+
+    // Get current organizer ID and Email from Redux store
+    const user = useSelector((state: RootState) => state.user.user);
+    const organizerId = user?.user_id; // Assuming user.id is available and is a number
+    const organizerEmail = user.email; // Assuming user.email is available and is a string
+
+    // --- RTK Query Hooks ---
+    const {
+        data: organizerEarningsSummary,
+        isLoading: isLoadingEarningsSummary,
+        isError: isErrorEarningsSummary,
+        error: errorEarningsSummary,
+        refetch: refetchEarningsSummary
+    } = useGetOrganizerEarningsSummaryQuery(organizerId, { skip: !organizerId }); // Skip if organizerId is not available
+
+    const {
+        data: revenuePerEvent,
+        isLoading: isLoadingRevenuePerEvent,
+        isError: isErrorRevenuePerEvent,
+        error: errorRevenuePerEvent,
+        refetch: refetchRevenuePerEvent
+    } = useGetRevenuePerEventQuery(organizerEmail, { skip: !organizerEmail }); // Skip if organizerEmail is not available
+
+    // Placeholder for bank details. In a real app, this would likely come from:
+    // const { data: organizerProfileData, isLoading: isLoadingProfile } = useGetOrganizerProfileQuery(organizerId);
+    // const bankDetails = organizerProfileData?.bankDetails || null;
+    const [bankDetails, setBankDetails] = useState(dummyProfileData.bankDetails); // Using dummy for now
+
+    // --- State for Payout Request Form ---
     const [payoutAmount, setPayoutAmount] = useState('');
     const [selectedEventForPayout, setSelectedEventForPayout] = useState(''); // Event ID for specific payout request
     const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
-    const [payoutRequestLoading, setPayoutRequestLoading] = useState(false);
+    const [payoutRequestLoading, setPayoutRequestLoading] = useState(false); // For the payout dialog submission
+    const [message, setMessage] = useState({ type: '', text: '' }); // General alert messages
 
-    // Fetch all necessary data on component mount
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                setMessage({ type: '', text: '' });
-                const [fin, events, bank, history] = await Promise.all([
-                    fetchOrganizerFinancials(CURRENT_ORGANIZER_ID),
-                    fetchOrganizerEventsForPayout(CURRENT_ORGANIZER_ID),
-                    fetchBankDetails(CURRENT_ORGANIZER_ID),
-                    fetchPayoutHistory(CURRENT_ORGANIZER_ID),
-                ]);
-                setFinancials(fin);
-                setEventsForPayout(events);
-                setBankDetails(bank);
-                setPayoutHistory(history);
-            } catch (err) {
-                console.error("Failed to load payout data:", err);
-                setMessage({ type: 'error', text: err.message || 'Failed to load payout information.' });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+    // Convert revenuePerEvent data for display in the table
+    // Assuming 'isFinalized' status might come from event details or be derived.
+    // For this example, I'll add a mock `isFinalized` based on a simple rule.
+    const eventsForPayoutDisplay = revenuePerEvent?.map(event => ({
+        id: event.eventName, // Using eventName as ID for simplicity if backend doesn't provide unique ID here
+        name: event.eventName,
+        netRevenue: event.revenue,
+        // Mocking `isFinalized` status. In a real app, this would come from backend.
+        isFinalized: event.revenue > 0, // Simple rule: if there's revenue, assume it's finalized for payout purposes
+    })) || [];
 
-    const handlePayoutAmountChange = (e) => {
+
+    // --- Payout Request Handlers ---
+    const handlePayoutAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         // Allow only numbers and a single decimal point
         if (/^\d*\.?\d*$/.test(value) || value === '') {
@@ -193,11 +133,11 @@ export const AdminPayouts = () => {
         }
     };
 
-    const handleEventForPayoutChange = (e) => {
-        const eventId = e.target.value;
+    const handleEventForPayoutChange = (e: React.ChangeEvent<{ value: unknown }>) => {
+        const eventId = e.target.value as string;
         setSelectedEventForPayout(eventId);
         if (eventId) {
-            const event = eventsForPayout.find(evt => evt.id === eventId);
+            const event = eventsForPayoutDisplay.find(evt => evt.id === eventId);
             if (event) {
                 setPayoutAmount(event.netRevenue.toFixed(2)); // Pre-fill with event's net revenue
             }
@@ -208,8 +148,9 @@ export const AdminPayouts = () => {
 
     const handleRequestPayoutClick = () => {
         setMessage({ type: '', text: '' }); // Clear any previous messages
+        // In a real app, you'd fetch/verify bank details from organizer profile query
         if (!bankDetails || !bankDetails.accountNumber) {
-            setMessage({ type: 'error', text: 'Please update your bank account details in the Admin Profile section before requesting a payout.' });
+            setMessage({ type: 'error', text: 'Please update your bank account details in your profile before requesting a payout.' });
             return;
         }
         setPayoutDialogOpen(true);
@@ -227,8 +168,8 @@ export const AdminPayouts = () => {
             setMessage({ type: 'error', text: 'Please enter a valid positive amount for payout.' });
             return;
         }
-        if (financials && amount > financials.availableBalance) {
-            setMessage({ type: 'error', text: `Requested amount ($${amount.toFixed(2)}) exceeds available balance ($${financials.availableBalance.toFixed(2)}).` });
+        if (organizerEarningsSummary && amount > organizerEarningsSummary.availableBalance) {
+            setMessage({ type: 'error', text: `Requested amount ($${amount.toFixed(2)}) exceeds available balance ($${organizerEarningsSummary.availableBalance.toFixed(2)}).` });
             return;
         }
 
@@ -240,19 +181,21 @@ export const AdminPayouts = () => {
                 bankDetails: bankDetails, // Send full bank details for payout processing
                 requestedForEventId: selectedEventForPayout || null, // Optional: for tracking origin
             };
-            const response = await requestPayout(requestPayload);
-            setMessage({ type: 'success', text: response.message });
+            // Replace mockRequestPayout with your actual RTK Query mutation here
+            // const [requestPayoutTrigger, { isLoading: isRequestingPayout }] = useRequestPayoutMutation();
+            // await requestPayoutTrigger(requestPayload).unwrap();
+            await mockRequestPayout(requestPayload); // Using mock for now
+
+            setMessage({ type: 'success', text: "Payout request submitted successfully!" });
             setPayoutDialogOpen(false);
-            // Re-fetch financials and history to reflect changes
-            const [updatedFin, updatedHistory] = await Promise.all([
-                fetchOrganizerFinancials(CURRENT_ORGANIZER_ID),
-                fetchPayoutHistory(CURRENT_ORGANIZER_ID),
-            ]);
-            setFinancials(updatedFin);
-            setPayoutHistory(updatedHistory);
+
+            // Refetch data to update the UI with new balances and history
+            refetchEarningsSummary();
+            refetchRevenuePerEvent(); // If payout affects individual event revenues immediately
+
             setPayoutAmount(''); // Clear after successful request
             setSelectedEventForPayout('');
-        } catch (err) {
+        } catch (err: any) { // Type 'any' for error for now
             console.error("Payout request failed:", err);
             setMessage({ type: 'error', text: err.message || 'Failed to submit payout request.' });
         } finally {
@@ -261,7 +204,14 @@ export const AdminPayouts = () => {
     };
 
 
-    if (loading || financials === null || bankDetails === null) {
+    // Combined loading state for initial render
+    const overallLoading = isLoadingEarningsSummary || isLoadingRevenuePerEvent;
+    // Combined error state
+    const overallError = isErrorEarningsSummary || isErrorRevenuePerEvent;
+    const overallErrorMessage = (errorEarningsSummary as any)?.message || (errorRevenuePerEvent as any)?.message || 'Failed to load payout information.';
+
+
+    if (overallLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
                 <CircularProgress />
@@ -270,6 +220,28 @@ export const AdminPayouts = () => {
         );
     }
 
+    if (overallError) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="error">
+                    Error: {overallErrorMessage}
+                </Alert>
+            </Box>
+        );
+    }
+
+    // Ensure data exists before trying to render
+    if (!organizerEarningsSummary) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="info">
+                    No organizer earnings summary available.
+                </Alert>
+            </Box>
+        );
+    }
+
+
     return (
         <Box sx={{ flexGrow: 1, p: 3 }}>
             <Typography variant="h4" gutterBottom>
@@ -277,7 +249,7 @@ export const AdminPayouts = () => {
             </Typography>
 
             {message.text && (
-                <Alert severity={message.type} sx={{ mb: 2 }}>
+                <Alert severity={message.type as "success" | "info" | "warning" | "error"} sx={{ mb: 2 }}>
                     {message.text}
                 </Alert>
             )}
@@ -290,8 +262,8 @@ export const AdminPayouts = () => {
                         <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
                             <MonetizationOnIcon color="success" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
-                                <Typography variant="h6" color="text.secondary">Total Earnings (Gross)</Typography>
-                                <Typography variant="h4" color="success">${financials.totalEarningsGross?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                                <Typography variant="h6" color="text.secondary">Total Earnings</Typography>
+                                <Typography variant="h4" color="success">${organizerEarningsSummary.totalEarnings?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                             </Box>
                         </Card>
                     </Grid>
@@ -300,7 +272,7 @@ export const AdminPayouts = () => {
                             <NorthEastIcon color="warning" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Total Withdrawn</Typography>
-                                <Typography variant="h4" color="warning">${financials.totalWithdrawn?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                                <Typography variant="h4" color="warning">${organizerEarningsSummary.totalWithdrawn?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                             </Box>
                         </Card>
                     </Grid>
@@ -309,11 +281,71 @@ export const AdminPayouts = () => {
                             <SouthWestIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Current Available Balance</Typography>
-                                <Typography variant="h4" color="primary">${financials.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                                <Typography variant="h4" color="primary">${organizerEarningsSummary.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                             </Box>
                         </Card>
                     </Grid>
                 </Grid>
+            </Paper>
+
+            {/* Request Payout Section */}
+            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+                <Typography variant="h5" gutterBottom>Request Payout</Typography>
+                <Grid container spacing={3} alignItems="flex-end">
+                    <Grid item xs={12} sm={6} md={4}>
+                        <FormControl fullWidth>
+                            <InputLabel id="select-event-payout-label">Select Event (Optional)</InputLabel>
+                            <Select
+                                labelId="select-event-payout-label"
+                                id="select-event-payout"
+                                value={selectedEventForPayout}
+                                label="Select Event (Optional)"
+                                onChange={handleEventForPayoutChange}
+                            >
+                                <MenuItem value="">
+                                    <em>None (Overall Balance)</em>
+                                </MenuItem>
+                                {eventsForPayoutDisplay.filter(e => e.isFinalized).map((event) => (
+                                    <MenuItem key={event.id} value={event.id}>
+                                        {event.name} (${event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                            <FormHelperText>Select an event to pre-fill its net revenue for payout.</FormHelperText>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                        <TextField
+                            fullWidth
+                            label="Payout Amount"
+                            variant="outlined"
+                            value={payoutAmount}
+                            onChange={handlePayoutAmountChange}
+                            type="text" // Use text to allow partial input like "123."
+                            InputProps={{
+                                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                            }}
+                            helperText={`Available: $${organizerEarningsSummary.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            onClick={handleRequestPayoutClick}
+                            disabled={payoutRequestLoading || !organizerEarningsSummary || organizerEarningsSummary.availableBalance <= 0}
+                            startIcon={<AttachMoneyIcon />}
+                        >
+                            Request Payout
+                        </Button>
+                    </Grid>
+                </Grid>
+                {!bankDetails?.accountNumber && (
+                    <Alert severity="warning" sx={{ mt: 2 }}>
+                        Your bank details are not fully set up. Please update them in your profile to enable payouts.
+                    </Alert>
+                )}
             </Paper>
 
             {/* Event Contributions */}
@@ -329,12 +361,12 @@ export const AdminPayouts = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {eventsForPayout.length === 0 ? (
+                            {eventsForPayoutDisplay.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={3} align="center">No events found or revenue pending.</TableCell>
                                 </TableRow>
                             ) : (
-                                eventsForPayout.map((event) => (
+                                eventsForPayoutDisplay.map((event) => (
                                     <TableRow key={event.id}>
                                         <TableCell>{event.name}</TableCell>
                                         <TableCell align="right">${event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -345,7 +377,7 @@ export const AdminPayouts = () => {
                                                     success: <CheckCircleIcon fontSize="inherit" />,
                                                     info: <HourglassEmptyIcon fontSize="inherit" />,
                                                 }}
-                                                sx={{ p: 0.5, py: 0, '& .MuiAlert-message': { mt: 0, mb: 0 } }}
+                                                sx={{ p: 0.5, py: 0, '& .MuiAlert-message': { mt: 0, mb: 0 }, minWidth: '80px' }}
                                             >
                                                 {event.isFinalized ? 'Ready' : 'Processing'}
                                             </Alert>
@@ -358,170 +390,72 @@ export const AdminPayouts = () => {
                 </TableContainer>
             </Paper>
 
-            {/*/!* Request Payout Section *!/*/}
-            {/*<Paper elevation={3} sx={{ p: 3, mb: 4 }}>*/}
-            {/*    <Typography variant="h5" gutterBottom>Request Payout</Typography>*/}
-            {/*    <Grid container spacing={3} alignItems="center">*/}
-            {/*        <Grid item xs={12} md={6}>*/}
-            {/*            <FormControl fullWidth margin="normal">*/}
-            {/*                <InputLabel>Request Payout For (Optional)</InputLabel>*/}
-            {/*                <Select*/}
-            {/*                    value={selectedEventForPayout}*/}
-            {/*                    label="Request Payout For (Optional)"*/}
-            {/*                    onChange={handleEventForPayoutChange}*/}
-            {/*                    disabled={payoutRequestLoading || !eventsForPayout.some(e => e.isFinalized)} // Disable if no finalized events*/}
-            {/*                >*/}
-            {/*                    <MenuItem value="">*/}
-            {/*                        <em>Overall Available Balance</em>*/}
-            {/*                    </MenuItem>*/}
-            {/*                    {eventsForPayout.filter(e => e.isFinalized).map((event) => (*/}
-            {/*                        <MenuItem key={event.id} value={event.id}>*/}
-            {/*                            <Box sx={{ display: 'flex', alignItems: 'center' }}>*/}
-            {/*                                <EventIcon sx={{ mr: 1 }} />*/}
-            {/*                                {event.name} (Net: ${event.netRevenue.toLocaleString()})*/}
-            {/*                            </Box>*/}
-            {/*                        </MenuItem>*/}
-            {/*                    ))}*/}
-            {/*                </Select>*/}
-            {/*                {(!eventsForPayout.some(e => e.isFinalized) && (*/}
-            {/*                    <FormHelperText>No finalized events available for specific payout requests.</FormHelperText>*/}
-            {/*                ))}*/}
-            {/*            </FormControl>*/}
-            {/*        </Grid>*/}
-            {/*        <Grid item xs={12} md={6}>*/}
-            {/*            <TextField*/}
-            {/*                fullWidth*/}
-            {/*                label="Amount to Withdraw"*/}
-            {/*                type="text" // Use text to allow partial decimals during typing*/}
-            {/*                value={payoutAmount}*/}
-            {/*                onChange={handlePayoutAmountChange}*/}
-            {/*                variant="outlined"*/}
-            {/*                InputProps={{*/}
-            {/*                    startAdornment: <InputAdornment position="start">$</InputAdornment>,*/}
-            {/*                    inputMode: 'decimal', // Helps with mobile keyboards*/}
-            {/*                }}*/}
-            {/*                helperText={`Max: $${financials.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}*/}
-            {/*                disabled={payoutRequestLoading || financials?.availableBalance <= 0}*/}
-            {/*            />*/}
-            {/*        </Grid>*/}
-            {/*        <Grid item xs={12}>*/}
-            {/*            <Divider sx={{ my: 2 }} />*/}
-            {/*            <Typography variant="h6" gutterBottom>Payout Details</Typography>*/}
-            {/*            <Alert severity="info" sx={{ mb: 2 }}>*/}
-            {/*                Payouts will be sent to the bank account details configured in your Profile. Please ensure they are correct.*/}
-            {/*            </Alert>*/}
-            {/*            {bankDetails ? (*/}
-            {/*                <Box>*/}
-            {/*                    <Typography variant="body1"><strong>Bank Name:</strong> {bankDetails.bankName}</Typography>*/}
-            {/*                    <Typography variant="body1"><strong>Account Name:</strong> {bankDetails.accountName}</Typography>*/}
-            {/*                    <Typography variant="body1"><strong>Account Number:</strong> {bankDetails.accountNumber}</Typography>*/}
-            {/*                </Box>*/}
-            {/*            ) : (*/}
-            {/*                <Alert severity="warning">Bank details not found. Please set them up in your Admin Profile.</Alert>*/}
-            {/*            )}*/}
-            {/*        </Grid>*/}
-            {/*        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>*/}
-            {/*            <Button*/}
-            {/*                variant="contained"*/}
-            {/*                color="primary"*/}
-            {/*                onClick={handleRequestPayoutClick}*/}
-            {/*                disabled={payoutRequestLoading || parseFloat(payoutAmount || '0') <= 0 || parseFloat(payoutAmount || '0') > financials?.availableBalance || !bankDetails?.accountNumber}*/}
-            {/*                startIcon={payoutRequestLoading ? <CircularProgress size={20} color="inherit" /> : null}*/}
-            {/*            >*/}
-            {/*                {payoutRequestLoading ? 'Submitting...' : 'Request Payout'}*/}
-            {/*            </Button>*/}
-            {/*        </Grid>*/}
-            {/*    </Grid>*/}
-            {/*</Paper>*/}
+            {/* Payout History - Placeholder for now as you didn't provide its RTK Query */}
+            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+                <Typography variant="h5" gutterBottom>Payout History</Typography>
+                <TableContainer>
+                    <Table stickyHeader>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Request ID</TableCell>
+                                <TableCell align="right">Amount</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Request Date</TableCell>
+                                <TableCell>Completion Date</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {/* This data would come from an RTK Query for payout history, e.g., useGetPayoutHistoryQuery(organizerId) */}
+                            <TableRow>
+                                <TableCell colSpan={5} align="center">Payout history data would be loaded here via RTK Query.</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
 
-            {/*/!* Payout History *!/*/}
-            {/*<Paper elevation={3} sx={{ p: 3 }}>*/}
-            {/*    <Typography variant="h5" gutterBottom>Payout History</Typography>*/}
-            {/*    <TableContainer>*/}
-            {/*        <Table stickyHeader>*/}
-            {/*            <TableHead>*/}
-            {/*                <TableRow>*/}
-            {/*                    <TableCell>Request ID</TableCell>*/}
-            {/*                    <TableCell>Amount</TableCell>*/}
-            {/*                    <TableCell>Requested For Event</TableCell>*/}
-            {/*                    <TableCell>Request Date</TableCell>*/}
-            {/*                    <TableCell>Status</TableCell>*/}
-            {/*                    <TableCell>Completion Date</TableCell>*/}
-            {/*                </TableRow>*/}
-            {/*            </TableHead>*/}
-            {/*            <TableBody>*/}
-            {/*                {payoutHistory.length === 0 ? (*/}
-            {/*                    <TableRow>*/}
-            {/*                        <TableCell colSpan={6} align="center">No payout history found.</TableCell>*/}
-            {/*                    </TableRow>*/}
-            {/*                ) : (*/}
-            {/*                    payoutHistory.map((request) => (*/}
-            {/*                        <TableRow key={request.requestId}>*/}
-            {/*                            <TableCell>{request.requestId}</TableCell>*/}
-            {/*                            <TableCell>${request.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>*/}
-            {/*                            <TableCell>*/}
-            {/*                                {request.requestedForEventId ? (*/}
-            {/*                                    eventsForPayout.find(e => e.id === request.requestedForEventId)?.name || request.requestedForEventId*/}
-            {/*                                ) : 'Overall'}*/}
-            {/*                            </TableCell>*/}
-            {/*                            <TableCell>{new Date(request.requestDate).toLocaleString()}</TableCell>*/}
-            {/*                            <TableCell>*/}
-            {/*                                <Alert*/}
-            {/*                                    severity={request.status === 'Completed' ? 'success' : request.status === 'Pending' ? 'info' : 'error'}*/}
-            {/*                                    sx={{ p: 0.5, py: 0, '& .MuiAlert-message': { mt: 0, mb: 0 } }}*/}
-            {/*                                >*/}
-            {/*                                    {request.status}*/}
-            {/*                                </Alert>*/}
-            {/*                            </TableCell>*/}
-            {/*                            <TableCell>{request.completionDate ? new Date(request.completionDate).toLocaleString() : '-'}</TableCell>*/}
-            {/*                        </TableRow>*/}
-            {/*                    ))*/}
-            {/*                )}*/}
-            {/*            </TableBody>*/}
-            {/*        </Table>*/}
-            {/*    </TableContainer>*/}
-            {/*</Paper>*/}
 
-            {/*/!* Payout Confirmation Dialog *!/*/}
-            {/*<Dialog open={payoutDialogOpen} onClose={handlePayoutDialogClose}>*/}
-            {/*    <DialogTitle>Confirm Payout Request</DialogTitle>*/}
-            {/*    <DialogContent dividers>*/}
-            {/*        <Typography gutterBottom>*/}
-            {/*            You are about to request a payout of <strong>${parseFloat(payoutAmount || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>.*/}
-            {/*        </Typography>*/}
-            {/*        {selectedEventForPayout && (*/}
-            {/*            <Typography gutterBottom>*/}
-            {/*                This amount is being requested for the event: <strong>{eventsForPayout.find(evt => evt.id === selectedEventForPayout)?.name}</strong>.*/}
-            {/*            </Typography>*/}
-            {/*        )}*/}
-            {/*        <Typography gutterBottom>*/}
-            {/*            Funds will be sent to the following bank account:*/}
-            {/*        </Typography>*/}
-            {/*        {bankDetails && (*/}
-            {/*            <Box sx={{ ml: 2, mb: 2 }}>*/}
-            {/*                <Typography variant="body2"><strong>Bank Name:</strong> {bankDetails.bankName}</Typography>*/}
-            {/*                <Typography variant="body2"><strong>Account Name:</strong> {bankDetails.accountName}</Typography>*/}
-            {/*                <Typography variant="body2"><strong>Account Number:</strong> {bankDetails.accountNumber}</Typography>*/}
-            {/*            </Box>*/}
-            {/*        )}*/}
-            {/*        <Typography color="error">*/}
-            {/*            Please double-check these details as payouts cannot be reversed once processed.*/}
-            {/*        </Typography>*/}
-            {/*    </DialogContent>*/}
-            {/*    <DialogActions>*/}
-            {/*        <Button onClick={handlePayoutDialogClose} color="error" disabled={payoutRequestLoading}>*/}
-            {/*            Cancel*/}
-            {/*        </Button>*/}
-            {/*        <Button*/}
-            {/*            onClick={handleConfirmPayout}*/}
-            {/*            color="primary"*/}
-            {/*            variant="contained"*/}
-            {/*            disabled={payoutRequestLoading}*/}
-            {/*        >*/}
-            {/*            {payoutRequestLoading ? <CircularProgress size={24} color="inherit" /> : 'Confirm Payout'}*/}
-            {/*        </Button>*/}
-            {/*    </DialogActions>*/}
-            {/*</Dialog>*/}
+            {/* Payout Confirmation Dialog */}
+            <Dialog
+                open={payoutDialogOpen}
+                onClose={handlePayoutDialogClose}
+                aria-labelledby="payout-dialog-title"
+            >
+                <DialogTitle id="payout-dialog-title">Confirm Payout Request</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                        You are requesting a payout of <Typography component="span" variant="h6" color="primary">${parseFloat(payoutAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>.
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        This amount will be transferred to your registered bank account:
+                    </Typography>
+                    <Box sx={{ mt: 1, p: 1, border: '1px dashed grey', borderRadius: 1 }}>
+                        <Typography variant="body2">Bank Name: <strong>{bankDetails?.bankName || 'N/A'}</strong></Typography>
+                        <Typography variant="body2">Account Name: <strong>{bankDetails?.accountName || 'N/A'}</strong></Typography>
+                        <Typography variant="body2">Account Number: <strong>{bankDetails?.accountNumber || 'N/A'}</strong></Typography>
+                    </Box>
+                    <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+                        Please ensure all details are correct. This action cannot be undone.
+                    </Typography>
+                    {payoutRequestLoading && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                            <CircularProgress size={20} />
+                            <Typography sx={{ ml: 1 }}>Processing request...</Typography>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handlePayoutDialogClose} disabled={payoutRequestLoading}>Cancel</Button>
+                    <Button
+                        onClick={handleConfirmPayout}
+                        color="primary"
+                        variant="contained"
+                        disabled={payoutRequestLoading}
+                    >
+                        Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

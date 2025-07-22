@@ -173,13 +173,13 @@ export const AdminQuery = createApi({
             providesTags: (result, error, eventId) => [{ type: 'TicketDistribution', id: eventId }],
         }),
 
-        getOrganizerEarningsSummary: builder.query<OrganizerEarningSummary, void>({
-            query: () => `/organizer/wallet`,
+        getOrganizerEarningsSummary: builder.query<OrganizerEarningSummary, number>({
+            query: (organizerId) => `/organizer/wallet/${organizerId}`,
             providesTags: ['EarningsSummary'],
         }),
 
-        getRevenuePerEvent: builder.query<RevenueSummaryPerEvent[], void>({
-            query: () => `/organizer/revenue`,
+        getRevenuePerEvent: builder.query<RevenueSummaryPerEvent[], number>({
+            query: (organizerEmail) => `/organizer/revenue/${organizerEmail}`,
             providesTags: ['RevenuePerEvent'],
         }),
     }),
