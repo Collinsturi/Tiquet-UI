@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -10,11 +10,17 @@ import {
     Divider,
     CircularProgress,
     Alert,
-    IconButton,
     Card,
     CardContent,
     CardActions,
     InputAdornment,
+    FormControlLabel,
+    RadioGroup,
+    Radio,
+    MenuItem,
+    Select,
+    InputLabel,
+    FormControl,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -22,58 +28,83 @@ import EventIcon from '@mui/icons-material/Event';
 
 // Date/Time Pickers
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import dayjs from 'dayjs'; // Import dayjs
+import dayjs from 'dayjs';
 
-// --- Dummy Data Simulation ---
-// In a real application, this would be an actual API call to your backend
-// to create a new event.
-const createNewEvent = async (eventData) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Simulate unique ID generation for the new event
-            const newEventId = `evt-${Date.now()}`;
-            console.log("Simulating new event creation:", { id: newEventId, ...eventData });
-            resolve({ success: true, message: "Event created successfully!", eventId: newEventId });
-        }, 1500); // Simulate network delay
-    });
-};
+// Import RTK Query hooks and types
+import {
+    useGetAllVenuesQuery,
+    useCreateEventMutation,
+    type Venue,
+    type CreateEventRequest,
+    type NewTicketTypeInput,
+} from '../../queries/general/EventQuery.ts';
+import {useSelector} from "react-redux";
+import type {RootState} from "../../redux/store.ts";
 
 export const AdminCreateEvent = () => {
     const navigate = useNavigate();
-    const [eventData, setEventData] = useState({
+    const user = useSelector((state: RootState) => state.user.user);
+
+    // RTK Query hooks
+    const { data: venues, isLoading: isLoadingVenues, isError: isErrorVenues } = useGetAllVenuesQuery();
+    const [createEvent, { isLoading: isCreatingEvent, isSuccess, isError, error }] = useCreateEventMutation();
+
+    // State for event form data
+    const [eventData, setEventData] = useState<Omit<CreateEventRequest, 'ticketTypes' | 'organizerEmail'> & {
+        ticketTypes: Array<NewTicketTypeInput & { id: string }>; // Add a local 'id' for React keys
+        venueOption: 'existing' | 'new';
+        selectedVenueId?: number | ''; // Store as number or empty string for UI dropdown
+    }>({
         category: '',
         name: '',
         description: '',
-        startDate: null, // dayjs object or ISO string
-        endDate: null,   // dayjs object or ISO string
-        address: '',
-        city: '',
-        country: '',
-        latitude: '',
-        longitude: '',
+        startDate: dayjs().toISOString(),
+        endDate: dayjs().add(1, 'hour').toISOString(),
+        // Initialize address, city, country to null/undefined
+        // This makes it clear they are not present by default for *new* venue creation.
+        // They will be populated if venueOption is 'new'.
+        address: null, // Changed from '' to null
+        city: null,    // Changed from '' to null
+        country: null, // Changed from '' to null
+        latitude: null,
+        longitude: null,
         posterImageUrl: '',
         thumbnailImageUrl: '',
-        ticketTypes: [ // Start with one default ticket type
+        venueOption: 'new', // Default to creating a new venue
+        selectedVenueId: '', // Default to empty string for the dropdown
+        ticketTypes: [
             {
-                id: `ticket-${Date.now()}-1`, // Temporary unique ID
-                name: 'Standard Ticket',
+                id: `ticket-${Date.now()}-1`, // Unique ID for local list rendering
+                typeName: 'Standard Ticket',
                 price: 0.00,
                 quantityAvailable: 0,
-                minPerOrder: 1,
-                maxPerOrder: 10,
-                salesStartDate: dayjs().toISOString(), // Default to current time
-                salesEndDate: dayjs().add(1, 'month').toISOString(), // Default to 1 month from now
                 description: '',
             },
         ],
     });
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' });
-    const [errors, setErrors] = useState({});
+
+    const [message, setMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+    // Effect to handle success/error messages from RTK Query
+    useEffect(() => {
+        if (isSuccess) {
+            setMessage({ type: 'success', text: 'Event created successfully!' });
+            // Optionally redirect after a delay
+            setTimeout(() => {
+                // If createEvent response includes eventId, navigate there
+                navigate('/admin/my-events'); // Or /admin/my-events/${response.eventId} if available
+            }, 2000);
+        } else if (isError) {
+            console.error("Error creating event:", error);
+            setMessage({ type: 'error', text: (error as any)?.data?.message || 'Failed to create event.' });
+        }
+    }, [isSuccess, isError, error, navigate]);
 
     // Simple validation
     const validateForm = () => {
-        const newErrors = {};
+        const newErrors: { [key: string]: string } = {};
+
         if (!eventData.name) newErrors.name = 'Event Name is required.';
         if (!eventData.category) newErrors.category = 'Category is required.';
         if (!eventData.description) newErrors.description = 'Description is required.';
@@ -82,35 +113,39 @@ export const AdminCreateEvent = () => {
         if (eventData.startDate && eventData.endDate && dayjs(eventData.startDate).isAfter(dayjs(eventData.endDate))) {
             newErrors.endDate = 'End Date must be after Start Date.';
         }
-        if (!eventData.address) newErrors.address = 'Address is required.';
-        if (!eventData.city) newErrors.city = 'City is required.';
-        if (!eventData.country) newErrors.country = 'Country is required.';
+
+        if (eventData.venueOption === 'new') {
+            // Check for non-null/non-empty string
+            if (!eventData.address) newErrors.address = 'Address is required for a new venue.';
+            if (!eventData.city) newErrors.city = 'City is required for a new venue.';
+            if (!eventData.country) newErrors.country = 'Country is required for a new venue.';
+        } else if (eventData.venueOption === 'existing') {
+            // Ensure selectedVenueId is a number and not empty string
+            if (typeof eventData.selectedVenueId !== 'number' || !eventData.selectedVenueId) {
+                newErrors.selectedVenueId = 'Please select an existing venue.';
+            }
+        }
 
         eventData.ticketTypes.forEach((ticket, index) => {
-            if (!ticket.name) newErrors[`ticketTypes.${index}.name`] = 'Ticket Name is required.';
+            if (!ticket.typeName) newErrors[`ticketTypes.${index}.typeName`] = 'Ticket Name is required.';
             if (ticket.price <= 0) newErrors[`ticketTypes.${index}.price`] = 'Price must be greater than 0.';
             if (ticket.quantityAvailable < 0) newErrors[`ticketTypes.${index}.quantityAvailable`] = 'Quantity cannot be negative.';
-            if (ticket.minPerOrder <= 0) newErrors[`ticketTypes.${index}.minPerOrder`] = 'Min per order must be greater than 0.';
-            if (ticket.maxPerOrder <= 0) newErrors[`ticketTypes.${index}.maxPerOrder`] = 'Max per order must be greater than 0.';
-            if (ticket.minPerOrder > ticket.maxPerOrder) newErrors[`ticketTypes.${index}.maxPerOrder`] = 'Max per order must be >= Min per order.';
-            if (!ticket.salesStartDate) newErrors[`ticketTypes.${index}.salesStartDate`] = 'Sales Start Date is required.';
-            if (!ticket.salesEndDate) newErrors[`ticketTypes.${index}.salesEndDate`] = 'Sales End Date is required.';
-            if (ticket.salesStartDate && ticket.salesEndDate && dayjs(ticket.salesStartDate).isAfter(dayjs(ticket.salesEndDate))) {
-                newErrors[`ticketTypes.${index}.salesEndDate`] = 'Sales End Date must be after Sales Start Date.';
-            }
         });
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        // Convert empty string for address/city/country back to null if they are meant to be optional
+        const newValue = (name === 'address' || name === 'city' || name === 'country') && value === '' ? null : value;
+
         setEventData(prev => ({
             ...prev,
-            [name]: value,
+            [name]: newValue,
         }));
-        if (errors[name]) { // Clear error when user starts typing
+        if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
@@ -119,12 +154,12 @@ export const AdminCreateEvent = () => {
         }
     };
 
-    const handleDateChange = (name, date) => {
+    const handleDateChange = (name: 'startDate' | 'endDate', date: dayjs.Dayjs | null) => {
         setEventData(prev => ({
             ...prev,
-            [name]: date ? dayjs(date).toISOString() : null, // Store as ISO string or null
+            [name]: date ? dayjs(date).toISOString() : '', // Store as ISO string or empty string
         }));
-        if (errors[name]) { // Clear error when date is selected
+        if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
@@ -133,19 +168,20 @@ export const AdminCreateEvent = () => {
         }
     };
 
-    const handleTicketTypeChange = (id, field, value) => {
+    const handleTicketTypeChange = (id: string, field: keyof NewTicketTypeInput, value: string | number) => {
         setEventData(prev => ({
             ...prev,
             ticketTypes: prev.ticketTypes.map(ticket =>
                 ticket.id === id ? { ...ticket, [field]: value } : ticket
             ),
         }));
-        const errorKey = `ticketTypes.${prev.ticketTypes.findIndex(t => t.id === id)}.${field}`;
+        const index = eventData.ticketTypes.findIndex(t => t.id === id);
+        const errorKey = `ticketTypes.${index}.${field}`;
         if (errors[errorKey]) {
             setErrors(prevErrors => {
-                const newErrors = { ...prevErrors };
-                delete newErrors[errorKey];
-                return newErrors;
+                const updatedErrors = { ...prevErrors }; // Corrected: use prevErrors here
+                delete updatedErrors[errorKey];
+                return updatedErrors;
             });
         }
     };
@@ -156,21 +192,17 @@ export const AdminCreateEvent = () => {
             ticketTypes: [
                 ...prev.ticketTypes,
                 {
-                    id: `ticket-${Date.now()}-${prev.ticketTypes.length + 1}`, // Unique ID
-                    name: `New Ticket Type ${prev.ticketTypes.length + 1}`,
+                    id: `ticket-${Date.now()}-${prev.ticketTypes.length + 1}`, // Generate unique ID
+                    typeName: `New Ticket Type ${prev.ticketTypes.length + 1}`,
                     price: 0.00,
                     quantityAvailable: 0,
-                    minPerOrder: 1,
-                    maxPerOrder: 10,
-                    salesStartDate: dayjs().toISOString(),
-                    salesEndDate: dayjs().add(1, 'month').toISOString(),
                     description: '',
                 },
             ],
         }));
     };
 
-    const handleDeleteTicketType = (idToDelete) => {
+    const handleDeleteTicketType = (idToDelete: string) => {
         if (eventData.ticketTypes.length === 1) {
             setMessage({ type: 'error', text: 'You must have at least one ticket type for the event.' });
             return;
@@ -190,41 +222,74 @@ export const AdminCreateEvent = () => {
             return;
         }
 
-        setLoading(true);
         setMessage({ type: '', text: '' }); // Clear previous messages
-        try {
-            // Prepare data for submission (remove temporary IDs, convert numbers)
-            const dataToSubmit = {
-                ...eventData,
-                startDate: eventData.startDate, // Already ISO string
-                endDate: eventData.endDate,     // Already ISO string
-                latitude: parseFloat(eventData.latitude) || null,
-                longitude: parseFloat(eventData.longitude) || null,
-                ticketTypes: eventData.ticketTypes.map(({ id, ...rest }) => ({ // Remove temporary 'id'
-                    ...rest,
-                    price: parseFloat(rest.price),
-                    quantityAvailable: parseInt(rest.quantityAvailable),
-                    minPerOrder: parseInt(rest.minPerOrder),
-                    maxPerOrder: parseInt(rest.maxPerOrder),
-                })),
-                organizerId: 'organizer-1', // Assign to current organizer (dummy)
-            };
 
-            const response = await createNewEvent(dataToSubmit);
-            setMessage({ type: 'success', text: response.message });
-            // Optionally redirect to the newly created event's details page or event list
-            setTimeout(() => {
-                if (response.eventId) {
-                    navigate(`/admin/my-events/${response.eventId}`);
-                } else {
-                    navigate('/admin/my-events'); // Go to event list if no specific ID returned
-                }
-            }, 2000); // Give time for message to be read
+        try {
+            const organizerEmail = user?.email;
+
+            console.log(organizerEmail)
+
+            if (!organizerEmail) {
+                setMessage({ type: 'error', text: 'Organizer email not found. Please log in.' });
+                return;
+            }
+
+            console.log("here")
+
+            // Start with a base object that mirrors CreateEventRequest
+            // Initialize optional fields to undefined to ensure they are omitted unless explicitly set
+            const dataToSubmit: CreateEventRequest = {
+                category: eventData.category,
+                name: eventData.name,
+                description: eventData.description,
+                startDate: eventData.startDate,
+                endDate: eventData.endDate,
+                // These are conditional and will be added later
+                venueId: undefined,
+                address: undefined,
+                city: undefined,
+                country: undefined,
+                // Latitude/Longitude can be null in the request, or undefined if you prefer to omit entirely
+                latitude: eventData.latitude,
+                longitude: eventData.longitude,
+                posterImageUrl: eventData.posterImageUrl || undefined, // Send undefined if empty string
+                thumbnailImageUrl: eventData.thumbnailImageUrl || undefined, // Send undefined if empty string
+                organizerEmail: organizerEmail,
+                ticketTypes: eventData.ticketTypes.map(ticket => ({
+                    typeName: ticket.typeName,
+                    price: parseFloat(ticket.price.toString()),
+                    quantityAvailable: parseInt(ticket.quantityAvailable.toString()),
+                    description: ticket.description,
+                })),
+            };
+            console.log("there")
+
+            console.log("Event Data Venue Option:", eventData.venueOption);
+            if (eventData.venueOption === 'existing') {
+                // We've ensured selectedVenueId is a number during validation
+                dataToSubmit.venueId = eventData.selectedVenueId as number;
+                // Explicitly ensure new venue fields are undefined/not present
+                dataToSubmit.address = undefined;
+                dataToSubmit.city = undefined;
+                dataToSubmit.country = undefined;
+                console.log("gone")
+
+            } else if (eventData.venueOption === 'new') {
+                // Ensure these are non-null strings from validation
+                dataToSubmit.address = eventData.address as string;
+                dataToSubmit.city = eventData.city as string;
+                dataToSubmit.country = eventData.country as string;
+                // Explicitly ensure venueId is undefined/not present
+                dataToSubmit.venueId = undefined;
+                console.log("also gone")
+
+            }
+
+            console.log("Submitting Event Data:", dataToSubmit); // Crucial for debugging
+
+            await createEvent({ CreateEventRequest: dataToSubmit, organizerEmail: organizerEmail }).unwrap();
         } catch (err) {
-            console.error("Error creating event:", err);
-            setMessage({ type: 'error', text: err.message || 'Failed to create event.' });
-        } finally {
-            setLoading(false);
+            // Error handling is now managed by the useEffect hook watching `isError` and `error`
         }
     };
 
@@ -285,95 +350,35 @@ export const AdminCreateEvent = () => {
                     <Grid item xs={12} md={6}>
                         <DateTimePicker
                             label="Start Date & Time"
-                            value={eventData.startDate ? dayjs(eventData.startDate) : null}
+                            value={dayjs(eventData.startDate)}
                             onChange={(newValue) => handleDateChange('startDate', newValue)}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    fullWidth
-                                    variant="outlined"
-                                    error={!!errors.startDate}
-                                    helperText={errors.startDate}
-                                />
-                            )}
+                            slotProps={{
+                                textField: {
+                                    fullWidth: true,
+                                    variant: "outlined",
+                                    error: !!errors.startDate,
+                                    helperText: errors.startDate,
+                                },
+                            }}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
                         <DateTimePicker
                             label="End Date & Time"
-                            value={eventData.endDate ? dayjs(eventData.endDate) : null}
+                            value={dayjs(eventData.endDate)}
                             onChange={(newValue) => handleDateChange('endDate', newValue)}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    fullWidth
-                                    variant="outlined"
-                                    error={!!errors.endDate}
-                                    helperText={errors.endDate}
-                                />
-                            )}
+                            slotProps={{
+                                textField: {
+                                    fullWidth: true,
+                                    variant: "outlined",
+                                    error: !!errors.endDate,
+                                    helperText: errors.endDate,
+                                },
+                            }}
                         />
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Address"
-                            name="address"
-                            value={eventData.address}
-                            onChange={handleChange}
-                            variant="outlined"
-                            error={!!errors.address}
-                            helperText={errors.address}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="City"
-                            name="city"
-                            value={eventData.city}
-                            onChange={handleChange}
-                            variant="outlined"
-                            error={!!errors.city}
-                            helperText={errors.city}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Country"
-                            name="country"
-                            value={eventData.country}
-                            onChange={handleChange}
-                            variant="outlined"
-                            error={!!errors.country}
-                            helperText={errors.country}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Latitude (Optional)"
-                            name="latitude"
-                            type="number"
-                            value={eventData.latitude}
-                            onChange={handleChange}
-                            variant="outlined"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Longitude (Optional)"
-                            name="longitude"
-                            type="number"
-                            value={eventData.longitude}
-                            onChange={handleChange}
-                            variant="outlined"
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
                         <TextField
                             fullWidth
                             label="Poster Image URL (Optional)"
@@ -384,7 +389,7 @@ export const AdminCreateEvent = () => {
                             helperText="Paste a URL for your event's main poster image."
                         />
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
                             label="Thumbnail Image URL (Optional)"
@@ -395,7 +400,141 @@ export const AdminCreateEvent = () => {
                             helperText="Paste a URL for a smaller thumbnail image."
                         />
                     </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="Latitude (Optional)"
+                            name="latitude"
+                            type="number"
+                            // If latitude/longitude can truly be null in the request, keep this.
+                            // If they should be omitted if not provided, change to (eventData.latitude ?? '')
+                            value={eventData.latitude === null ? '' : eventData.latitude}
+                            onChange={handleChange}
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="Longitude (Optional)"
+                            name="longitude"
+                            type="number"
+                            value={eventData.longitude === null ? '' : eventData.longitude}
+                            onChange={handleChange}
+                            variant="outlined"
+                        />
+                    </Grid>
                 </Grid>
+            </Paper>
+
+            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+                <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>Venue Information</Typography>
+                <FormControl component="fieldset" sx={{ mb: 2 }}>
+                    <RadioGroup
+                        row
+                        name="venueOption"
+                        value={eventData.venueOption}
+                        onChange={(e) => {
+                            const selectedOption = e.target.value as 'existing' | 'new';
+                            setEventData(prev => ({
+                                ...prev,
+                                venueOption: selectedOption,
+                                // Reset venue-related fields when switching option
+                                selectedVenueId: selectedOption === 'existing' ? prev.selectedVenueId : '', // Keep current if existing, clear if new
+                                address: selectedOption === 'new' ? (prev.address || '') : null, // Keep existing if new, clear if existing
+                                city: selectedOption === 'new' ? (prev.city || '') : null,
+                                country: selectedOption === 'new' ? (prev.country || '') : null,
+                            }));
+                        }}
+                    >
+                        <FormControlLabel value="existing" control={<Radio />} label="Select Existing Venue" />
+                        <FormControlLabel value="new" control={<Radio />} label="Create New Venue" />
+                    </RadioGroup>
+                </FormControl>
+
+                {eventData.venueOption === 'existing' && (
+                    <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth variant="outlined" error={!!errors.selectedVenueId}>
+                                <InputLabel id="venue-select-label">Select Venue</InputLabel>
+                                <Select
+                                    labelId="venue-select-label"
+                                    id="selectedVenueId"
+                                    name="selectedVenueId"
+                                    value={eventData.selectedVenueId}
+                                    onChange={(e) => {
+                                        // Crucial: Convert value to number if not empty string
+                                        const value = e.target.value;
+                                        setEventData(prev => ({
+                                            ...prev,
+                                            selectedVenueId: value === '' ? '' : Number(value)
+                                        }));
+                                    }}
+                                    label="Select Venue"
+                                >
+                                    <MenuItem value="">
+                                        <em>None</em>
+                                    </MenuItem>
+                                    {isLoadingVenues ? (
+                                        <MenuItem disabled>Loading venues...</MenuItem>
+                                    ) : isErrorVenues ? (
+                                        <MenuItem disabled>Error loading venues.</MenuItem>
+                                    ) : (
+                                        venues?.map((venue: Venue) => (
+                                            <MenuItem key={venue.id} value={venue.id}>
+                                                {venue.name} (Capacity: {venue.capacity})
+                                            </MenuItem>
+                                        ))
+                                    )}
+                                </Select>
+                                {errors.selectedVenueId && <Typography color="error" variant="caption">{errors.selectedVenueId}</Typography>}
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+                )}
+
+                {eventData.venueOption === 'new' && (
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Address"
+                                name="address"
+                                // Ensure display value is '' if null for TextField
+                                value={eventData.address ?? ''}
+                                onChange={handleChange}
+                                variant="outlined"
+                                error={!!errors.address}
+                                helperText={errors.address}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="City"
+                                name="city"
+                                value={eventData.city ?? ''}
+                                onChange={handleChange}
+                                variant="outlined"
+                                error={!!errors.city}
+                                helperText={errors.city}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Country"
+                                name="country"
+                                value={eventData.country ?? ''}
+                                onChange={handleChange}
+                                variant="outlined"
+                                error={!!errors.country}
+                                helperText={errors.country}
+                            />
+                        </Grid>
+                    </Grid>
+                )}
             </Paper>
 
             <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
@@ -424,11 +563,11 @@ export const AdminCreateEvent = () => {
                                             fullWidth
                                             margin="dense"
                                             label="Ticket Type Name"
-                                            value={ticket.name}
-                                            onChange={(e) => handleTicketTypeChange(ticket.id, 'name', e.target.value)}
+                                            value={ticket.typeName}
+                                            onChange={(e) => handleTicketTypeChange(ticket.id, 'typeName', e.target.value)}
                                             variant="outlined"
-                                            error={!!errors[`ticketTypes.${index}.name`]}
-                                            helperText={errors[`ticketTypes.${index}.name`]}
+                                            error={!!errors[`ticketTypes.${index}.typeName`]}
+                                            helperText={errors[`ticketTypes.${index}.typeName`]}
                                         />
                                         <TextField
                                             fullWidth
@@ -458,58 +597,6 @@ export const AdminCreateEvent = () => {
                                         <TextField
                                             fullWidth
                                             margin="dense"
-                                            label="Min Per Order"
-                                            type="number"
-                                            value={ticket.minPerOrder}
-                                            onChange={(e) => handleTicketTypeChange(ticket.id, 'minPerOrder', e.target.value)}
-                                            variant="outlined"
-                                            error={!!errors[`ticketTypes.${index}.minPerOrder`]}
-                                            helperText={errors[`ticketTypes.${index}.minPerOrder`]}
-                                        />
-                                        <TextField
-                                            fullWidth
-                                            margin="dense"
-                                            label="Max Per Order"
-                                            type="number"
-                                            value={ticket.maxPerOrder}
-                                            onChange={(e) => handleTicketTypeChange(ticket.id, 'maxPerOrder', e.target.value)}
-                                            variant="outlined"
-                                            error={!!errors[`ticketTypes.${index}.maxPerOrder`]}
-                                            helperText={errors[`ticketTypes.${index}.maxPerOrder`]}
-                                        />
-                                        <DateTimePicker
-                                            label="Sales Start Date & Time"
-                                            value={ticket.salesStartDate ? dayjs(ticket.salesStartDate) : null}
-                                            onChange={(newValue) => handleTicketTypeChange(ticket.id, 'salesStartDate', dayjs(newValue).toISOString())}
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    fullWidth
-                                                    margin="dense"
-                                                    variant="outlined"
-                                                    error={!!errors[`ticketTypes.${index}.salesStartDate`]}
-                                                    helperText={errors[`ticketTypes.${index}.salesStartDate`]}
-                                                />
-                                            )}
-                                        />
-                                        <DateTimePicker
-                                            label="Sales End Date & Time"
-                                            value={ticket.salesEndDate ? dayjs(ticket.salesEndDate) : null}
-                                            onChange={(newValue) => handleTicketTypeChange(ticket.id, 'salesEndDate', dayjs(newValue).toISOString())}
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    fullWidth
-                                                    margin="dense"
-                                                    variant="outlined"
-                                                    error={!!errors[`ticketTypes.${index}.salesEndDate`]}
-                                                    helperText={errors[`ticketTypes.${index}.salesEndDate`]}
-                                                />
-                                            )}
-                                        />
-                                        <TextField
-                                            fullWidth
-                                            margin="dense"
                                             label="Description (Optional)"
                                             value={ticket.description}
                                             onChange={(e) => handleTicketTypeChange(ticket.id, 'description', e.target.value)}
@@ -524,7 +611,7 @@ export const AdminCreateEvent = () => {
                                             color="error"
                                             startIcon={<DeleteIcon />}
                                             onClick={() => handleDeleteTicketType(ticket.id)}
-                                            disabled={eventData.ticketTypes.length === 1} // Disable if only one ticket type left
+                                            disabled={eventData.ticketTypes.length === 1}
                                         >
                                             Delete
                                         </Button>
@@ -547,9 +634,9 @@ export const AdminCreateEvent = () => {
                     size="large"
                     startIcon={<AddIcon />}
                     onClick={handleSubmit}
-                    disabled={loading}
+                    disabled={isCreatingEvent}
                 >
-                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Event'}
+                    {isCreatingEvent ? <CircularProgress size={24} color="inherit" /> : 'Create Event'}
                 </Button>
             </Box>
         </Box>

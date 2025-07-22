@@ -74,6 +74,40 @@ export type OrganizerEventDetails = {
     attendanceRate: string; // Consider making it a number (float)
 };
 
+export type CreateEventRequest = {
+    category: string;
+    name: string;
+    description: string;
+    startDate: string; // ISO string, maps to eventDate and eventTime on backend
+    endDate: string;   // ISO string, may be used for event duration
+    address?: string; // Made optional for existing venue
+    city?: string;    // Made optional for existing venue
+    country?: string; // Made optional for existing venue
+    venueId?: number; // Optional if selecting an existing venue
+    latitude?: number | null;
+    longitude?: number | null;
+    posterImageUrl?: string;
+    thumbnailImageUrl?: string;
+    organizerEmail: string; // Taken from logged-in user's state
+    ticketTypes: NewTicketTypeInput[];
+};
+
+export type NewTicketTypeInput = {
+    typeName: string;
+    price: number;
+    quantityAvailable: number;
+    description?: string;
+};
+
+
+
+export type CreateEventResponse = {
+    success: boolean;
+    message: string;
+    eventId: number;
+};
+
+
 // === Helper to normalize raw rows ===
 // This function takes an array of rows that all belong to the SAME event
 const normalizeEventData = (rows?: RawEventRow[]): NormalizedEvent | null => {
@@ -122,7 +156,7 @@ const staggeredBaseQuery = retry(
 export const EventQuery = createApi({
     reducerPath: 'eventApi',
     baseQuery: staggeredBaseQuery,
-    tagTypes: ['Events', 'FeaturedEventsList', 'CategorizedEventsList'],
+    tagTypes: ['Events', 'FeaturedEventsList', 'CategorizedEventsList', 'Venues'],
     endpoints: (builder) => ({
         // 1. Featured Events
         getFeaturedEvents: builder.query<Event[], void>({
@@ -214,6 +248,59 @@ export const EventQuery = createApi({
             }),
             providesTags: ['DetailedOrganizerEvents'],
         }),
+        // New endpoint to get all venues
+        getAllVenues: builder.query<Venue[], void>({
+            query: () => '/venues', // Assuming a /venues endpoint
+            providesTags: ['Venues'],
+        }),
+        createEvent: builder.mutation<CreateEventResponse, { CreateEventRequest: CreateEventRequest, organizerEmail: string }>({
+            // Corrected query parameters: Destructure the single argument
+            query: ({ CreateEventRequest: eventDataForApi, organizerEmail: apiOrganizerEmail }) => {
+                // eventDataForApi now correctly holds the CreateEventRequest object
+                // apiOrganizerEmail now correctly holds the organizerEmail string
+
+                const body: any = {
+                    category: eventDataForApi.category,
+                    name: eventDataForApi.name,
+                    description: eventDataForApi.description,
+                    startDate: eventDataForApi.startDate,
+                    endDate: eventDataForApi.endDate,
+                    latitude: eventDataForApi.latitude,
+                    longitude: eventDataForApi.longitude,
+                    posterImageUrl: eventDataForApi.posterImageUrl,
+                    thumbnailImageUrl: eventDataForApi.thumbnailImageUrl,
+                    // Important: Use the organizerEmail passed in the mutation args
+                    organizerEmail: apiOrganizerEmail, // Use the destructured email here
+                    ticketTypes: eventDataForApi.ticketTypes,
+                };
+
+                // This logic is correct as long as eventDataForApi holds the correct data
+                if (eventDataForApi.venueId) {
+                    // Existing venue selected
+                    body.venueId = eventDataForApi.venueId;
+                } else if (eventDataForApi.address && eventDataForApi.city && eventDataForApi.country) {
+                    // New venue to be created
+                    body.address = eventDataForApi.address;
+                    body.city = eventDataForApi.city;
+                    body.country = eventDataForApi.country;
+                } else {
+                    throw new Error("Either 'venueId' or 'address', 'city', and 'country' must be provided for event creation.");
+                }
+
+                return {
+                    url: `/events/${apiOrganizerEmail}`, // Use the destructured email in the URL
+                    method: 'POST',
+                    body: body,
+                };
+            },
+            invalidatesTags: [
+                'Events',
+                'FeaturedEventsList',
+                'CategorizedEventsList',
+                'DetailedOrganizerEvents',
+                'Venues',
+            ],
+        }),
     }),
 });
 
@@ -222,7 +309,8 @@ export const {
     useGetDetailedUpcomingOrganizerEventsQuery,
     useGetDetailedCurrentOrganizerEventsQuery,
     useGetDetailedPastOrganizerEventsQuery,
-    useGetDetailedOrganizerEventsByTimeframeQuery,
     useGetEventByIdQuery,
-    useGetAllEventsQuery
+    useGetAllEventsQuery,
+    useCreateEventMutation,
+    useGetAllVenuesQuery, // Export the new hook
 } = EventQuery;
