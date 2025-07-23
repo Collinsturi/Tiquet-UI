@@ -94,17 +94,21 @@ export const Navbar = () => {
             {/* Blur Overlay (for mobile menu) */}
             {isMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-md z-10" // Slightly more opaque and blurred
+                    className="fixed inset-0 bg-black/40 backdrop-blur-md z-60"
                     onClick={() => setIsMenuOpen(false)}
                 ></div>
             )}
 
             {/* Sidebar Menu (mobile) */}
-            <div className={`fixed top-0 left-0 h-full w-64 bg-base-200 shadow-lg z-30 transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
-                <div className="flex items-center justify-between p-4 border-b">
-                    <span className="text-xl font-bold">Menu</span>
+            <div
+                className={`fixed top-0 left-0 h-full w-64 z-70 transform ${
+                    isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+                } transition-transform duration-300 ease-in-out backdrop-blur-md bg-[var(--color-my-accent)/95] pt-6 shadow-2xl`}
+            >
+                <div className="flex items-center justify-between p-4 border-b border-white/20">
+                    <span className="text-xl font-bold text-white">Menu</span>
                     <button
-                        className="btn btn-square btn-ghost"
+                        className="btn btn-square btn-ghost text-white"
                         onClick={() => setIsMenuOpen(false)}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -113,14 +117,20 @@ export const Navbar = () => {
                     </button>
                 </div>
 
-                <ul className="flex flex-col p-4 space-y-4">
+                <ul className="flex flex-col p-4 space-y-4 text-white">
                     <li><NavLink to="/events" onClick={() => setIsMenuOpen(false)}>Events</NavLink></li>
                     <li><NavLink to="/how-it-works" onClick={() => setIsMenuOpen(false)}>How it works</NavLink></li>
                     <li><NavLink to="/about" onClick={() => setIsMenuOpen(false)}>About</NavLink></li>
                     <li><NavLink to="/contact" onClick={() => setIsMenuOpen(false)}>Contact</NavLink></li>
                     <li><NavLink to="/legal" onClick={() => setIsMenuOpen(false)}>Legal</NavLink></li>
-                    <li>
-                        <a className="border-2 p-2 rounded-md" href="/login" onClick={() => setIsMenuOpen(false)}>Login</a>
+                    <li className="flex justify-center">
+                        <a
+                            href="/login"
+                            onClick={() => setIsMenuOpen(false)}
+                            className="border border-white px-4 py-2 rounded-md text-white hover:bg-white hover:text-[var(--color-my-accent)] transition"
+                        >
+                            Login
+                        </a>
                     </li>
                 </ul>
             </div>
