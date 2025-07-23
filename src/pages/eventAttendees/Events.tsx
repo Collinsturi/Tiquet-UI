@@ -3,10 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
-    Grid,
     CircularProgress,
     Alert,
-    Card,
     Button,
 } from '@mui/material';
 import ExploreIcon from '@mui/icons-material/Explore';
@@ -19,26 +17,24 @@ import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store.ts";
-import { useGetAllEventsQuery, type NormalizedEvent } from '../../queries/general/EventQuery.ts';
+// Import APIEventResponseItem as the actual data type returned by getAllEvents
+import { useGetAllEventsQuery, type APIEventResponseItem } from '../../queries/general/EventQuery.ts'; // ADJUST PATH if different from previous component
 
 // --- Dummy Data for User Interests (since this is not from API yet) ---
-// IMPORTANT: These categories must match the 'Category' strings returned by your API for filtering to work.
-// Example: if your API returns Category: "Public-key contextually-based superstructure",
-// then your dummyUserInterests should include "Public-key contextually-based superstructure".
 const dummyUserInterests = {
     'user-001': ['Public-key contextually-based superstructure', 'Fundamental value-added projection'],
-    'user-002': ['Technology', 'Music', 'Arts & Culture'], // Example categories that might not match your API
+    'user-002': ['Technology', 'Music', 'Arts & Culture'],
 };
 
 // Helper function to format dates using native Date methods
-const formatDateRange = (startDateString, endDateString) => {
+const formatDateRange = (startDateString: string, endDateString: string) => {
     const startDate = new Date(startDateString);
     const endDate = new Date(endDateString);
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 'Invalid Dates';
 
-    const startOptions = { month: 'short', day: 'numeric' };
-    const endOptions = { hour: 'numeric', minute: 'numeric', hour12: true };
+    const startOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    const endOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: 'numeric', hour12: true };
 
     const formattedStartDate = startDate.toLocaleDateString(undefined, startOptions);
     const formattedStartTime = startDate.toLocaleTimeString(undefined, endOptions);
@@ -52,41 +48,47 @@ const formatDateRange = (startDateString, endDateString) => {
     }
 };
 
-// --- Recommendation Logic (Adapted for NormalizedEvent structure and available data) ---
-const getRecommendedEvents = (user: any, events: NormalizedEvent[], userInterests: any, filterType: string) => {
+// --- Recommendation Logic (Adapted for APIEventResponseItem structure) ---
+// The 'events' parameter now directly receives APIEventResponseItem[]
+const getRecommendedEvents = (user: any, events: APIEventResponseItem[], userInterests: any, filterType: string) => {
     if (!user || !events || events.length === 0) return [];
 
-    let recommendations: NormalizedEvent[] = [];
+    // Add a recommendationReason property to the APIEventResponseItem type for internal use
+    type RecommendedEvent = APIEventResponseItem & { recommendationReason: string };
+
+    let recommendations: RecommendedEvent[] = [];
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize 'now' to start of today for date comparison
 
     // Filter out past events
-    // TEMPORARY CHANGE FOR DEBUGGING: Removed `eventDateObj > now` to display all events regardless of date.
-    // If events now appear, the issue is with your backend providing past dates.
+    // Ensure eventDate is compared correctly as a date
     const upcomingEvents = events.filter(item => {
-        const eventDateTimeString = `${item.event.eventDate}T${item.event.eventTime}`;
+        const eventDateString = item.eventDate; // Directly access eventDate
+        const eventDateTimeString = `${eventDateString}T${item.eventTime}`;
         const eventDateObj = new Date(eventDateTimeString);
-        return !isNaN(eventDateObj.getTime()); // Only check for valid date, not future date
+        // Ensure the event is today or in the future
+        return !isNaN(eventDateObj.getTime()) && eventDateObj >= now;
     });
 
     // Rule 1: Based on User Interests
     const userCategoryNames = userInterests[user.user_id] || [];
     const interestBased = upcomingEvents.filter(item =>
-        userCategoryNames.includes(item.event.Category)
+        userCategoryNames.includes(item.category) // Directly access 'category'
     ).map(item => ({ ...item, recommendationReason: 'Based on your interests' }));
 
     // Rule 2: Newly Added Events (e.g., added in last 30 days)
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
     const newEvents = upcomingEvents.filter(item =>
-        new Date(item.event.createdAt) > thirtyDaysAgo
+        new Date(item.createdAt) > thirtyDaysAgo // Directly access 'createdAt'
     ).map(item => ({ ...item, recommendationReason: 'Newly added' }));
 
     // Combine and deduplicate recommendations based on priority
-    const finalRecommendationsMap = new Map<number, NormalizedEvent>(); // Use event.id as key
+    const finalRecommendationsMap = new Map<number, RecommendedEvent>(); // Use item.id as key
 
-    const addUnique = (eventList: NormalizedEvent[]) => {
+    const addUnique = (eventList: RecommendedEvent[]) => {
         eventList.forEach(item => {
-            if (!finalRecommendationsMap.has(item.event.id)) {
-                finalRecommendationsMap.set(item.event.id, item);
+            if (!finalRecommendationsMap.has(item.id)) { // Directly access 'id'
+                finalRecommendationsMap.set(item.id, item);
             }
         });
     };
@@ -95,7 +97,7 @@ const getRecommendedEvents = (user: any, events: NormalizedEvent[], userInterest
     addUnique(interestBased);
     addUnique(newEvents);
     // Add all other upcoming events as general recommendations if not already added
-    addUnique(upcomingEvents.map(item => ({ ...item, recommendationReason: 'General Recommendation' })));
+    addUnique(upcomingEvents.map(item => ({ ...item, recommendationReason: 'General Recommendation' } as RecommendedEvent)));
 
     recommendations = Array.from(finalRecommendationsMap.values());
 
@@ -106,17 +108,17 @@ const getRecommendedEvents = (user: any, events: NormalizedEvent[], userInterest
         recommendations = recommendations.filter(item => item.recommendationReason === 'Newly added');
     }
         // For 'trending' and 'nearby', since we don't have the data fields (ticketsSold, city/location)
-        // from the current API response, we'll just show all upcoming events as a fallback.
-    // In a real application, you'd fetch/calculate these specifically from your backend.
+    // from the current API response, we'll just show all upcoming events as a fallback.
     else if (filterType === 'trending' || filterType === 'nearby') {
-        recommendations = upcomingEvents.map(item => ({ ...item, recommendationReason: filterType === 'trending' ? 'Trending (Fallback)' : 'Near You (Fallback)' }));
+        // You might want to implement actual trending/nearby logic here if your API provides data for it
+        recommendations = upcomingEvents.map(item => ({ ...item, recommendationReason: filterType === 'trending' ? 'Trending (Fallback)' : 'Near You (Fallback)' } as RecommendedEvent));
     }
 
 
     // Sort by start date ascending
     recommendations.sort((a, b) => {
-        const dateA = new Date(`${a.event.eventDate}T${a.event.eventTime}`).getTime();
-        const dateB = new Date(`${b.event.eventDate}T${b.event.eventTime}`).getTime();
+        const dateA = new Date(`${a.eventDate}T${a.eventTime}`).getTime(); // Directly access eventDate & eventTime
+        const dateB = new Date(`${b.eventDate}T${b.eventTime}`).getTime(); // Directly access eventDate & eventTime
         return dateA - dateB;
     });
 
@@ -130,11 +132,13 @@ export const AttendeeEvents = () => {
     const user = useSelector((state: RootState) => state.user.user);
 
     // Use RTK Query to fetch all events
+    // The data received here will be APIEventResponseItem[]
     const { data: allEventsData, isLoading, error } = useGetAllEventsQuery({});
 
     // console.log('Raw API Data:', allEventsData); // Log the raw data from RTK Query
 
-    const [recommendedEvents, setRecommendedEvents] = useState<NormalizedEvent[]>([]);
+    // The state now holds `RecommendedEvent[]` where RecommendedEvent is APIEventResponseItem with `recommendationReason`
+    const [recommendedEvents, setRecommendedEvents] = useState< (APIEventResponseItem & { recommendationReason: string })[]>([]);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [filterType, setFilterType] = useState('all');
 
@@ -158,7 +162,8 @@ export const AttendeeEvents = () => {
             return;
         }
 
-        if (allEventsData && allEventsData.length > 0) {
+        // Ensure allEventsData is not null/undefined and is an array before processing
+        if (allEventsData && Array.isArray(allEventsData) && allEventsData.length > 0) {
             const recommendations = getRecommendedEvents(user, allEventsData, dummyUserInterests, filterType);
             // console.log('Processed Recommendations:', recommendations); // Log processed recommendations
             setRecommendedEvents(recommendations);
@@ -167,7 +172,7 @@ export const AttendeeEvents = () => {
             } else {
                 setMessage({ type: '', text: '' });
             }
-        } else if (allEventsData && allEventsData.length === 0) {
+        } else if (allEventsData && Array.isArray(allEventsData) && allEventsData.length === 0) {
             setMessage({ type: 'info', text: 'No events are currently available.' });
             setRecommendedEvents([]);
         }
@@ -258,33 +263,33 @@ export const AttendeeEvents = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {recommendedEvents.length > 0 ? (
                     recommendedEvents.map(item => (
-                        <div key={item.event.id} className="card bg-base-100 shadow-xl overflow-hidden flex flex-col">
+                        <div key={item.id} className="card bg-base-100 shadow-xl overflow-hidden flex flex-col"> {/* Directly use item.id */}
                             <figure className="h-40 w-full overflow-hidden">
                                 <img
-                                    src={item.event.posterImageUrl || `https://placehold.co/400x200/E0E0E0/000000?text=Event+Image`}
-                                    alt={item.event.title}
+                                    src={item.posterImageUrl || `https://placehold.co/400x200/E0E0E0/000000?text=Event+Image`} // Directly use item.posterImageUrl
+                                    alt={item.title} // Directly use item.title
                                     className="w-full h-full object-cover"
                                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src="https://placehold.co/400x200/E0E0E0/000000?text=Event+Image"; }}
                                 />
                             </figure>
                             <div className="card-body p-4 flex-grow">
-                                <h2 className="card-title text-lg mb-2 line-clamp-2">{item.event.title}</h2>
+                                <h2 className="card-title text-lg mb-2 line-clamp-2">{item.title}</h2> {/* Directly use item.title */}
                                 <div className="badge badge-primary badge-outline text-xs mb-2">
                                     <AutoAwesomeIcon className="w-4 h-4 mr-1" /> {item.recommendationReason}
                                 </div>
                                 <p className="text-sm text-base-content/70 flex items-center gap-1 mb-1">
                                     <CalendarTodayIcon className="w-4 h-4" />
-                                    {formatDateRange(`${item.event.eventDate}T${item.event.eventTime}`, `${item.event.eventDate}T${item.event.eventTime}`)}
+                                    {formatDateRange(`${item.eventDate}T${item.eventTime}`, `${item.eventDate}T${item.eventTime}`)} {/* Directly use item.eventDate and item.eventTime */}
                                 </p>
                                 <p className="text-sm text-base-content/70 flex items-center gap-1">
                                     <LocationOnIcon className="w-4 h-4" />
-                                    {item.venue?.addresses || 'Venue Not Specified'}
+                                    {item.venue?.address || item.venueAddress || 'Venue Not Specified'} {/* Corrected venue access */}
                                 </p>
                             </div>
                             <div className="card-actions justify-end p-4 pt-0">
                                 <button
                                     className="btn btn-sm btn-primary"
-                                    onClick={() => handleViewDetails(item.event.id)}
+                                    onClick={() => handleViewDetails(item.id)}
                                 >
                                     <EventIcon className="w-4 h-4" /> View Details
                                 </button>

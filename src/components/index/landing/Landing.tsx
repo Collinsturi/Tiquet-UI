@@ -36,10 +36,11 @@ export const Landing = () => {
                         <h1 className="text-5xl font-bold leading-tight mb-4 text-center">
                             Amapiano Groove <br /> house
                         </h1>
-                        <p className="text-lg font-medium mb-6 max-w-md mx-auto lg:mx-0 text-center ">
+                        <p className="text-lg font-medium mb-6 max-w-md mx-auto lg:mx-0 text-center lg:text-center ">
                             <span className="font-bold">Come eat, Drink, Mingle, have fun</span> as Amapiano Groove house 4.0 is coming to Eldoret
                         </p>
-                        <div className="flex flex-row sm:flex-row gap-4 justify-center lg:justify-start">
+
+                        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
                             <a
                                 href="#"
                                 className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-full font-semibold shadow transition"

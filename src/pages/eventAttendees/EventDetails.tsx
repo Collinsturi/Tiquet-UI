@@ -23,27 +23,28 @@ import AddAlertIcon from '@mui/icons-material/AddAlert'; // For add to calendar
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../redux/store';
-import { useGetEventByIdQuery, type NormalizedEvent } from '../../queries/general/EventQuery.ts';
+// Import APIEventResponseItem as the actual data type returned by getEventById
+import { useGetEventByIdQuery, type APIEventResponseItem } from '../../queries/general/EventQuery.ts'; // ADJUST PATH if different
 
 // For PDF generation
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 
 // Helper function to format dates
-const formatDateTime = (dateString) => {
+const formatDateTime = (dateString: string) => { // Added type for dateString
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid Date';
-    const options = {
+    const options: Intl.DateTimeFormatOptions = { // Added type for options
         year: 'numeric', month: 'long', day: 'numeric',
         hour: 'numeric', minute: '2-digit', hour12: true
     };
     return date.toLocaleString(undefined, options);
 };
 
-const formatTimeOnly = (dateString) => {
+const formatTimeOnly = (dateString: string) => { // Added type for dateString
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid Time';
-    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
+    const options: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true }; // Added type for options
     return date.toLocaleTimeString(undefined, options);
 };
 
@@ -53,16 +54,17 @@ export const EventDetails = () => {
     const user = useSelector((state: RootState) => state.user.user); // Get logged-in user
 
     // Use RTK Query hook to fetch event details
+    // The data received here will be APIEventResponseItem (or null if not found)
     const { data: eventData, isLoading, error } = useGetEventByIdQuery(parseInt(eventId!), {
         skip: !eventId || isNaN(parseInt(eventId!)), // Skip if eventId is missing or invalid
     });
 
     const [message, setMessage] = useState({ type: '', text: '' });
-    const [ticketQuantities, setTicketQuantities] = useState({});
+    const [ticketQuantities, setTicketQuantities] = useState<{ [key: number]: number }>({}); // Added type for state
     const [buyTicketLoading, setBuyTicketLoading] = useState(false); // This is for the modal's proceed button
 
-    const buyTicketsModalRef = useRef(null); // Ref for the buy tickets modal
-    const ticketRef = useRef(null); // Ref for PDF download content
+    const buyTicketsModalRef = useRef<HTMLDialogElement>(null); // Ref for the buy tickets modal, added type
+    const ticketRef = useRef<HTMLDivElement>(null); // Ref for PDF download content, added type
 
 
     // Effect to handle API response and initialize ticket quantities
@@ -79,10 +81,11 @@ export const EventDetails = () => {
             return;
         }
 
+        // eventData is now directly APIEventResponseItem
         if (eventData) {
             // Initialize ticket quantities to 0 for all available ticket types
-            const initialQuantities = {};
-            eventData.ticketTypes.forEach(type => {
+            const initialQuantities: { [key: number]: number } = {};
+            eventData.ticketTypes.forEach(type => { // Directly access eventData.ticketTypes
                 initialQuantities[type.id] = 0;
             });
             setTicketQuantities(initialQuantities);
@@ -95,11 +98,12 @@ export const EventDetails = () => {
     }, [eventData, isLoading, error, eventId]);
 
 
-    const handleQuantityChange = (ticketTypeId, change) => {
+    const handleQuantityChange = (ticketTypeId: number, change: number) => { // Added types
         setTicketQuantities(prev => {
             const currentQuantity = prev[ticketTypeId];
             const newQuantity = Math.max(0, currentQuantity + change); // Ensure non-negative
             // Max quantity: prevent buying more than available
+            // Directly access eventData.ticketTypes
             const ticketType = eventData?.ticketTypes.find(t => t.id === ticketTypeId);
             const finalQuantity = ticketType ? Math.min(newQuantity, ticketType.quantityAvailable) : newQuantity;
             return { ...prev, [ticketTypeId]: finalQuantity };
@@ -109,14 +113,19 @@ export const EventDetails = () => {
     const calculateTotalPrice = () => {
         if (!eventData) return 0;
         let total = 0;
-        eventData.ticketTypes.forEach(type => {
+        eventData.ticketTypes.forEach(type => { // Directly access eventData.ticketTypes
             total += type.price * (ticketQuantities[type.id] || 0);
         });
         return total;
     };
 
     const handleProceedToCheckout = () => {
-        const totalTicketsSelected = Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0);
+        if (!eventData) { // Ensure eventData is available
+            setMessage({ type: 'error', text: 'Event data is not available for checkout.' });
+            return;
+        }
+
+        const totalTicketsSelected = Object.values(ticketQuantities).reduce((sum: number, qty: number) => sum + qty, 0); // Added types
         const totalPrice = calculateTotalPrice();
 
         if (totalTicketsSelected === 0) {
@@ -129,19 +138,23 @@ export const EventDetails = () => {
 
         // Construct order details to pass to the checkout page
         const orderDetails = {
-            eventId: eventData.event.id,
-            eventName: eventData.event.title,
-            eventDate: `${formatDateTime(`${eventData.event.eventDate}T${eventData.event.eventTime}`)}`, // Combined date/time
-            eventLocation: eventData.venue?.addresses || 'Venue Not Specified',
+            eventId: eventData.id, // Directly access eventData.id
+            eventName: eventData.title, // Directly access eventData.title
+            eventDate: `${formatDateTime(`${eventData.eventDate}T${eventData.eventTime}`)}`, // Directly access eventData.eventDate/Time
+            eventLocation: eventData.venue?.address || eventData.venueAddress || 'Venue Not Specified', // Use venue.address or venueAddress
             totalAmount: totalPrice,
             tickets: Object.keys(ticketQuantities)
-                .filter(id => ticketQuantities[id] > 0)
-                .map(id => ({
-                    ticketTypeId: parseInt(id),
-                    ticketTypeName: eventData.ticketTypes.find(t => t.id === parseInt(id))?.typeName,
-                    quantity: ticketQuantities[id],
-                    pricePerUnit: eventData.ticketTypes.find(t => t.id === parseInt(id))?.price,
-                })),
+                .filter(id => ticketQuantities[parseInt(id)] > 0) // Parse id to number
+                .map(id => {
+                    const parsedId = parseInt(id);
+                    const ticketType = eventData.ticketTypes.find(t => t.id === parsedId);
+                    return {
+                        ticketTypeId: parsedId,
+                        ticketTypeName: ticketType?.typeName,
+                        quantity: ticketQuantities[parsedId],
+                        pricePerUnit: ticketType?.price,
+                    };
+                }),
             userId: user?.user_id, // Use actual user ID from Redux
         };
 
@@ -185,10 +198,11 @@ export const EventDetails = () => {
                 heightLeft -= pageHeight;
             }
 
-            pdf.save(`${eventData.event.title.replace(/\s/g, '_')}-details.pdf`);
+            // Directly access eventData.title
+            pdf.save(`${eventData.title.replace(/\s/g, '_')}-details.pdf`);
             setMessage({ type: 'success', text: 'Event details downloaded successfully as PDF!' });
 
-        } catch (downloadError) {
+        } catch (downloadError: any) { // Added type for downloadError
             console.error("Error generating PDF:", downloadError);
             setMessage({ type: 'error', text: `Failed to generate PDF: ${downloadError.message || 'An unexpected error occurred.'}` });
         }
@@ -216,22 +230,32 @@ export const EventDetails = () => {
         );
     }
 
-    // Destructure data for easier access
-    const { event, venue, ticketTypes } = eventData;
+    // Destructure data for easier access - eventData is already the top-level object
+    // You no longer need to destructure `event` and `venue` if eventData itself contains these.
+    // However, since your `APIEventResponseItem` *does* have nested `venue` and `ticketTypes`,
+    // you can keep those destructures for clarity, or just use `eventData.propertyName`.
+    // Let's keep `venue` and `ticketTypes` destructured for consistency with how you're using them below.
+    const { venue, ticketTypes } = eventData;
+
 
     // Log the fetched eventData to the console
     console.log('Fetched Event Data:', eventData);
 
     // Fallback for fields not present in current API response
-    const eventDescription = event.Description || "No detailed description available for this event.";
-    // posterImageUrl and mapImageUrl are now typed in Event, but might be undefined if API doesn't send them
-    const eventPoster = event.posterImageUrl || `https://placehold.co/800x400/E0E0E0/000000?text=${encodeURIComponent(event.title || 'Event Image')}`;
-    const eventMapUrl = event.mapImageUrl || `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.8251261376826!2d36.8142345!3d-1.2825488!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f111816f06cfb%3A0x6b8d9c5b2a0c4f80!2sKICC!5e0!3m2!1sen!2ske!4v1719602495010!5m2!1sen!2ske`; // Default to KICC map
+    // Directly access properties from eventData
+    const eventDescription = eventData.description || "No detailed description available for this event."; // Directly access description
+    // posterImageUrl and mapImageUrl are now typed in APIEventResponseItem, but might be undefined if API doesn't send them
+    const eventPoster = eventData.posterImageUrl || `https://placehold.co/800x400/E0E0E0/000000?text=${encodeURIComponent(eventData.title || 'Event Image')}`; // Directly access title
+    // Check your API response for 'mapImageUrl' or derive it from latitude/longitude
+    const eventMapUrl = `https://www.google.com/maps/embed/v1/place?key=YOUR_Maps_API_KEY&q=${eventData.latitude || 0},${eventData.longitude || 0}`; // Using lat/long from API if available
+    // OR if you want a static image, you'll need the Google Static Maps API.
+    // For now, if you don't have a map URL from the backend, you could use a placeholder or remove it.
+    // const eventMapUrl = eventData.mapImageUrl || `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.8251261376826!2d36.8142345!3d-1.2825488!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f111816f06cfb%3A0x6b8d9c5b2a0c4f80!2sKICC!5e0!3m2!1sen!2ske!4v1719602495010!5m2!1sen!2ske`; // Original fallback
 
-    // Speakers and FAQs are not in current NormalizedEvent from /events endpoint.
-    // They would need to be added to your API response and Event type for proper display.
-    const speakers = []; // Default to empty array
-    const faqs = [];     // Default to empty array
+    // Speakers and FAQs are not in current APIEventResponseItem from /events endpoint.
+    // They would need to be added to your API response and APIEventResponseItem type for proper display.
+    const speakers: any[] = []; // Default to empty array, added type
+    const faqs: any[] = [];     // Default to empty array, added type
 
     return (
         <div className="container mx-auto p-4 md:p-8">
@@ -241,25 +265,25 @@ export const EventDetails = () => {
                     <img
                         src={eventPoster}
                         className="w-full lg:w-1/2 h-64 lg:h-auto object-cover rounded-tl-box lg:rounded-bl-box lg:rounded-tr-none"
-                        alt={event.title}
+                        alt={eventData.title} // Directly access eventData.title
                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src="https://placehold.co/800x400/E0E0E0/000000?text=Event+Image"; }}
                     />
                     <div className="p-6 lg:p-8 w-full lg:w-1/2">
-                        <h1 className="text-4xl font-bold mb-2">{event.title}</h1>
+                        <h1 className="text-4xl font-bold mb-2">{eventData.title}</h1> {/* Directly access eventData.title */}
                         <p className="text-lg text-base-content/70 mb-4">By {venue?.name || 'Unknown Organizer'}</p> {/* Use venue name as organizer */}
 
                         <div className="space-y-2 mb-6">
                             <div className="flex items-center gap-2 text-base-content/80">
                                 <CalendarTodayIcon className="w-5 h-5" />
-                                <span>{formatDateTime(`${event.eventDate}T${event.eventTime}`)}</span>
+                                <span>{formatDateTime(`${eventData.eventDate}T${eventData.eventTime}`)}</span> {/* Directly access eventData.eventDate/Time */}
                             </div>
                             <div className="flex items-center gap-2 text-base-content/80">
                                 <AccessTimeIcon className="w-5 h-5" />
-                                <span>Ends: {formatTimeOnly(`${event.eventDate}T${event.eventTime}`)}</span> {/* Assuming end time is same as start for simplicity if not provided */}
+                                <span>Ends: {formatTimeOnly(`${eventData.eventDate}T${eventData.eventTime}`)}</span> {/* Assuming end time is same as start for simplicity if not provided */}
                             </div>
                             <div className="flex items-center gap-2 text-base-content/80">
                                 <LocationOnIcon className="w-5 h-5" />
-                                <span>{venue?.addresses || 'Venue Not Specified'}</span>
+                                <span>{venue?.address || eventData.venueAddress || 'Venue Not Specified'}</span> {/* Corrected venue address access */}
                             </div>
                         </div>
 
@@ -378,7 +402,11 @@ export const EventDetails = () => {
                     </h2>
                     <div className="rounded-lg overflow-hidden h-64 w-full">
                         <iframe
-                            src={eventMapUrl}
+                            // Changed to use eventData.latitude and eventData.longitude if available
+                            src={eventData.latitude && eventData.longitude ?
+                                `https://www.google.com/maps/embed/v1/place?key=YOUR_Maps_API_KEY&q=${eventData.latitude},${eventData.longitude}` :
+                                `https://www.google.com/maps/embed/v1/place?key=YOUR_Maps_API_KEY&q=${encodeURIComponent(eventData.venue?.address || eventData.venueAddress || 'Kenya')}` // Fallback to address or default to Kenya
+                            }
                             width="100%"
                             height="100%"
                             style={{ border: 0 }}
@@ -388,7 +416,7 @@ export const EventDetails = () => {
                             title="Event Location Map"
                         ></iframe>
                     </div>
-                    <p className="text-base-content/70 mt-4">{venue?.addresses || 'Venue Not Specified'}</p>
+                    <p className="text-base-content/70 mt-4">{venue?.address || eventData.venueAddress || 'Venue Not Specified'}</p> {/* Corrected venue address access */}
                 </div>
             )}
 
@@ -420,7 +448,7 @@ export const EventDetails = () => {
                     <h3 className="font-bold text-lg flex items-center gap-2">
                         <ShoppingCartIcon className="w-6 h-6" /> Confirm Your Order
                     </h3>
-                    <p className="py-4">You are about to purchase tickets for **{event?.title}**:</p>
+                    <p className="py-4">You are about to purchase tickets for **{eventData?.title}**:</p> {/* Directly use eventData.title */}
                     <div className="overflow-x-auto mb-4">
                         <table className="table w-full">
                             <thead>
