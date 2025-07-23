@@ -44,16 +44,8 @@
     themes: false;
 }
 
-
-/*#f7fdfd*/
-/*#3844a7*/
-/*#5570bc*/
-/*#739cd1*/
-/*#91c9e7*/
-
-
 @theme {
-    /*--font-display: "Libertinus Math", serif;*/
+    --font-display: "Libertinus Math", serif;
 
     --color-my-primary: #3844a7;
     --color-my-primary-focus: #2a378e;
@@ -81,7 +73,6 @@
     --color-my-warning: #fbbd23;
     --color-my-error: #f87272;
 
-    /* You can define other custom properties for DaisyUI here if needed */
     /*--rounded-box: 1rem;*/
     /*--rounded-btn: 0.5rem;*/
     /*--rounded-badge: 1.9rem;*/

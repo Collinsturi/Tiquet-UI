@@ -3,16 +3,16 @@ import { NavLink } from "react-router-dom";
 
 export const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
+    const [scrolled, setScrolled] = useState(true);
 
     useEffect(() => {
         const handleScroll = () => {
             // Adjust this threshold based on when you want the frosting to appear.
             // If you want it frosted from the start over the hero, you might use 0 or a very small number.
-            const isScrolled = window.scrollY > 50; // Changed to a smaller value for earlier frosting
-            if (isScrolled !== scrolled) {
-                setScrolled(isScrolled);
-            }
+            // const isScrolled = window.scrollY > -10; // Changed to a smaller value for earlier frosting
+            // if (isScrolled !== scrolled) {
+            //     setScrolled(isScrolled);
+            // }
         };
 
         window.addEventListener('scroll', handleScroll);
@@ -24,18 +24,12 @@ export const Navbar = () => {
     return (
         <>
             {/* Navbar */}
-            <nav className={`navbar fixed w-full z-20 transition-all duration-300 flex py-4
-    ${scrolled
-                ? 'bg-white/50 backdrop-blur-lg shadow-md'
-                : 'bg-transparent'
-            }`}>
-
-                <div className="flex-none lg:hidden">
+            <nav className="navbar fixed w-full z-50 transition-all duration-300 flex py-4 bg-[var(--color-my-neutral)] shadow-md">
+            <div className="flex-none lg:hidden">
                     <button
                         className="btn btn-square btn-ghost"
                         onClick={() => setIsMenuOpen(true)}
                     >
-                        {/* Ensure these icons contrast with the background */}
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className={`inline-block h-6 w-6 stroke-current ${scrolled ? 'text-gray-800' : 'text-white'}`}>
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
@@ -44,7 +38,6 @@ export const Navbar = () => {
 
                 <div className="flex flex-1 items-center">
                     <NavLink to={"/"} className="btn-ghost text-xl">
-                        {/* You might want to have a different logo for scrolled state for better visibility */}
                         <img
                             src={"src/assets/tiquet-logo-no-background.png"}
                             alt={"Logo"}
@@ -56,13 +49,43 @@ export const Navbar = () => {
                 {/* Desktop Menu */}
                 <div className="hidden lg:flex p-3">
                     <ul className="flex flex-row gap-8 items-center">
-                        <li><NavLink to="/events" className={scrolled ? "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white" : "border-white text-white hover:bg-white hover:text-black"}>Events</NavLink></li>
-                        <li><NavLink to="/how-it-works" className={scrolled ? "text-gray-800 hover:text-blue-600" : "text-white hover:text-gray-200"}>How it works</NavLink></li>
-                        <li><NavLink to="/about" className={scrolled ? "text-gray-800 hover:text-blue-600" : "text-white hover:text-gray-200"}>About</NavLink></li>
-                        <li><NavLink to="/contact" className={scrolled ? "text-gray-800 hover:text-blue-600" : "text-white hover:text-gray-200"}>Contact</NavLink></li>
-                        <li><NavLink to="/legal" className={scrolled ? "text-gray-800 hover:text-blue-600" : "text-white hover:text-gray-200"}>Legal</NavLink></li>
+                        <li><NavLink to="/events" className={
+                            scrolled
+                                ? "border-[var(--color-my-accent)] text-[var(--color-my-accent)] hover:bg-[var(--color-my-accent)] hover:text-white  p-2 rounded-md"
+                                : "border-white text-white hover:bg-white hover:text-black border-2 p-2 rounded-md"
+                        }
+                        >Events</NavLink></li>
+                        <li><NavLink to="/how-it-works" className={
+                            scrolled
+                                ? "border-[var(--color-my-accent)] text-[var(--color-my-accent)] hover:bg-[var(--color-my-accent)] hover:text-white p-2 rounded-md"
+                                : "border-white text-white hover:bg-white hover:text-black border-2 p-2 rounded-md"
+                        }
+                        >How it works</NavLink></li>
+                        <li><NavLink to="/about" className={
+                            scrolled
+                                ? "border-[var(--color-my-accent)] text-[var(--color-my-accent)] hover:bg-[var(--color-my-accent)] hover:text-white  p-2 rounded-md"
+                                : "border-white text-white hover:bg-white hover:text-black border-2 p-2 rounded-md"
+                        }
+                        >About</NavLink></li>
+                        <li><NavLink to="/contact" className={
+                            scrolled
+                                ? "border-[var(--color-my-accent)] text-[var(--color-my-accent)] hover:bg-[var(--color-my-accent)] hover:text-white p-2 rounded-md"
+                                : "border-white text-white hover:bg-white hover:text-black border-2 p-2 rounded-md"
+                        }
+                        >Contact</NavLink></li>
+                        <li><NavLink to="/legal" className={
+                            scrolled
+                                ? "text-[var(--color-my-accent)] hover:bg-[var(--color-my-accent)] hover:text-white p-2 rounded-md"
+                                : "border-white text-white hover:bg-white hover:text-black border-2 p-2 rounded-md"
+                        }
+                        >Legal</NavLink></li>
                         <li>
-                            <a className={`border-2  p-2 rounded-md ${scrolled ? "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white" : "border-white text-white hover:bg-white hover:text-black"}`} href="/login">Login</a>
+                            <a className={
+                                scrolled
+                                    ? "border-[var(--color-my-accent)] text-[var(--color-my-accent)] hover:bg-[var(--color-my-accent)] hover:text-white border-2 p-2 rounded-md"
+                                    : "border-white text-white hover:bg-white hover:text-black border-2 p-2 rounded-md"
+                            }
+                               href="/login">Login</a>
                         </li>
                     </ul>
                 </div>
