@@ -1955,6 +1955,9 @@
       gap: calc(0.25rem * 4);
     }
   }
+  .m-2 {
+    margin: calc(var(--spacing) * 2);
+  }
   .filter {
     display: flex;
     flex-wrap: wrap;
@@ -2950,6 +2953,9 @@
   }
   .bg-base-200 {
     background-color: var(--color-base-200);
+  }
+  .bg-black {
+    background-color: var(--color-black);
   }
   .bg-black\/40 {
     background-color: color-mix(in srgb, #000 40%, transparent);

@@ -22,9 +22,9 @@ export const Navbar = () => {
     }, [scrolled]);
 
     return (
-        <>
+        <header className="sticky top-0 z-50 bg-black shadow-md">
             {/* Navbar */}
-            <nav className="navbar fixed w-full z-50 transition-all duration-300 flex py-4 bg-[var(--color-my-neutral)] shadow-md">
+            <nav className="navbar w-full z-50 transition-all duration-300 flex py-4 bg-[var(--color-my-neutral)] shadow-md">
             <div className="flex-none lg:hidden">
                     <button
                         className="btn btn-square btn-ghost"
@@ -134,7 +134,7 @@ export const Navbar = () => {
                     </li>
                 </ul>
             </div>
-        </>
+        </header>
     );
 };
 
