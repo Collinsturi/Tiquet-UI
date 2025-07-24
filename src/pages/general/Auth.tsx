@@ -97,7 +97,7 @@ export const Auth = () => {
             clearFields();
 
             const role = res.user.role;
-            if (role === 'admin') navigate('/platformAdmin');
+            if (role === 'organizer') navigate('/organizer');
             else if (role === 'check_in_staff') navigate('/staff');
             else if (role === 'event_attendee') navigate('/attendee');
             else navigate('/attendee'); // fallback redirection

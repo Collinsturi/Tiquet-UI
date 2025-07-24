@@ -60,18 +60,20 @@ import PlatformAdminProfile from "./pages/plaformAdmin/PlatformAdminProfile.tsx"
 import {AttendeeEvents} from "./pages/eventAttendees/Events.tsx";
 import {PlatformDashboard} from "./pages/plaformAdmin/dashboard/Dashboard.tsx";
 import { EmailVerificationWrapper} from "./pages/general/EmailVerification.tsx";
+import {useSelector} from "react-redux";
+import type {RootState} from "./redux/store.ts";
 
 export const AdminRoute = () => {
     // const user = useSelector((state: RootState) => state.user.user);
 
     const user = {
-        role: 'admin'
+        role: 'organizer'
     }
     if (!user) {
         return <Navigate to="/auth" />;
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'organizer') {
         return <Navigate to="/auth" />;
     }
 
@@ -79,17 +81,17 @@ export const AdminRoute = () => {
 };
 
 export const EventAttendeeRoute = () => {
-    // const user = useSelector((state: RootState) => state.user.user);
+    const user = useSelector((state: RootState) => state.user.user);
 
-    const user = {
-        role: 'user'
-    }
+    // const user = {
+    //     role: 'event_attendee'
+    // }
 
     if (!user) {
         return <Navigate to="/auth" />;
     }
 
-    if (user.role !== 'user') {
+    if (user.role !== 'event_attendee') {
         return <Navigate to="/auth" />;
     }
 
@@ -97,17 +99,17 @@ export const EventAttendeeRoute = () => {
 };
 
 export const CheckInStaffRoute = () => {
-    // const user = useSelector((state: RootState) => state.user.user);
+    const user = useSelector((state: RootState) => state.user.user);
 
-    const user = {
-        role: 'staff'
-    }
+    // const user = {
+    //     role: 'check_in_staff'
+    // }
 
     if (!user) {
         return <Navigate to="/auth" />;
     }
 
-    if (user.role !== 'staff') {
+    if (user.role !== 'check_in_staff') {
         return <Navigate to="/auth" />;
     }
 
@@ -115,11 +117,11 @@ export const CheckInStaffRoute = () => {
 };
 
 export const SuperAdminRoute = () => {
-    // const user = useSelector((state: RootState) => state.user.user);
+    const user = useSelector((state: RootState) => state.user.user);
 
-    const user = {
-        role: 'platformAdmin'
-    }
+    // const user = {
+    //     role: 'platformAdmin'
+    // }
     if (!user) {
         return <Navigate to="/auth" />;
     }
@@ -170,7 +172,7 @@ const router = createBrowserRouter([
     },
     //Admin Routes
     {
-        path: "/admin",
+        path: "/organizer",
         Component: AdminRoute,
         children: [
             {

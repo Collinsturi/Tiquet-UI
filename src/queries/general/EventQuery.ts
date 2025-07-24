@@ -126,7 +126,6 @@ export type CreateEventResponse = {
 };
 
 
-// === Base Query with Auth Header & Retry (No changes here) ===
 const staggeredBaseQuery = retry(
     fetchBaseQuery({
         baseUrl: BASE_URL,

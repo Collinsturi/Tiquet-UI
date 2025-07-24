@@ -93,7 +93,7 @@ export const AdminCreateEvent = () => {
             // Optionally redirect after a delay
             setTimeout(() => {
                 // If createEvent response includes eventId, navigate there
-                navigate('/admin/my-events'); // Or /admin/my-events/${response.eventId} if available
+                navigate('/organizer/my-events'); // Or /admin/my-events/${response.eventId} if available
             }, 2000);
         } else if (isError) {
             console.error("Error creating event:", error);

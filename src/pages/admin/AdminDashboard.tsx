@@ -219,7 +219,7 @@ export const AdminDashboard = () => {
                                 color="primary"
                                 startIcon={<AddIcon />}
                                 sx={{ mb: 2, width: '80%' }}
-                                onClick={() => navigate('/admin/create-event')}
+                                onClick={() => navigate('/organizer/create-event')}
                             >
                                 Create New Event
                             </Button>
@@ -228,7 +228,7 @@ export const AdminDashboard = () => {
                                 color="secondary"
                                 startIcon={<SellIcon />}
                                 sx={{ mb: 2, width: '80%' }}
-                                onClick={() => navigate('/admin/my-events')}
+                                onClick={() => navigate('/organizer/my-events')}
                             >
                                 Manage My Events
                             </Button>
@@ -237,7 +237,7 @@ export const AdminDashboard = () => {
                                 color="info"
                                 startIcon={<PeopleIcon />}
                                 sx={{ width: '80%' }}
-                                onClick={() => navigate('/admin/attendees')}
+                                onClick={() => navigate('/organizer/attendees')}
                             >
                                 View Attendees
                             </Button>
@@ -330,7 +330,7 @@ export const AdminDashboard = () => {
                                                 <Button
                                                     variant="outlined"
                                                     size="small"
-                                                    onClick={() => navigate(`/admin/my-events/${event.id}`)}
+                                                    onClick={() => navigate(`/organizer/my-events/${event.id}`)}
                                                 >
                                                     View Details
                                                 </Button>
@@ -340,7 +340,7 @@ export const AdminDashboard = () => {
                                     ))}
                                 </List>
                                 <Box sx={{ mt: 2, textAlign: 'right' }}>
-                                    <Button variant="text" onClick={() => navigate('/admin/my-events')}>View All Events</Button>
+                                    <Button variant="text" onClick={() => navigate('/organizer/my-events')}>View All Events</Button>
                                 </Box>
                             </Paper>
                         </Grid>

@@ -155,11 +155,11 @@ export const AdminEvents = () => {
     };
 
     const handleCreateEventClick = () => {
-        navigate('/admin/create-event');
+        navigate('/organizer/create-event');
     };
 
     const handleViewDetails = (eventId: number) => {
-        navigate(`/admin/my-events/${eventId}`);
+        navigate(`/organizer/my-events/${eventId}`);
     };
 
     // Helper to format dates (assuming backend returns "YYYY-MM-DD")

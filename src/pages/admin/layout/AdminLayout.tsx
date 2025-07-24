@@ -101,14 +101,14 @@ export const AdminLayout = () => {
 
     const sections = [
         { kind: 'header', title: 'Main Menu' },
-        { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin' },
-        { text: 'CheckIn Staff', icon: <ShoppingCartIcon />, path: '/admin/CheckIn-Staff' },
-        { text: 'My Events', icon: <ShoppingCartIcon />, path: '/admin/My-Events' },
+        { text: 'Dashboard', icon: <DashboardIcon />, path: '/organizer' },
+        { text: 'CheckIn Staff', icon: <ShoppingCartIcon />, path: '/organizer/CheckIn-Staff' },
+        { text: 'My Events', icon: <ShoppingCartIcon />, path: '/organizer/My-Events' },
         { kind: 'divider' },
         { kind: 'header', title: 'Analytics' },
-        { text: 'Reports', icon: <BarChartIcon />, path: '/admin/Reports' },
-        { text: 'Payout', icon: <BarChartIcon />, path: "/admin/Payout"},
-        { text: 'Profile', icon: <LayersIcon />, path: '/admin/profile' },
+        { text: 'Reports', icon: <BarChartIcon />, path: '/organizer/Reports' },
+        { text: 'Payout', icon: <BarChartIcon />, path: "/organizer/Payout"},
+        { text: 'Profile', icon: <LayersIcon />, path: '/organizer/profile' },
     ];
 
     const drawer = (
