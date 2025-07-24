@@ -44,7 +44,7 @@ export const EmailVerification = () => {
     useEffect(() => {
         if (isVerificationSuccess) {
             setMessage(verificationData?.message || 'Verification successful! Redirecting...');
-            setTimeout(() => navigate('/login'), 2000); // Redirect to login after 2 seconds
+            setTimeout(() => navigate('/auth'), 2000); // Redirect to login after 2 seconds
         }
     }, [isVerificationSuccess, verificationData, navigate]);
 

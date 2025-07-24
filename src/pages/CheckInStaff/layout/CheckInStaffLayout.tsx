@@ -88,7 +88,7 @@ export const CheckInStaffLayout = () => {
     const handleLogout = () => {
         // Implement your logout logic here
         console.log('Logging out...');
-        navigate('/login'); // Example: navigate to login page
+        navigate('/auth'); // Example: navigate to login page
         handleProfileClose();
     };
 

@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from "react-router-dom";
 import { useLoginUserMutation, useRegisterUserMutation } from '../../queries/general/AuthQuery.ts';
 import { useDispatch } from 'react-redux';
 import * as yup from 'yup';
 import { loginSuccess } from '../../queries/general/ApplicationUserSlice.ts';
+
+// Define your backend's base URL
+const BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8081/api';
 
 export const Auth = () => {
     const [isLoginView, setIsLoginView] = useState(true);
@@ -158,39 +161,78 @@ export const Auth = () => {
         }
     };
 
-    // Removed the redundant useEffect for isLoginSuccess as handleLogin handles success directly.
-
-    // Handle Google OAuth - this often involves redirecting to Google, then handling a callback
+    // Handle Google OAuth - redirect to backend endpoint
     const handleGoogleOAuth = () => {
         console.log("Initiating Google OAuth...");
-        // This is typically handled by directing the user to a Google OAuth URL,
-        // and then Google redirects back to your application with a 'code'
-        // which you then send to your backend for token exchange.
-        // For simplicity, this might be a direct link to your backend's OAuth initiation endpoint
-        // window.location.href = `${BASE_URL}/api/auth/google`; // Example
-        setFormMessage("Google OAuth not implemented in this demo.");
+        // Redirect to your backend's Google OAuth initiation endpoint
+        window.location.href = `${BASE_URL}/auth/google`;
     };
 
-    const handleMicrosoftOAuth = () => {
-        console.log("Initiating Microsoft OAuth...");
-        // window.location.href = `${BASE_URL}/api/auth/microsoft`; // Example
-        setFormMessage("Microsoft OAuth not implemented in this demo.");
-    };
+    // Effect to handle OAuth callback from backend
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        const userId = params.get('userId');
+        const firstName = params.get('firstName');
+        const lastName = params.get('lastName');
+        const email = params.get('email');
+        const role = params.get('role');
+        const error = params.get('error');
+
+        if (token && userId && firstName && lastName && email && role) {
+            const userPayload = {
+                token,
+                user: {
+                    user_id: parseInt(userId),
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: email,
+                    role: role
+                }
+            };
+            dispatch(loginSuccess(userPayload));
+            setFormMessage('Login successful via Google!');
+            // Clean up the URL
+            navigate(window.location.pathname, { replace: true });
+
+            // Redirect based on role
+            if (role === 'admin') navigate('/platformAdmin');
+            else if (role === 'check_in_staff') navigate('/staff');
+            else if (role === 'event_attendee') navigate('/attendee');
+            else navigate('/attendee'); // fallback redirection
+
+        } else if (error) {
+            setFormMessage(`Google authentication failed: ${error.replace(/_/g, ' ')}`);
+            // Clean up the URL
+            navigate(window.location.pathname, { replace: true });
+        }
+    }, [dispatch, navigate]);
 
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-base-200 p-4 font-sans">
-            <div className="w-full max-w-md bg-base-100 shadow-xl border border-base-300 rounded-lg p-6 md:p-8 space-y-6">
-                <div className={"bg-neutral"}>
-                    <h5 className={"text-center font-light"}><NavLink to={'/'}>Tkti</NavLink></h5>
+        // Apply base-200 background and font-sans from custom theme
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-my-base-200)] p-4 font-sans">
+            {/* Apply base-100 background, base-300 border, and enhanced shadow */}
+            <div className="w-full max-w-md bg-[var(--color-my-base-100)] shadow-2xl border border-[var(--color-my-base-300)] rounded-lg p-6 md:p-8 space-y-6">
+                {/* Apply neutral background with padding and rounded corners */}
+                <div className={"bg-[var(--color-my-neutral)] p-4 rounded-md"}>
+                    {/* Apply neutral-content text color and subtle hover effect for the link */}
+                    <h5 className={"text-center font-light text-[var(--color-my-neutral-content)]"}>
+                        <NavLink to={'/'} className="inline-block transition-transform duration-300 hover:scale-105">
+                            {/* Image for Tkti logo */}
+                            <img src={"/src/assets/tiquet-logo-no-background.png"} alt="Tkti Logo" className="mx-auto h-12 w-auto object-contain" />
+                        </NavLink>
+                    </h5>
                 </div>
-                <h1 className="text-4xl font-extrabold text-center mb-4 text-primary">
+                {/* Apply primary text color */}
+                <h1 className="text-4xl font-extrabold text-center mb-4 text-[var(--color-my-primary)]">
                     {isLoginView ? 'Welcome Back' : 'Create an Account'}
                 </h1>
 
                 <div className="flex justify-center mb-6">
                     <button
-                        className={`btn ${isLoginView ? 'btn-primary' : 'btn-ghost'} mr-4`}
+                        // Apply primary background/content for active, ghost for inactive, and smooth transitions
+                        className={`btn ${isLoginView ? 'bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]' : 'bg-transparent text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-300)]'} mr-4 transition-colors duration-300`}
                         onClick={() => {
                             setIsLoginView(true);
                             clearFields(); // Clear messages/errors when switching views
@@ -199,7 +241,8 @@ export const Auth = () => {
                         Login
                     </button>
                     <button
-                        className={`btn ${!isLoginView ? 'btn-secondary' : 'btn-ghost'}`}
+                        // Apply secondary background/content for active, ghost for inactive, and smooth transitions
+                        className={`btn ${!isLoginView ? 'bg-[var(--color-my-secondary)] text-[var(--color-my-secondary-content)] hover:bg-[var(--color-my-secondary-focus)]' : 'bg-transparent text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-300)]'} transition-colors duration-300`}
                         onClick={() => {
                             setIsLoginView(false);
                             clearFields(); // Clear messages/errors when switching views
@@ -209,9 +252,9 @@ export const Auth = () => {
                     </button>
                 </div>
 
-                {/* Display form messages */}
+                {/* Display form messages with consistent padding and rounded corners */}
                 {formMessage && (
-                    <div className={`alert ${formMessage.includes('successful') ? 'alert-success' : 'alert-error'} shadow-lg mb-4`}>
+                    <div className={`alert ${formMessage.includes('successful') ? 'bg-[var(--color-my-success)]' : 'bg-[var(--color-my-error)]'} shadow-lg mb-4 text-[var(--color-my-base-content)] rounded-md py-3 px-4`}>
                         <div>
                             <span>{formMessage}</span>
                         </div>
@@ -221,61 +264,72 @@ export const Auth = () => {
                 <div className="space-y-4">
                     <button
                         onClick={handleGoogleOAuth}
-                        className="btn btn-outline btn-primary w-full text-lg rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center"
+                        // Apply primary outline styles with focus ring
+                        className="btn btn-outline w-full text-lg rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center border-[var(--color-my-primary)] text-[var(--color-my-primary)] hover:bg-[var(--color-my-primary)] hover:text-[var(--color-my-primary-content)] focus:ring focus:ring-[var(--color-my-primary)] focus:ring-opacity-50"
                         disabled={isLoginLoading || isRegisterLoading || isSubmitting}
                     >
+                        {/* Google SVG Icon */}
+                        <svg className="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.24 10.284V14.4H18.444C18.267 15.429 17.65 16.514 16.82 17.291C16.033 18.068 15.035 18.665 13.91 19.043L13.905 19.046L13.91 19.043C12.785 19.421 11.558 19.61 10.285 19.61C6.21 19.61 2.76 16.29 2.76 12.21C2.76 8.13 6.21 4.81 10.285 4.81C12.193 4.81 13.882 5.487 15.222 6.754L18.09 3.886C16.14 2.052 13.36 1 10.285 1C4.61 1 0 5.61 0 12.21C0 18.81 4.61 23.41 10.285 23.41C13.36 23.41 16.14 22.368 18.09 20.534C20.04 18.7 21.095 16.06 21.095 12.21C21.095 11.59 21.028 10.96 20.9 10.38L12.24 10.284Z" fill="#EA4335"/>
+                            <path d="M23.41 12.21C23.41 11.59 23.343 10.96 23.215 10.38L14.555 10.284V14.4H20.759C20.582 15.429 19.965 16.514 19.135 17.291C18.348 18.068 17.35 18.665 16.225 19.043L16.22 19.046L16.225 19.043C15.1 19.421 13.873 19.61 12.6 19.61C8.525 19.61 5.075 16.29 5.075 12.21C5.075 8.13 8.525 4.81 12.6 4.81C14.508 4.81 16.197 5.487 17.537 6.754L20.405 3.886C18.455 2.052 15.675 1 12.6 1C6.935 1 2.325 5.61 2.325 12.21C2.325 18.81 6.935 23.41 12.6 23.41C15.675 23.41 18.455 22.368 20.405 20.534C22.355 18.7 23.41 16.06 23.41 12.21Z" fill="#4285F4"/>
+                            <path d="M2.76 12.21C2.76 8.13 6.21 4.81 10.285 4.81C12.193 4.81 13.882 5.487 15.222 6.754L18.09 3.886C16.14 2.052 13.36 1 10.285 1C4.61 1 0 5.61 0 12.21C0 18.81 4.61 23.41 10.285 23.41C11.558 23.41 12.785 23.221 13.91 22.843L13.905 22.846L13.91 22.843C15.035 22.465 16.033 21.868 16.82 21.091C17.65 20.314 18.267 19.229 18.444 18.2H12.24V14.4H18.444C18.267 15.429 17.65 16.514 16.82 17.291C16.033 18.068 15.035 18.665 13.91 19.043L13.905 19.046L13.91 19.043C12.785 19.421 11.558 19.61 10.285 19.61C6.21 19.61 2.76 16.29 2.76 12.21Z" fill="#FBBC05"/>
+                            <path d="M12.24 10.284V14.4H18.444C18.267 15.429 17.65 16.514 16.82 17.291C16.033 18.068 15.035 18.665 13.91 19.043L13.905 19.046L13.91 19.043C12.785 19.421 11.558 19.61 10.285 19.61C6.21 19.61 2.76 16.29 2.76 12.21C2.76 8.13 6.21 4.81 10.285 4.81C12.193 4.81 13.882 5.487 15.222 6.754L18.09 3.886C16.14 2.052 13.36 1 10.285 1C4.61 1 0 5.61 0 12.21C0 18.81 4.61 23.41 10.285 23.41C13.36 23.41 16.14 22.368 18.09 20.534C20.04 18.7 21.095 16.06 21.095 12.21C21.095 11.59 21.028 10.96 20.9 10.38L12.24 10.284Z" fill="#34A853"/>
+                        </svg>
                         Sign in with Google
                     </button>
-                    <button
-                        onClick={handleMicrosoftOAuth}
-                        className="btn btn-outline btn-info w-full text-lg rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center"
-                        disabled={isLoginLoading || isRegisterLoading || isSubmitting}
-                    >
-                        Sign in with Microsoft
-                    </button>
+                    {/* Removed the "Sign in with Microsoft" button */}
                 </div>
 
-                <div className="divider text-base-content/70">OR</div>
+                {/* Apply base-content/70 for divider text */}
+                <div className="divider text-[var(--color-my-base-content)]/70">OR</div>
 
                 {isLoginView ? (
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">Email</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">Email</span>
                             </label>
                             <input
                                 type="email"
                                 name="email"
                                 placeholder="your_email@example.com"
-                                className={`input input-bordered input-primary w-full rounded-md ${errors.email ? 'input-error' : ''}`}
+                                // Apply primary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-primary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-primary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.email ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.email && <p className="text-error text-sm mt-1">{errors.email}</p>}
+                            {/* Apply error text color */}
+                            {errors.email && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.email}</p>}
                         </div>
 
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">Password</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">Password</span>
                             </label>
                             <input
                                 type="password"
                                 name="password"
                                 placeholder="••••••••"
-                                className={`input input-bordered input-primary w-full rounded-md ${errors.password ? 'input-error' : ''}`}
+                                // Apply primary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-primary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-primary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.password ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.password && <p className="text-error text-sm mt-1">{errors.password}</p>}
+                            {/* Apply error text color */}
+                            {errors.password && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.password}</p>}
                         </div>
 
                         <label className="label">
-                            <a href="#" className="label-text-alt link link-hover text-sm text-primary">
+                            {/* Apply primary text color for link */}
+                            <a href="#" className="label-text-alt link link-hover text-sm text-[var(--color-my-primary)]">
                                 Forgot password?
                             </a>
                         </label>
 
                         <button
                             type="submit"
-                            className="btn btn-primary w-full text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                            // Apply primary background/content, hover states, and focus ring
+                            className="btn w-full text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)] focus:ring focus:ring-[var(--color-my-primary)] focus:ring-opacity-50"
                             disabled={isLoginLoading || isSubmitting}
                         >
                             {isLoginLoading || isSubmitting ? 'Logging In...' : 'Login'}
@@ -285,91 +339,110 @@ export const Auth = () => {
                     <form onSubmit={handleRegister} className="space-y-6">
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">First Name</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">First Name</span>
                             </label>
                             <input
                                 type="text"
                                 name="firstName"
                                 placeholder="First Name"
-                                className={`input input-bordered input-secondary w-full rounded-md ${errors.firstName ? 'input-error' : ''}`}
+                                // Apply secondary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.firstName ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.firstName && <p className="text-error text-sm mt-1">{errors.firstName}</p>}
+                            {/* Apply error text color */}
+                            {errors.firstName && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.firstName}</p>}
                         </div>
 
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">Last Name</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">Last Name</span>
                             </label>
                             <input
                                 type="text"
                                 name="lastName"
                                 placeholder="Last Name"
-                                className={`input input-bordered input-secondary w-full rounded-md ${errors.lastName ? 'input-error' : ''}`}
+                                // Apply secondary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.lastName ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.lastName && <p className="text-error text-sm mt-1">{errors.lastName}</p>}
+                            {/* Apply error text color */}
+                            {errors.lastName && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.lastName}</p>}
                         </div>
 
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">Phone Number</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">Phone Number</span>
                             </label>
                             <input
                                 type="tel"
                                 name="phoneNumber"
                                 placeholder="+1234567890"
-                                className={`input input-bordered input-secondary w-full rounded-md ${errors.phoneNumber ? 'input-error' : ''}`}
+                                // Apply secondary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.contactPhone ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.phoneNumber && <p className="text-error text-sm mt-1">{errors.phoneNumber}</p>}
+                            {/* Apply error text color */}
+                            {errors.contactPhone && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.contactPhone}</p>}
                         </div>
 
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">Email</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">Email</span>
                             </label>
                             <input
                                 type="email"
                                 name="email"
                                 placeholder="your_email@example.com"
-                                className={`input input-bordered input-secondary w-full rounded-md ${errors.email ? 'input-error' : ''}`}
+                                // Apply secondary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.email ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.email && <p className="text-error text-sm mt-1">{errors.email}</p>}
+                            {/* Apply error text color */}
+                            {errors.email && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.email}</p>}
                         </div>
 
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">Password</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">Password</span>
                             </label>
                             <input
                                 type="password"
                                 name="password"
                                 placeholder="••••••••"
-                                className={`input input-bordered input-secondary w-full rounded-md ${errors.password ? 'input-error' : ''}`}
+                                // Apply secondary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.password ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.password && <p className="text-error text-sm mt-1">{errors.password}</p>}
+                            {/* Apply error text color */}
+                            {errors.password && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.password}</p>}
                         </div>
 
                         <div>
                             <label className="label">
-                                <span className="label-text text-base-content">Confirm Password</span>
+                                {/* Apply base-content text color */}
+                                <span className="label-text text-[var(--color-my-base-content)]">Confirm Password</span>
                             </label>
                             <input
                                 type="password"
                                 name="confirmPassword"
                                 placeholder="••••••••"
-                                className={`input input-bordered input-secondary w-full rounded-md ${errors.confirmPassword ? 'input-error' : ''}`}
+                                // Apply secondary border, base-content text, error border, and focus ring
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.confirmPassword ? 'border-[var(--color-my-error)]' : ''}`}
                                 required
                             />
-                            {errors.confirmPassword && <p className="text-error text-sm mt-1">{errors.confirmPassword}</p>}
+                            {/* Apply error text color */}
+                            {errors.confirmPassword && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.confirmPassword}</p>}
                         </div>
 
                         <button
                             type="submit"
-                            className="btn btn-secondary w-full text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                            // Apply secondary background/content, hover states, and focus ring
+                            className="btn w-full text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-[var(--color-my-secondary)] text-[var(--color-my-secondary-content)] hover:bg-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-secondary)] focus:ring-opacity-50"
                             disabled={isRegisterLoading || isSubmitting}
                         >
                             {isRegisterLoading || isSubmitting ? 'Registering...' : 'Register'}

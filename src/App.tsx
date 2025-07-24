@@ -68,11 +68,11 @@ export const AdminRoute = () => {
         role: 'admin'
     }
     if (!user) {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     if (user.role !== 'admin') {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     return <Outlet />;
@@ -86,11 +86,11 @@ export const EventAttendeeRoute = () => {
     }
 
     if (!user) {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     if (user.role !== 'user') {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     return <Outlet />;
@@ -104,11 +104,11 @@ export const CheckInStaffRoute = () => {
     }
 
     if (!user) {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     if (user.role !== 'staff') {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     return <Outlet />;
@@ -121,11 +121,11 @@ export const SuperAdminRoute = () => {
         role: 'platformAdmin'
     }
     if (!user) {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     if(user.role !== 'platformAdmin') {
-        return <Navigate to="/login" />;
+        return <Navigate to="/auth" />;
     }
 
     return <Outlet />;
@@ -161,7 +161,7 @@ const router = createBrowserRouter([
         Component: EventDetail
     },
     {
-        path: "/login",
+        path: "/auth",
         Component: Auth
     },
     {
