@@ -2697,6 +2697,9 @@
       outline-offset: 2px;
     }
   }
+  .cursor-not-allowed {
+    cursor: not-allowed;
+  }
   .cursor-pointer {
     cursor: pointer;
   }
@@ -3006,6 +3009,9 @@
   }
   .bg-gray-100 {
     background-color: var(--color-gray-100);
+  }
+  .bg-gray-400 {
+    background-color: var(--color-gray-400);
   }
   .bg-green-100 {
     background-color: var(--color-green-100);

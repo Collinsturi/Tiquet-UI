@@ -85,7 +85,7 @@ export const Navbar = () => {
                                     ? "border-[var(--color-my-accent)] text-[var(--color-my-accent)] hover:bg-[var(--color-my-accent)] hover:text-white border-2 p-2 rounded-md"
                                     : "border-white text-white hover:bg-white hover:text-black border-2 p-2 rounded-md"
                             }
-                               href="/login">Login</a>
+                               href="/auth">Login</a>
                         </li>
                     </ul>
                 </div>

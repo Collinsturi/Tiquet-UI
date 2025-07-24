@@ -11,11 +11,20 @@ const BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8081/
 export const Auth = () => {
     const [isLoginView, setIsLoginView] = useState(true);
     const navigate = useNavigate();
+    // New state for selected role in registration form
+    const [selectedRole, setSelectedRole] = useState('event_attendee'); // Default role
+    // New state for address
+    const [address, setAddress] = useState('');
+    // State for modal visibility
+    const [showAddressModal, setShowAddressModal] = useState(false);
+
 
     // State for form handling and messages
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [formMessage, setFormMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false); // For overall form submission status
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     // RTK Query hooks
     const [loginUser, { isLoading: isLoginLoading, isSuccess: isLoginSuccess, error: loginError, data: loginData }] = useLoginUserMutation();
@@ -27,16 +36,18 @@ export const Auth = () => {
         password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
     });
 
-    // Yup validation schema for registration
+    // Yup validation schema for registration - Added role and address validation
     const registerSchema = yup.object().shape({
         firstName: yup.string().required('First Name is required'),
         lastName: yup.string().required('Last Name is required'),
         contactPhone: yup.string().required('Phone Number is required'),
-        email: yup.string().email('Invalid email').required('Email is required'),
+        email: yup.string().trim().email('Invalid email').required('Email is required'),
         password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
         confirmPassword: yup.string()
             .oneOf([yup.ref('password'), null], 'Passwords must match')
             .required('Confirm Password is required'),
+        role: yup.string().oneOf(['event_attendee', 'organizer'], 'Invalid role selected').required('Role is required'),
+        address: yup.string().nullable(true).notRequired() // Address is optional for registration
     });
 
     const dispatch = useDispatch();
@@ -44,6 +55,8 @@ export const Auth = () => {
     const clearFields = () => {
         setErrors({});
         setFormMessage('');
+        setSelectedRole('event_attendee'); // Reset role when switching views or clearing fields
+        setAddress(''); // Clear address field
     };
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -52,8 +65,10 @@ export const Auth = () => {
         setFormMessage('');
         setIsSubmitting(true);
 
-        const email = (e.target as HTMLFormElement).email.value;
+        const email = (e.target as HTMLFormElement).email.value.trim();
         const password = (e.target as HTMLFormElement).password.value;
+
+        console.log("Email entered:", `"${email}"`);
 
         const values = { email, password };
 
@@ -110,34 +125,44 @@ export const Auth = () => {
         }
     };
 
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setErrors({});
-        setFormMessage('');
-        setIsSubmitting(true);
+    // Function to handle the actual registration submission
+    const submitRegistration = async (finalAddress: string | null) => {
+        setIsSubmitting(true); // Set submitting true when starting registration
+        setFormMessage(''); // Clear any previous messages
 
-        const firstName = (e.target as HTMLFormElement).firstName.value;
-        const lastName = (e.target as HTMLFormElement).lastName.value;
-        const contactPhone = (e.target as HTMLFormElement).phoneNumber.value;
-        const email = (e.target as HTMLFormElement).email.value;
-        const password = (e.target as HTMLFormElement).password.value;
-        const confirmPassword = (e.target as HTMLFormElement).confirmPassword.value;
+        // Re-gather values from the form, using the finalAddress from modal interaction
+        const form = document.getElementById('registration-form') as HTMLFormElement;
+        const firstName = form.firstName.value;
+        const lastName = form.lastName.value;
+        const contactPhone = form.phoneNumber.value;
+        const email = form.email.value;
+        const password = form.password.value;
+        const confirmPassword = form.confirmPassword.value;
+        const role = selectedRole; // Use selected role from state
 
-        const values = { firstName, lastName, contactPhone, email, password, confirmPassword };
+        const values = {
+            firstName,
+            lastName,
+            contactPhone,
+            email,
+            password,
+            confirmPassword,
+            role,
+            ...(finalAddress ? { address: finalAddress } : {}) // Only include if it has a value
+        };
 
         try {
+            // Validate again, including the final address value
             await registerSchema.validate(values, { abortEarly: false });
 
-            await registerUser({ firstName, lastName, contactPhone, email, password }).unwrap();
+            await registerUser(values).unwrap();
 
-            // setFormMessage("Registration successful! Please log in.");
-            // clearFields();
-            // setIsLoginView(true);
-
+            setFormMessage('Registration successful!');
+            clearFields();
+            setIsLoginView(true); // Automatically switch to login view after successful registration
             navigate('/verify-email', { state: { email } });
 
         } catch (err: any) {
-            // Handle Yup validation errors
             if (err.inner) {
                 const fieldErrors: { [key: string]: string } = {};
                 err.inner.forEach((e: any) => {
@@ -148,7 +173,6 @@ export const Auth = () => {
                 setErrors(fieldErrors);
                 setFormMessage('Please correct the form errors.');
             }
-            // Handle RTK Query / network errors
             else if (err?.data?.message) {
                 setFormMessage(err.data.message);
                 console.error("Registration failed:", err.data);
@@ -157,8 +181,30 @@ export const Auth = () => {
                 console.error('General Error:', err);
             }
         } finally {
-            setIsSubmitting(false); // Reset submitting state
+            setIsSubmitting(false); // Set submitting false after registration attempt
+            setShowAddressModal(false); // Close modal on submission attempt
         }
+    };
+
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrors({});
+        setFormMessage('');
+        setIsSubmitting(true); // Set submitting true when starting the process
+
+        const form = e.target as HTMLFormElement;
+        const userAddress = form.address.value; // Get current address value from form
+
+        // If address is empty, show the modal
+        if (!userAddress) {
+            setShowAddressModal(true);
+            setIsSubmitting(false); // Release submitting state for the main form while modal is open
+            return;
+        }
+
+        // If address is filled, proceed directly
+        await submitRegistration(userAddress);
     };
 
     // Handle Google OAuth - redirect to backend endpoint
@@ -336,7 +382,7 @@ export const Auth = () => {
                         </button>
                     </form>
                 ) : (
-                    <form onSubmit={handleRegister} className="space-y-6">
+                    <form onSubmit={handleRegister} className="space-y-6" id="registration-form"> {/* Added id="registration-form" */}
                         <div>
                             <label className="label">
                                 {/* Apply base-content text color */}
@@ -439,17 +485,110 @@ export const Auth = () => {
                             {errors.confirmPassword && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.confirmPassword}</p>}
                         </div>
 
+                        {/* New Address Field */}
+                        <div>
+                            <label className="label">
+                                <span className="label-text text-[var(--color-my-base-content)]">Address (Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="address"
+                                placeholder="Your full address"
+                                className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.address ? 'border-[var(--color-my-error)]' : ''}`}
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                            />
+                            {errors.address && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.address}</p>}
+                        </div>
+
+                        {/* Role Selection Dropdown */}
+                        <div>
+                            <label className="label">
+                                <span className="label-text text-[var(--color-my-base-content)]">Register as</span>
+                            </label>
+                            <select
+                                name="role"
+                                className={`select select-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.role ? 'border-[var(--color-my-error)]' : ''}`}
+                                value={selectedRole}
+                                onChange={(e) => setSelectedRole(e.target.value)}
+                                required
+                            >
+                                <option value="event_attendee">Event Attendee</option>
+                                <option value="organizer">Organizer</option>
+                            </select>
+                            {errors.role && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.role}</p>}
+                        </div>
+
                         <button
                             type="submit"
-                            // Apply secondary background/content, hover states, and focus ring
-                            className="btn w-full text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 bg-[var(--color-my-secondary)] text-[var(--color-my-secondary-content)] hover:bg-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-secondary)] focus:ring-opacity-50"
+                            // Conditional styling for loading state
+                            className={`btn w-full text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300
+                                ${isRegisterLoading || isSubmitting
+                                ? 'bg-gray-400 text-gray-700 cursor-not-allowed' // Muted gray when loading
+                                : 'bg-[var(--color-my-secondary)] text-[var(--color-my-secondary-content)] hover:bg-[var(--color-my-secondary-focus)]'
+                            }
+                                focus:ring focus:ring-[var(--color-my-secondary)] focus:ring-opacity-50`}
                             disabled={isRegisterLoading || isSubmitting}
                         >
-                            {isRegisterLoading || isSubmitting ? 'Registering...' : 'Register'}
+                            {isRegisterLoading || isSubmitting ? (
+                                <>
+                                    <span className="loading loading-spinner"></span>
+                                    Registering...
+                                </>
+                            ) : (
+                                'Register'
+                            )}
                         </button>
                     </form>
                 )}
             </div>
+
+            {/* Address Modal */}
+            {showAddressModal && (
+                <div className="modal modal-open">
+                    <div className="modal-box bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] shadow-lg rounded-lg p-6">
+                        <h3 className="font-bold text-lg text-[var(--color-my-primary)] mb-4">Why We Ask for Your Address</h3>
+                        <p className="py-4">
+                            Providing your address helps us show you events happening close to your location,
+                            making it easier for you to discover and attend events relevant to you.
+                            You can always add or update it later in your profile settings.
+                        </p>
+                        <div className="form-control w-full mb-4">
+                            <label className="label">
+                                <span className="label-text text-[var(--color-my-base-content)]">Your Address (Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Enter your address here..."
+                                className="input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50"
+                                value={address} // Bind to the address state
+                                onChange={(e) => setAddress(e.target.value)}
+                                disabled={isSubmitting} // Disable input while submitting
+                            />
+                        </div>
+                        <div className="modal-action">
+                            <button
+                                className={`btn rounded-md
+                                    ${isSubmitting
+                                    ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                                    : 'bg-[var(--color-my-secondary)] text-[var(--color-my-secondary-content)] hover:bg-[var(--color-my-secondary-focus)]'
+                                }`}
+                                onClick={() => submitRegistration(address || null)} // Pass current address (or null if empty)
+                                disabled={isSubmitting} // Disable button while submitting
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <span className="loading loading-spinner"></span>
+                                        Proceeding...
+                                    </>
+                                ) : (
+                                    'Proceed with Registration'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -23,7 +23,7 @@ export type RegisterRequest = {
     phoneNumber: string;
     email: string;
     password: string;
-    // Note: confirmPassword is a frontend-only validation, not typically sent to the backend
+    role: string
 };
 
 export type TRegisterResponse = {
