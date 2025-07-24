@@ -212,8 +212,8 @@ export const EventDetails = () => {
     if (isLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <CircularProgress />
-                <Typography sx={{ ml: 2 }}>Loading event details...</Typography>
+                <CircularProgress sx={{ color: 'var(--color-my-primary)' }} />
+                <Typography sx={{ ml: 2, color: 'var(--color-my-base-content)' }}>Loading event details...</Typography>
             </Box>
         );
     }
@@ -222,9 +222,9 @@ export const EventDetails = () => {
     if (error || !eventData) {
         return (
             <Box sx={{ flexGrow: 1, p: 3 }}>
-                <Alert severity="error" sx={{ mb: 2 }}>
+                <Alert severity="error" sx={{ mb: 2, bgcolor: 'var(--color-my-error)', color: 'var(--color-my-error-content)' }}>
                     {message.text || "Could not load event details. Please ensure the event ID is valid."}
-                    <Button variant="contained" sx={{ mt: 2, ml: 2 }} onClick={() => navigate('/attendee/events')}>Back to Events</Button>
+                    <Button variant="contained" sx={{ mt: 2, ml: 2, bgcolor: 'var(--color-my-primary)', color: 'var(--color-my-primary-content)', '&:hover': { bgcolor: 'var(--color-my-primary-focus)' } }} onClick={() => navigate('/attendee/events')}>Back to Events</Button>
                 </Alert>
             </Box>
         );
@@ -258,9 +258,10 @@ export const EventDetails = () => {
     const faqs: any[] = [];     // Default to empty array, added type
 
     return (
-        <div className="container mx-auto p-4 md:p-8">
+        // Apply base-200 background and font-sans from custom theme
+        <div className="min-h-screen flex flex-col bg-[var(--color-my-base-200)] font-sans container mx-auto p-4 md:p-8">
             {/* Hero Section */}
-            <div className="hero bg-base-200 rounded-box shadow-xl overflow-hidden mb-8">
+            <div className="hero bg-[var(--color-my-base-200)] rounded-box shadow-xl overflow-hidden mb-8">
                 <div className="hero-content flex-col lg:flex-row p-0">
                     <img
                         src={eventPoster}
@@ -269,29 +270,29 @@ export const EventDetails = () => {
                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src="https://placehold.co/800x400/E0E0E0/000000?text=Event+Image"; }}
                     />
                     <div className="p-6 lg:p-8 w-full lg:w-1/2">
-                        <h1 className="text-4xl font-bold mb-2">{eventData.title}</h1> {/* Directly access eventData.title */}
-                        <p className="text-lg text-base-content/70 mb-4">By {venue?.name || 'Unknown Organizer'}</p> {/* Use venue name as organizer */}
+                        <h1 className="text-4xl font-bold mb-2 text-[var(--color-my-primary)]">{eventData.title}</h1> {/* Directly access eventData.title */}
+                        <p className="text-lg text-[var(--color-my-base-content)]/70 mb-4">By {venue?.name || 'Unknown Organizer'}</p> {/* Use venue name as organizer */}
 
                         <div className="space-y-2 mb-6">
-                            <div className="flex items-center gap-2 text-base-content/80">
-                                <CalendarTodayIcon className="w-5 h-5" />
+                            <div className="flex items-center gap-2 text-[var(--color-my-base-content)]/80">
+                                <CalendarTodayIcon className="w-5 h-5 text-[var(--color-my-accent)]" />
                                 <span>{formatDateTime(`${eventData.eventDate}T${eventData.eventTime}`)}</span> {/* Directly access eventData.eventDate/Time */}
                             </div>
-                            <div className="flex items-center gap-2 text-base-content/80">
-                                <AccessTimeIcon className="w-5 h-5" />
+                            <div className="flex items-center gap-2 text-[var(--color-my-base-content)]/80">
+                                <AccessTimeIcon className="w-5 h-5 text-[var(--color-my-accent)]" />
                                 <span>Ends: {formatTimeOnly(`${eventData.eventDate}T${eventData.eventTime}`)}</span> {/* Assuming end time is same as start for simplicity if not provided */}
                             </div>
-                            <div className="flex items-center gap-2 text-base-content/80">
-                                <LocationOnIcon className="w-5 h-5" />
+                            <div className="flex items-center gap-2 text-[var(--color-my-base-content)]/80">
+                                <LocationOnIcon className="w-5 h-5 text-[var(--color-my-accent)]" />
                                 <span>{venue?.address || eventData.venueAddress || 'Venue Not Specified'}</span> {/* Corrected venue address access */}
                             </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                            <button className="btn btn-outline btn-sm">
+                            <button className="btn btn-outline btn-sm border-[var(--color-my-primary)] text-[var(--color-my-primary)] hover:bg-[var(--color-my-primary)] hover:text-[var(--color-my-primary-content)]">
                                 <AddAlertIcon className="w-4 h-4" /> Add to Calendar
                             </button>
-                            <button className="btn btn-outline btn-sm">
+                            <button className="btn btn-outline btn-sm border-[var(--color-my-primary)] text-[var(--color-my-primary)] hover:bg-[var(--color-my-primary)] hover:text-[var(--color-my-primary-content)]">
                                 <ShareIcon className="w-4 h-4" /> Share Event
                             </button>
                         </div>
@@ -300,7 +301,7 @@ export const EventDetails = () => {
             </div>
 
             {message.text && (
-                <div role="alert" className={`alert ${message.type === 'success' ? 'alert-success' : (message.type === 'info' ? 'alert-info' : 'alert-error')} mb-6`}>
+                <div role="alert" className={`alert ${message.type === 'success' ? 'bg-[var(--color-my-success)] text-[var(--color-my-success-content)]' : (message.type === 'info' ? 'bg-[var(--color-my-info)] text-[var(--color-my-info-content)]' : 'bg-[var(--color-my-error)] text-[var(--color-my-error-content)]')} mb-6`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span>{message.text}</span>
                 </div>
@@ -308,59 +309,62 @@ export const EventDetails = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Event Description */}
-                <div className="lg:col-span-2 card bg-base-100 shadow-xl p-6">
-                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                        <InfoIcon className="w-6 h-6" /> Event Description
+                <div className="lg:col-span-2 card bg-[var(--color-my-base-100)] shadow-xl p-6">
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-[var(--color-my-secondary)]">
+                        <InfoIcon className="w-6 h-6 text-[var(--color-my-accent)]" /> Event Description
                     </h2>
-                    <p className="whitespace-pre-line text-base-content/80">
+                    <p className="whitespace-pre-line text-[var(--color-my-base-content)]/80">
                         {eventDescription}
                     </p>
                 </div>
 
                 {/* Tickets Section (Sticky on larger screens) */}
                 <div className="lg:col-span-1">
-                    <div className="sticky top-4 card bg-base-100 shadow-xl p-6">
-                        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                            <ConfirmationNumberIcon className="w-6 h-6" /> Get Tickets
+                    <div className="sticky top-4 card bg-[var(--color-my-base-100)] shadow-xl p-6">
+                        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-[var(--color-my-secondary)]">
+                            <ConfirmationNumberIcon className="w-6 h-6 text-[var(--color-my-accent)]" /> Get Tickets
                         </h2>
                         <div className="space-y-4 mb-6">
                             {ticketTypes.length > 0 ? (
                                 ticketTypes.map(type => (
-                                    <div key={type.id} className="flex items-center justify-between border-b border-base-200 pb-2">
+                                    <div key={type.id} className="flex items-center justify-between border-b border-[var(--color-my-base-200)] pb-2">
                                         <div>
-                                            <p className="font-semibold text-lg">{type.typeName}</p> {/* Use typeName */}
-                                            <p className="text-sm text-base-content/70">Available: {type.quantityAvailable}</p> {/* Use quantityAvailable */}
+                                            <p className="font-semibold text-lg text-[var(--color-my-base-content)]">{type.typeName}</p> {/* Use typeName */}
+                                            <p className="text-sm text-[var(--color-my-base-content)]/70">Available: {type.quantityAvailable}</p> {/* Use quantityAvailable */}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
-                                                className="btn btn-square btn-xs"
+                                                className="btn btn-square btn-xs bg-[var(--color-my-accent)] text-[var(--color-my-accent-content)] hover:bg-[var(--color-my-accent-focus)]"
                                                 onClick={() => handleQuantityChange(type.id, -1)}
                                                 disabled={(ticketQuantities[type.id] || 0) === 0}
                                             >-</button>
-                                            <span className="font-bold text-lg w-8 text-center">
+                                            <span className="font-bold text-lg w-8 text-center text-[var(--color-my-base-content)]">
                                                 {ticketQuantities[type.id] || 0}
                                             </span>
                                             <button
-                                                className="btn btn-square btn-xs"
+                                                className="btn btn-square btn-xs bg-[var(--color-my-accent)] text-[var(--color-my-accent-content)] hover:bg-[var(--color-my-accent-focus)]"
                                                 onClick={() => handleQuantityChange(type.id, 1)}
                                                 disabled={(ticketQuantities[type.id] || 0) >= type.quantityAvailable}
                                             >+</button>
                                         </div>
-                                        <span className="font-bold text-lg text-primary">${type.price.toLocaleString('en-KE')}</span>
+                                        <span className="font-bold text-lg text-[var(--color-my-primary)]">${type.price.toLocaleString('en-KE')}</span>
                                     </div>
                                 ))
                             ) : (
-                                <Alert severity="info">No ticket types available for this event.</Alert>
+                                <div role="alert" className="alert bg-[var(--color-my-info)] text-[var(--color-my-info-content)]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>No ticket types available for this event.</span>
+                                </div>
                             )}
                         </div>
 
-                        <div className="flex justify-between items-center text-xl font-bold mb-4">
+                        <div className="flex justify-between items-center text-xl font-bold mb-4 text-[var(--color-my-base-content)]">
                             <span>Total:</span>
                             <span>${calculateTotalPrice().toLocaleString('en-KE')}</span>
                         </div>
 
                         <button
-                            className="btn btn-primary btn-block"
+                            className="btn btn-block bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
                             onClick={() => buyTicketsModalRef.current?.showModal()}
                             disabled={calculateTotalPrice() === 0 || buyTicketLoading}
                         >
@@ -373,21 +377,21 @@ export const EventDetails = () => {
 
             {/* Speakers Section (if available) - Will only render if `speakers` array is populated by API */}
             {speakers && speakers.length > 0 && (
-                <div className="card bg-base-100 shadow-xl p-6 mt-8">
-                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                        <PersonOutlineIcon className="w-6 h-6" /> Speakers
+                <div className="card bg-[var(--color-my-base-100)] shadow-xl p-6 mt-8">
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-[var(--color-my-secondary)]">
+                        <PersonOutlineIcon className="w-6 h-6 text-[var(--color-my-accent)]" /> Speakers
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {speakers.map(speaker => (
-                            <div key={speaker.id} className="card bg-base-200 shadow-sm p-4 text-center">
+                            <div key={speaker.id} className="card bg-[var(--color-my-base-200)] shadow-sm p-4 text-center">
                                 <div className="avatar mb-2">
                                     <div className="w-24 mask mask-squircle">
                                         <img src={`https://placehold.co/100x100/ADD8E6/000000?text=${speaker.name.split(' ').map(n => n[0]).join('')}`} alt={speaker.name} />
                                     </div>
                                 </div>
-                                <h3 className="text-lg font-semibold">{speaker.name}</h3>
-                                <p className="text-sm text-base-content/70 mb-1">{speaker.title}</p>
-                                <p className="text-xs text-base-content/60">{speaker.bio}</p>
+                                <h3 className="text-lg font-semibold text-[var(--color-my-base-content)]">{speaker.name}</h3>
+                                <p className="text-sm text-[var(--color-my-base-content)]/70 mb-1">{speaker.title}</p>
+                                <p className="text-xs text-[var(--color-my-base-content)]/60">{speaker.bio}</p>
                             </div>
                         ))}
                     </div>
@@ -396,9 +400,9 @@ export const EventDetails = () => {
 
             {/* Location/Map Section */}
             {eventMapUrl && ( // Render if map URL is available
-                <div className="card bg-base-100 shadow-xl p-6 mt-8">
-                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                        <LocationOnIcon className="w-6 h-6" /> Location
+                <div className="card bg-[var(--color-my-base-100)] shadow-xl p-6 mt-8">
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-[var(--color-my-secondary)]">
+                        <LocationOnIcon className="w-6 h-6 text-[var(--color-my-accent)]" /> Location
                     </h2>
                     <div className="rounded-lg overflow-hidden h-64 w-full">
                         <iframe
@@ -416,24 +420,24 @@ export const EventDetails = () => {
                             title="Event Location Map"
                         ></iframe>
                     </div>
-                    <p className="text-base-content/70 mt-4">{venue?.address || eventData.venueAddress || 'Venue Not Specified'}</p> {/* Corrected venue address access */}
+                    <p className="text-[var(--color-my-base-content)]/70 mt-4">{venue?.address || eventData.venueAddress || 'Venue Not Specified'}</p> {/* Corrected venue address access */}
                 </div>
             )}
 
             {/* FAQs Section (Optional) - Will only render if `faqs` array is populated by API */}
             {faqs && faqs.length > 0 && (
-                <div className="card bg-base-100 shadow-xl p-6 mt-8">
-                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                        <InfoIcon className="w-6 h-6" /> FAQs
+                <div className="card bg-[var(--color-my-base-100)] shadow-xl p-6 mt-8">
+                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-[var(--color-my-secondary)]">
+                        <InfoIcon className="w-6 h-6 text-[var(--color-my-accent)]" /> FAQs
                     </h2>
                     <div className="join join-vertical w-full">
                         {faqs.map((faq, index) => (
-                            <div key={index} className="collapse collapse-arrow join-item border border-base-300">
+                            <div key={index} className="collapse collapse-arrow join-item border border-[var(--color-my-base-300)]">
                                 <input type="radio" name="my-accordion-4" defaultChecked={index === 0} />
-                                <div className="collapse-title text-xl font-medium">
+                                <div className="collapse-title text-xl font-medium text-[var(--color-my-base-content)]">
                                     {faq.question}
                                 </div>
-                                <div className="collapse-content">
+                                <div className="collapse-content text-[var(--color-my-base-content)]/80">
                                     <p>{faq.answer}</p>
                                 </div>
                             </div>
@@ -444,15 +448,15 @@ export const EventDetails = () => {
 
             {/* Buy Tickets Confirmation Modal (DaisyUI) */}
             <dialog id="buy_tickets_modal" className="modal" ref={buyTicketsModalRef}>
-                <div className="modal-box">
-                    <h3 className="font-bold text-lg flex items-center gap-2">
+                <div className="modal-box bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)]">
+                    <h3 className="font-bold text-lg flex items-center gap-2 text-[var(--color-my-primary)]">
                         <ShoppingCartIcon className="w-6 h-6" /> Confirm Your Order
                     </h3>
                     <p className="py-4">You are about to purchase tickets for **{eventData?.title}**:</p> {/* Directly use eventData.title */}
                     <div className="overflow-x-auto mb-4">
                         <table className="table w-full">
                             <thead>
-                            <tr>
+                            <tr className="text-[var(--color-my-base-content)]">
                                 <th>Ticket Type</th>
                                 <th>Quantity</th>
                                 <th className="text-right">Price</th>
@@ -466,28 +470,28 @@ export const EventDetails = () => {
                                     const subtotal = type.price * qty;
                                     return (
                                         <tr key={type.id}>
-                                            <td>{type.typeName}</td>
-                                            <td>{qty}</td>
-                                            <td className="text-right">${type.price.toLocaleString('en-KE')}</td>
-                                            <td className="text-right">${subtotal.toLocaleString('en-KE')}</td>
+                                            <td className="text-[var(--color-my-base-content)]">{type.typeName}</td>
+                                            <td className="text-[var(--color-my-base-content)]">{qty}</td>
+                                            <td className="text-right text-[var(--color-my-base-content)]">${type.price.toLocaleString('en-KE')}</td>
+                                            <td className="text-right text-[var(--color-my-base-content)]">${subtotal.toLocaleString('en-KE')}</td>
                                         </tr>
                                     );
                                 })}
                             </tbody>
                             <tfoot>
                             <tr>
-                                <th colSpan="3" className="text-right">Total Payable:</th>
-                                <th className="text-right text-lg text-primary">${calculateTotalPrice().toLocaleString('en-KE')}</th>
+                                <th colSpan="3" className="text-right text-[var(--color-my-base-content)]">Total Payable:</th>
+                                <th className="text-right text-lg text-[var(--color-my-primary)]">${calculateTotalPrice().toLocaleString('en-KE')}</th>
                             </tr>
                             </tfoot>
                         </table>
                     </div>
                     <div className="modal-action">
                         <form method="dialog">
-                            <button className="btn btn-ghost" disabled={buyTicketLoading}>Cancel</button>
+                            <button className="btn btn-ghost text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-300)]" disabled={buyTicketLoading}>Cancel</button>
                         </form>
                         <button
-                            className="btn btn-primary"
+                            className="btn bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
                             onClick={handleProceedToCheckout}
                             disabled={buyTicketLoading}
                         >

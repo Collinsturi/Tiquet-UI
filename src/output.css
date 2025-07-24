@@ -93,6 +93,7 @@
     --color-my-secondary-content: #f7fdfd;
     --color-my-accent: #739cd1;
     --color-my-accent-focus: #5f85b6;
+    --color-my-accent-content: #f7fdfd;
     --color-my-neutral: #1a202c;
     --color-my-neutral-content: #f7fdfd;
     --color-my-base-100: #f7fdfd;
@@ -2911,6 +2912,9 @@
   .border-\[var\(--color-my-accent\)\] {
     border-color: var(--color-my-accent);
   }
+  .border-\[var\(--color-my-base-200\)\] {
+    border-color: var(--color-my-base-200);
+  }
   .border-\[var\(--color-my-base-300\)\] {
     border-color: var(--color-my-base-300);
   }
@@ -2961,6 +2965,9 @@
   }
   .bg-\[var\(--color-my-accent\)\/95\] {
     background-color: var(--color-my-accent)/95;
+  }
+  .bg-\[var\(--color-my-accent\)\] {
+    background-color: var(--color-my-accent);
   }
   .bg-\[var\(--color-my-base-100\)\] {
     background-color: var(--color-my-base-100);
@@ -3243,8 +3250,17 @@
   .text-\[var\(--color-my-accent\)\] {
     color: var(--color-my-accent);
   }
+  .text-\[var\(--color-my-accent-content\)\] {
+    color: var(--color-my-accent-content);
+  }
   .text-\[var\(--color-my-base-content\)\] {
     color: var(--color-my-base-content);
+  }
+  .text-\[var\(--color-my-base-content\)\]\/60 {
+    color: color-mix(in srgb, #1a202c 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-my-base-content) 60%, transparent);
+    }
   }
   .text-\[var\(--color-my-base-content\)\]\/70 {
     color: color-mix(in srgb, #1a202c 70%, transparent);
@@ -3252,11 +3268,23 @@
       color: color-mix(in oklab, var(--color-my-base-content) 70%, transparent);
     }
   }
+  .text-\[var\(--color-my-base-content\)\]\/80 {
+    color: color-mix(in srgb, #1a202c 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-my-base-content) 80%, transparent);
+    }
+  }
   .text-\[var\(--color-my-error\)\] {
     color: var(--color-my-error);
   }
+  .text-\[var\(--color-my-error-content\)\] {
+    color: var(--color-my-error-content);
+  }
   .text-\[var\(--color-my-info\)\] {
     color: var(--color-my-info);
+  }
+  .text-\[var\(--color-my-info-content\)\] {
+    color: var(--color-my-info-content);
   }
   .text-\[var\(--color-my-neutral-content\)\] {
     color: var(--color-my-neutral-content);
@@ -3275,6 +3303,9 @@
   }
   .text-\[var\(--color-my-success\)\] {
     color: var(--color-my-success);
+  }
+  .text-\[var\(--color-my-success-content\)\] {
+    color: var(--color-my-success-content);
   }
   .text-base-content {
     color: var(--color-base-content);
@@ -3656,6 +3687,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-my-accent);
+      }
+    }
+  }
+  .hover\:bg-\[var\(--color-my-accent-focus\)\] {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-my-accent-focus);
       }
     }
   }

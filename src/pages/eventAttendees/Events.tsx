@@ -126,7 +126,6 @@ const getRecommendedEvents = (user: any, events: APIEventResponseItem[], userInt
 };
 
 
-// --- Component Start ---
 export const AttendeeEvents = () => {
     const navigate = useNavigate();
     const user = useSelector((state: RootState) => state.user.user);
