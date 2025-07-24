@@ -3559,9 +3559,19 @@
   .radio-primary {
     --input-color: var(--color-primary);
   }
+  .peer-checked\:bg-\[var\(--color-my-primary\)\] {
+    &:is(:where(.peer):checked ~ *) {
+      background-color: var(--color-my-primary);
+    }
+  }
   .peer-checked\:bg-primary {
     &:is(:where(.peer):checked ~ *) {
       background-color: var(--color-primary);
+    }
+  }
+  .peer-checked\:text-\[var\(--color-my-primary-content\)\] {
+    &:is(:where(.peer):checked ~ *) {
+      color: var(--color-my-primary-content);
     }
   }
   .peer-checked\:text-primary-content {
