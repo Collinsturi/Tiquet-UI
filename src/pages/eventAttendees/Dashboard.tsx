@@ -168,6 +168,10 @@ export const Dashboard = () => {
         }
     }, [ticketsData, userId, isLoading, error]);
 
+    const handleViewTicketDetails = (ticketId) => {
+        navigate(`/attendee/tickets/${ticketId}`);
+    };
+
 
     if (isLoading) {
         return (
@@ -325,7 +329,11 @@ export const Dashboard = () => {
                                             color={ticket.checkInStatus === 'Checked In' ? 'success' : 'default'}
                                             size="small"
                                         />
-                                        <Button variant="text" size="small" sx={{ ml: 1 }}>View Details</Button>
+                                        <Button variant="text"
+                                                size="small"
+                                                sx={{ ml: 1 }}
+                                                onClick={() => handleViewTicketDetails(ticket.id)}
+                                        >View Details</Button>
                                     </Box>
                                 </Card>
                             </Grid>

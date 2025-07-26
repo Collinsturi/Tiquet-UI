@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles'; // Import useTheme
 import {
     AppBar,
     Box,
@@ -26,18 +26,19 @@ import MenuIcon from '@mui/icons-material/Menu'; // Hamburger icon
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import LayersIcon from '@mui/icons-material/Layers';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber'; // Icon for My tickets
+import EventIcon from '@mui/icons-material/Event'; // Icon for Events
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // Icon for Profile
 import SearchIcon from '@mui/icons-material/Search';
-import NotificationsIcon from '@mui/icons-material/Notifications'; // Import NotificationsIcon
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import {useSelector} from "react-redux";
 
 const drawerWidth = 240;
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
     borderRadius: theme.shape.borderRadius,
-    backgroundColor: '#f1f1f1',
+    backgroundColor: 'var(--color-my-base-100)', // Use custom theme variable
     marginRight: theme.spacing(2),
     marginLeft: 0,
     width: '100%',
@@ -54,11 +55,11 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: 'black',
+    color: 'var(--color-my-base-content)', // Use custom theme variable
 }));
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
-    color: 'black',
+    color: 'var(--color-my-base-content)', // Use custom theme variable
     '& .MuiInputBase-input': {
         padding: theme.spacing(1, 1, 1, 0),
         paddingLeft: `calc(1em + ${theme.spacing(4)})`,
@@ -69,10 +70,12 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 export const EventAttendeesLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const theme = useTheme(); // Access the theme object
     const [mobileOpen, setMobileOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(true); // Initial state for desktop drawer
     const [notificationAnchorEl, setNotificationAnchorEl] = useState(null); // State for notification dropdown
     const [profileAnchorEl, setProfileAnchorEl] = useState(null); // State for profile dropdown
+    const user = useSelector((state: RootState) => state.user.user);
 
     const handleMobileToggle = () => setMobileOpen(!mobileOpen);
 
@@ -102,40 +105,37 @@ export const EventAttendeesLayout = () => {
     const sections = [
         { kind: 'header', title: 'Main Menu' },
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/attendee' },
-        { text: 'My tickets', icon: <ShoppingCartIcon />, path: '/attendee/My-tickets' },
-        { text: 'Events', icon: <LayersIcon />, path: '/attendee/events'},
-        { text: 'Profile', icon: <LayersIcon />, path: '/attendee/profile' },
+        { text: 'My tickets', icon: <ConfirmationNumberIcon />, path: '/attendee/My-tickets' }, // Updated icon
+        { text: 'Events', icon: <EventIcon />, path: '/attendee/events'}, // Updated icon
+        { text: 'Profile', icon: <AccountCircleIcon />, path: '/attendee/profile' }, // Updated icon
     ];
 
     const drawer = (
         <div>
-            <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', backgroundColor: 'var(--color-my-neutral)' }}> {/* Bolder color for Toolbar in drawer */}
                 {drawerOpen && (
                     <img
                         src={"/src/assets/tiquet-logo-no-background.png"}
                         alt={"Logo"}
-                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`}
                     />
                 )}
-                {/* The chevron button for closing/opening the drawer, only visible when drawer is open on large screens */}
-                {/* On large screens, the hamburger in AppBar will handle the initial toggle */}
-                {/* We can keep this for fine-tuning the close if needed, but it's redundant if AppBar handles all toggling */}
-                {/* For consistency, we might remove this and solely rely on the AppBar hamburger for desktop too */}
-                {/* For now, let's keep it but note its redundancy if AppBar's hamburger controls everything */}
-                <IconButton onClick={handleDrawerToggle}>
+                <IconButton onClick={handleDrawerToggle} sx={{ color: 'var(--color-my-neutral-content)' }}> {/* Text color for icons on bolder background */}
                     {drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
                 </IconButton>
             </Toolbar>
 
-            <Divider />
+            <Divider sx={{ borderColor: 'var(--color-my-base-300)' }} />
 
             {/* Mobile-specific content: Search & Avatar */}
-            <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', px: 2, mb: 2 }}>
-                <div className={"flex flex-row gap-3"}>
-                    <Avatar alt="AdminUser" src="https://i.pravatar.cc/300" />
-                    <Typography className={"pt-2"}>AdminUser Name</Typography>
+            <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', px: 2, mb: 2, backgroundColor: 'var(--color-my-neutral)' }}> {/* Bolder color for mobile drawer header */}
+                <div className={"flex flex-row gap-3 pt-2"}>
+                    <Avatar alt="AdminUser"
+                            src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
+                            sx={{ border: '2px solid var(--color-my-primary)' }} />
+                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>AdminUser Name</Typography> {/* Text color on bolder background */}
                 </div>
-                <Search >
+                <Search sx={{ mt: 2 }}>
                     <SearchIconWrapper>
                         <SearchIcon />
                     </SearchIconWrapper>
@@ -143,18 +143,18 @@ export const EventAttendeesLayout = () => {
                 </Search>
             </Box>
 
-            <List>
+            <List sx={{ backgroundColor: 'var(--color-my-neutral)' }}> {/* Bolder color for drawer list background */}
                 {sections.map((item, index) => {
                     if (item.kind === 'header') {
                         return drawerOpen ? (
-                            <Typography key={index} variant="caption" sx={{ px: 2, py: 1, fontWeight: 'bold', color: 'gray' }}>
+                            <Typography key={index} variant="caption" sx={{ px: 2, py: 1, fontWeight: 'bold', color: 'var(--color-my-neutral-content)' }}> {/* Text color on bolder background */}
                                 {item.title}
                             </Typography>
                         ) : null;
                     }
 
                     if (item.kind === 'divider') {
-                        return <Divider key={index} sx={{ my: 1 }} />;
+                        return <Divider key={index} sx={{ my: 1, borderColor: 'var(--color-my-base-300)' }} />;
                     }
 
                     return (
@@ -165,6 +165,10 @@ export const EventAttendeesLayout = () => {
                                     minHeight: 48,
                                     justifyContent: drawerOpen ? 'initial' : 'center',
                                     px: 2.5,
+                                    backgroundColor: location.pathname === item.path ? 'var(--color-my-primary-focus)' : 'transparent',
+                                    '&:hover': {
+                                        backgroundColor: 'var(--color-my-base-300)', // Adjusted hover for list items on darker background
+                                    },
                                 }}
                                 onClick={() => navigate(item.path)}
                             >
@@ -173,12 +177,13 @@ export const EventAttendeesLayout = () => {
                                         minWidth: 0,
                                         mr: drawerOpen ? 3 : 'auto',
                                         justifyContent: 'center',
+                                        color: location.pathname === item.path ? 'var(--color-my-primary-content)' : 'var(--color-my-neutral-content)', // Text color on bolder background
                                     }}
                                 >
                                     {item.icon}
                                 </ListItemIcon>
                                 <Collapse in={drawerOpen} orientation="horizontal">
-                                    <ListItemText primary={item.text} />
+                                    <ListItemText primary={item.text} sx={{ color: location.pathname === item.path ? 'var(--color-my-primary-content)' : 'var(--color-my-neutral-content)' }} /> {/* Text color on bolder background */}
                                 </Collapse>
                             </ListItemButton>
                         </ListItem>
@@ -191,7 +196,7 @@ export const EventAttendeesLayout = () => {
     return (
         <Box sx={{ display: 'flex' }}>
             <CssBaseline />
-            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1,  backgroundColor: 'var(--color-my-primary)',}}>
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1,  backgroundColor: 'var(--color-my-neutral)', color: 'var(--color-my-primary-content)' }}>
                 <Toolbar>
                     {/* Hamburger button for mobile screens */}
                     <IconButton
@@ -218,7 +223,7 @@ export const EventAttendeesLayout = () => {
                     <img
                         src={"/src/assets/tiquet-logo-no-background.png"}
                         alt={"Logo"}
-                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`}
                     />
 
                     {/* Hide on small screens */}
@@ -260,17 +265,23 @@ export const EventAttendeesLayout = () => {
                             vertical: 'top',
                             horizontal: 'right',
                         }}
+                        PaperProps={{
+                            sx: {
+                                backgroundColor: 'var(--color-my-base-100)',
+                                color: 'var(--color-my-base-content)',
+                            }
+                        }}
                     >
-                        <Typography variant="h6" sx={{ px: 2, py: 1 }}>Notifications</Typography>
-                        <Divider />
+                        <Typography variant="h6" sx={{ px: 2, py: 1, color: 'var(--color-my-primary)' }}>Notifications</Typography>
+                        <Divider sx={{ borderColor: 'var(--color-my-base-300)' }} />
                         {notifications.length > 0 ? (
                             notifications.map((notification, index) => (
-                                <MenuItem key={index} onClick={handleNotificationClose}>
+                                <MenuItem key={index} onClick={handleNotificationClose} sx={{ color: 'var(--color-my-base-content)' }}>
                                     <Typography variant="body2">{notification}</Typography>
                                 </MenuItem>
                             ))
                         ) : (
-                            <MenuItem onClick={handleNotificationClose}>No new notifications</MenuItem>
+                            <MenuItem onClick={handleNotificationClose} sx={{ color: 'var(--color-my-base-content)' }}>No new notifications</MenuItem>
                         )}
                     </Menu>
 
@@ -281,7 +292,11 @@ export const EventAttendeesLayout = () => {
                             aria-controls="profile-menu"
                             aria-haspopup="true"
                         >
-                            <Avatar alt="AdminUser" src="https://i.pravatar.cc/300"/>
+                            <Avatar
+                                alt="AdminUser"
+                                src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
+                                sx={{ border: '2px solid var(--color-my-primary-content)' }}
+                            />
                         </IconButton>
                         <Menu
                             id="profile-menu"
@@ -296,8 +311,14 @@ export const EventAttendeesLayout = () => {
                                 vertical: 'top',
                                 horizontal: 'right',
                             }}
+                            PaperProps={{
+                                sx: {
+                                    backgroundColor: 'var(--color-my-base-100)',
+                                    color: 'var(--color-my-base-content)',
+                                }
+                            }}
                         >
-                            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                            <MenuItem onClick={handleLogout} sx={{ color: 'var(--color-my-base-content)' }}>Logout</MenuItem>
                         </Menu>
                     </Box>
                 </Toolbar>
@@ -317,7 +338,7 @@ export const EventAttendeesLayout = () => {
                     ModalProps={{ keepMounted: true }}
                     sx={{
                         display: { xs: 'block', sm: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, backgroundColor: 'var(--color-my-neutral)' }, // Bolder color for mobile drawer background
                     }}
                 >
                     {drawer}
@@ -334,7 +355,7 @@ export const EventAttendeesLayout = () => {
                             width: drawerOpen ? drawerWidth : 60,
                             transition: 'width 0.3s',
                             overflowX: 'hidden',
-                            backgroundColor: 'var(--color-my-primary)'
+                            backgroundColor: 'var(--color-my-neutral)' // Bolder color for desktop drawer background
                         },
                     }}
                 >
@@ -342,7 +363,7 @@ export const EventAttendeesLayout = () => {
                 </Drawer>
             </Box>
 
-            <Box component="main" sx={{ flexGrow: 1 }}>
+            <Box component="main" sx={{ flexGrow: 1, backgroundColor: 'var(--color-my-base-200)' }}>
                 <Toolbar /> {/* This Toolbar is crucial for pushing content below the AppBar */}
                 <Outlet />
             </Box>

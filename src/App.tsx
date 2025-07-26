@@ -64,11 +64,11 @@ import {useSelector} from "react-redux";
 import type {RootState} from "./redux/store.ts";
 
 export const AdminRoute = () => {
-    // const user = useSelector((state: RootState) => state.user.user);
+    const user = useSelector((state: RootState) => state.user.user);
 
-    const user = {
-        role: 'organizer'
-    }
+    // const user = {
+    //     role: 'organizer'
+    // }
     if (!user) {
         return <Navigate to="/auth" />;
     }

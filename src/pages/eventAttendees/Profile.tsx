@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect} from 'react';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -9,30 +9,50 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store.ts";
 
-// Removed dummyUsersDb and simulated API calls as data will come from Redux
+// Import RTK Query hook and type
+import { useGetUserDetailsQuery, type ApplicationUser } from '../../queries/general/AuthQuery.ts';
 
 export const Profile = () => {
     const user = useSelector((state: RootState) => state.user.user); // Get user from Redux store
+    const userId = user?.user_id; // Get the user ID from your Redux state
 
-    const [userProfile, setUserProfile] = useState(null);
-    const [loading, setLoading] = useState(true); // Start as loading if user isn't immediately available
+    // Use the RTK Query hook to fetch user details
+    const {
+        data: fetchedProfileData, // Renamed to avoid conflict with local state
+        isLoading: isQueryLoading,
+        isFetching: isQueryFetching, // isFetching can be used to indicate background refetches
+        isError: isQueryError,
+        error: queryError,
+        refetch // Allows manual refetching
+    } = useGetUserDetailsQuery(userId!, {
+        skip: !userId, // Skip the query if userId is not available
+    });
+
+    console.log(fetchedProfileData)
+    const [userProfile, setUserProfile] = useState<ApplicationUser | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState({});
-    const [message, setMessage] = useState({ type: '', text: '' });
-    const [formErrors, setFormErrors] = useState({});
+    const [formData, setFormData] = useState<ApplicationUser | {}>({});
+    const [message, setMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
+    const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
-    // Fetch user profile from Redux on component mount or when 'user' from Redux changes
+    // Effect to initialize editable data when fetchedProfileData is loaded
     useEffect(() => {
-        if (user) {
-            setUserProfile(user);
-            setFormData(user); // Initialize formData with user's current data
-            setLoading(false);
-        } else {
-            // Handle case where user might not be logged in or data is not yet in Redux
-            setMessage({ type: 'error', text: 'User profile not available. Please log in.' });
-            setLoading(false);
+        if (fetchedProfileData) {
+            setUserProfile(fetchedProfileData);
+            setFormData(fetchedProfileData); // Initialize formData with user's current data
+        } else if (!isQueryLoading && !isQueryFetching && !fetchedProfileData && userId) {
+            // If query finished loading and no data, and userId exists, it's an error/no profile
+            setMessage({ type: 'error', text: 'User profile not found or failed to load.' });
         }
-    }, [user]); // Depend on the 'user' object from Redux
+    }, [fetchedProfileData, isQueryLoading, isQueryFetching, userId]);
+
+    // Effect to handle errors from the query
+    useEffect(() => {
+        if (isQueryError) {
+            console.error("Failed to fetch profile data:", queryError);
+            setMessage({ type: 'error', text: (queryError as any)?.data?.message || 'Failed to load profile data.' });
+        }
+    }, [isQueryError, queryError]);
 
     // --- Profile Editing Handlers ---
     const handleEditClick = () => {
@@ -50,9 +70,9 @@ export const Profile = () => {
         setMessage({ type: '', text: '' });
     };
 
-    const handleFormChange = (e) => {
+    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => prev ? { ...prev, [name]: value } : {});
         // Clear error for the field being edited
         if (formErrors[name]) {
             setFormErrors(prev => {
@@ -64,17 +84,20 @@ export const Profile = () => {
     };
 
     const validateProfileForm = () => {
-        const errors = {};
-        if (!formData.name?.trim()) {
-            errors.name = 'Name is required.';
+        const errors: { [key: string]: string } = {};
+        if (!formData.firstName?.trim()) {
+            errors.firstName = 'First Name is required.';
+        }
+        if (!formData.lastName?.trim()) {
+            errors.lastName = 'Last Name is required.';
         }
         if (!formData.email?.trim()) {
             errors.email = 'Email is required.';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             errors.email = 'Invalid email format.';
         }
-        if (formData.phone && !/^\+?[0-9\s-()]{7,20}$/.test(formData.phone)) {
-            errors.phone = 'Invalid phone number format.';
+        if (formData.contactPhone && !/^\+?[0-9\s-()]{7,20}$/.test(formData.contactPhone)) {
+            errors.contactPhone = 'Invalid phone number format.';
         }
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
@@ -86,45 +109,45 @@ export const Profile = () => {
             return;
         }
 
-        setLoading(true);
         setMessage({ type: '', text: '' });
+        // Simulate saving data to backend
+        console.log("Simulating profile update with:", formData);
         try {
             // In a real application, you would dispatch an action to update the user profile in Redux
             // For now, we'll simulate a successful update and directly update local state
             // Example: dispatch(updateUserProfile(formData));
-            console.log("Simulating profile update with:", formData);
-            // Simulate API call success
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            setUserProfile(prev => ({ ...prev, ...formData })); // Update local state with new data
+            // After simulated successful save, update local state and refetch from backend
+            setUserProfile(prev => ({ ...prev, ...formData }));
             setIsEditing(false);
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            refetch(); // Refetch to ensure local state is in sync with server
 
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error saving profile:", err);
             setMessage({ type: 'error', text: err.message || 'Failed to save profile changes.' });
-        } finally {
-            setLoading(false);
         }
     };
 
-    if (loading || userProfile === null) {
+    // Show loading spinner if fetching initial data or refetching
+    if (isQueryLoading || isQueryFetching || !userProfile) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <span className="loading loading-spinner loading-lg"></span>
-                <p className="ml-4 text-lg">Loading profile...</p>
+            <div className="flex justify-center items-center min-h-screen bg-[var(--color-my-base-200)]">
+                <span className="loading loading-spinner loading-lg text-[var(--color-my-primary)]"></span>
+                <p className="ml-4 text-lg text-[var(--color-my-base-content)]">Loading profile...</p>
             </div>
         );
     }
 
-    const alertClasses = message.type === 'success' ? 'alert-success' : 'alert-error';
+    const alertClasses = message.type === 'success' ? 'bg-[var(--color-my-success)] text-[var(--color-my-success-content)]' : 'bg-[var(--color-my-error)] text-[var(--color-my-error-content)]';
 
     return (
-        <div className="container mx-auto p-4 md:p-8">
-            <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-                <PersonIcon className="text-4xl" /> My Profile
+        <div className="container mx-auto p-4 md:p-8 min-h-screen bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]">
+            <h1 className="text-3xl font-bold mb-6 flex items-center gap-2 text-[var(--color-my-primary)]">
+                <PersonIcon className="text-4xl text-[var(--color-my-primary)]" /> My Profile
             </h1>
-            <hr className="my-6 border-base-content/10" />
+            <hr className="my-6 border-[var(--color-my-base-300)]" />
 
             {message.text && (
                 <div role="alert" className={`alert ${alertClasses} mb-6`}>
@@ -134,43 +157,43 @@ export const Profile = () => {
             )}
 
             {/* Profile Details Section */}
-            <div className="card bg-base-100 shadow-xl p-6 mb-8 max-w-3xl mx-auto">
+            <div className="card bg-[var(--color-my-base-100)] shadow-xl p-6 mb-8 max-w-3xl mx-auto ">
                 <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
-                    <div className="avatar w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center text-primary-content text-4xl overflow-hidden">
+                    <div className="avatar w-24 h-24 rounded-full bg-[var(--color-my-primary)]/20 flex items-center justify-center text-[var(--color-my-primary-content)] text-4xl overflow-hidden border-2 border-[var(--color-my-primary)]">
                         {userProfile.profilePicture ? (
-                            <img src={userProfile.profilePicture} alt={userProfile.first_name} className="w-full h-full object-cover" />
+                            <img src={userProfile.profilePicture} alt={userProfile.firstName} className="w-full h-full object-cover" />
                         ) : (
-                            <span>{userProfile.first_name?.charAt(0) || 'U'}</span>
+                            <span>{userProfile.firstName?.charAt(0) || 'U'}</span>
                         )}
                     </div>
                     <div className="flex-grow text-center sm:text-left">
-                        <h2 className="text-2xl font-semibold mb-1">{userProfile.first_name} {userProfile.last_name}</h2>
-                        <p className="text-base-content/70">{userProfile.email}</p>
+                        <h2 className="text-2xl font-semibold mb-1 text-[var(--color-my-base-content)]">{userProfile.firstName} {userProfile.lastName}</h2>
+                        <p className="text-[var(--color-my-base-content)]/70">{userProfile.email}</p>
                     </div>
                     <div>
                         {!isEditing ? (
                             <button
-                                className="btn btn-primary"
+                                className="btn bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
                                 onClick={handleEditClick}
-                                disabled={loading}
+                                disabled={isQueryLoading || isQueryFetching}
                             >
                                 <EditIcon className="w-5 h-5" /> Edit Profile
                             </button>
                         ) : (
                             <div className="flex gap-2">
                                 <button
-                                    className="btn btn-outline btn-error"
+                                    className="btn btn-outline border-[var(--color-my-error)] text-[var(--color-my-error)] hover:bg-[var(--color-my-error)] hover:text-[var(--color-my-error-content)]"
                                     onClick={handleCancelClick}
-                                    disabled={loading}
+                                    disabled={isQueryLoading || isQueryFetching}
                                 >
                                     <CancelIcon className="w-5 h-5" /> Cancel
                                 </button>
                                 <button
-                                    className="btn btn-primary"
+                                    className="btn bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
                                     onClick={handleSaveClick}
-                                    disabled={loading}
+                                    disabled={isQueryLoading || isQueryFetching}
                                 >
-                                    {loading && <span className="loading loading-spinner loading-sm mr-2"></span>}
+                                    {(isQueryLoading || isQueryFetching) && <span className="loading loading-spinner loading-sm mr-2"></span>}
                                     <SaveIcon className="w-5 h-5" /> Save Changes
                                 </button>
                             </div>
@@ -178,82 +201,102 @@ export const Profile = () => {
                     </div>
                 </div>
 
-                <hr className="my-6 border-base-content/10" />
+                <hr className="my-6 border-[var(--color-my-base-300)]" />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">Full Name</span>
+                            <span className="label-text text-[var(--color-my-base-content)]">First Name</span>
                         </label>
                         <label className="input-group">
-                            <span className="bg-base-200"><PersonIcon className="w-5 h-5" /></span>
+                            <span className="bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]"><PersonIcon className="w-5 h-5" /></span>
                             <input
                                 type="text"
-                                name="name"
-                                value={`${formData.first_name || ''} ${formData.last_name || ''}`}
+                                name="firstName"
+                                value={formData.firstName || ''}
                                 onChange={handleFormChange}
-                                placeholder="Your full name"
-                                className={`input input-bordered w-full ${formErrors.name ? 'input-error' : ''}`}
-                                disabled={!isEditing || loading}
+                                placeholder="Your first name"
+                                className={`input input-bordered w-full bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)] ${formErrors.firstName ? 'border-[var(--color-my-error)]' : ''}`}
+                                disabled={!isEditing || isQueryLoading || isQueryFetching}
                                 required
                             />
                         </label>
-                        {formErrors.first_name && <p className="text-error text-sm mt-1">{formErrors.first_name}</p>}
+                        {formErrors.firstName && <p className="text-[var(--color-my-error)] text-sm mt-1">{formErrors.firstName}</p>}
                     </div>
 
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">Email Address</span>
+                            <span className="label-text text-[var(--color-my-base-content)]">Last Name</span>
                         </label>
                         <label className="input-group">
-                            <span className="bg-base-200"><EmailIcon className="w-5 h-5" /></span>
+                            <span className="bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]"><PersonIcon className="w-5 h-5" /></span>
+                            <input
+                                type="text"
+                                name="lastName"
+                                value={formData.lastName || ''}
+                                onChange={handleFormChange}
+                                placeholder="Your last name"
+                                className={`input input-bordered w-full bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)] ${formErrors.lastName ? 'border-[var(--color-my-error)]' : ''}`}
+                                disabled={!isEditing || isQueryLoading || isQueryFetching}
+                                required
+                            />
+                        </label>
+                        {formErrors.lastName && <p className="text-[var(--color-my-error)] text-sm mt-1">{formErrors.lastName}</p>}
+                    </div>
+
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text text-[var(--color-my-base-content)]">Email Address</span>
+                        </label>
+                        <label className="input-group">
+                            <span className="bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]"><EmailIcon className="w-5 h-5" /></span>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email || ''}
                                 onChange={handleFormChange}
                                 placeholder="your@email.com"
-                                className={`input input-bordered w-full ${formErrors.email ? 'input-error' : ''}`}
-                                disabled={!isEditing || loading}
+                                className={`input input-bordered w-full bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)] ${formErrors.email ? 'border-[var(--color-my-error)]' : ''}`}
+                                disabled={!isEditing || isQueryLoading || isQueryFetching}
                                 required
                             />
                         </label>
-                        {formErrors.email && <p className="text-error text-sm mt-1">{formErrors.email}</p>}
+                        {formErrors.email && <p className="text-[var(--color-my-error)] text-sm mt-1">{formErrors.email}</p>}
                     </div>
 
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">Phone Number</span>
+                            <span className="label-text text-[var(--color-my-base-content)]">Phone Number</span>
                         </label>
                         <label className="input-group">
-                            <span className="bg-base-200"><PhoneIcon className="w-5 h-5" /></span>
+                            <span className="bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]"><PhoneIcon className="w-5 h-5" /></span>
                             <input
                                 type="tel"
-                                name="phone"
-                                value={formData.phone || ''}
+                                name="contactPhone"
+                                value={formData.contactPhone || ''}
                                 onChange={handleFormChange}
                                 placeholder="+2547XXXXXXXX"
-                                className={`input input-bordered w-full ${formErrors.phone ? 'input-error' : ''}`}
-                                disabled={!isEditing || loading}
+                                className={`input input-bordered w-full bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)] ${formErrors.contactPhone ? 'border-[var(--color-my-error)]' : ''}`}
+                                disabled={!isEditing || isQueryLoading || isQueryFetching}
                             />
                         </label>
-                        {formErrors.phone && <p className="text-error text-sm mt-1">{formErrors.phone}</p>}
+                        {formErrors.contactPhone && <p className="text-[var(--color-my-error)] text-sm mt-1">{formErrors.contactPhone}</p>}
                     </div>
 
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text">Address</span>
+                            <span className="label-text text-[var(--color-my-base-content)]">Address</span>
                         </label>
                         <label className="input-group">
-                            <span className="bg-base-200"><LocationOnIcon className="w-5 h-5" /></span>
+                            <span className="bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]"><LocationOnIcon className="w-5 h-5" /></span>
                             <input
                                 type="text"
                                 name="address"
                                 value={formData.address || ''}
                                 onChange={handleFormChange}
                                 placeholder="123 Street, City"
-                                className="input input-bordered w-full"
-                                disabled={!isEditing || loading}
+                                className="input input-bordered w-full bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)]"
+                                disabled={!isEditing || isQueryLoading || isQueryFetching}
                             />
                         </label>
                     </div>

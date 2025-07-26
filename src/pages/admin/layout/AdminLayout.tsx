@@ -36,9 +36,10 @@ import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
 // Redux imports for data fetching
-import { useSelector } from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import type { RootState } from "../../redux/store.ts";
 import { useGetAdminDashboardSummaryQuery } from '../../../queries/admin/adminQuery.ts';
+import {logout} from "../../../queries/general/ApplicationUserSlice.ts";
 
 
 const drawerWidth = 240;
@@ -78,6 +79,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 export const AdminLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
     const theme = useTheme(); // Access the theme object
     const [mobileOpen, setMobileOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(true); // Initial state for desktop drawer
@@ -105,6 +107,7 @@ export const AdminLayout = () => {
     const handleLogout = () => {
         // Implement your logout logic here
         console.log('Logging out...');
+        dispatch(logout())
         navigate('/auth'); // Example: navigate to login page
         handleProfileClose();
     };
