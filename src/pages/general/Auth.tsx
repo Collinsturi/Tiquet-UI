@@ -86,7 +86,8 @@ export const Auth = () => {
                     first_name: res.user.first_name,
                     last_name: res.user.last_name,
                     email: res.user.email,
-                    role: res.user.role
+                    role: res.user.role,
+                    profilePicture: res.user.profilePicture
                 }
             };
 

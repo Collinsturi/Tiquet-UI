@@ -57,6 +57,7 @@ export type ApplicationUser ={
     role: string,
     isVerified: boolean,
     createdAt: string,
+    profilePicture: string,
 }
 
 export const AuthQuery = createApi({

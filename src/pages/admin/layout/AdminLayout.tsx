@@ -143,8 +143,11 @@ export const AdminLayout = () => {
             {/* Mobile-specific content: Search & Avatar */}
             <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', px: 2, mb: 2 }}>
                 <div className={"flex flex-row gap-3"}>
-                    <Avatar alt="AdminUser" src="https://i.pravatar.cc/300" />
-                    <Typography className={"pt-2"}>AdminUser Name</Typography>
+                    <Avatar
+                        alt="organizer"
+                        src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
+                    />
+                    <Typography className={"pt-2"}>{user.firstName}</Typography>
                 </div>
                 <Search >
                     <SearchIconWrapper>
@@ -304,7 +307,10 @@ export const AdminLayout = () => {
                             aria-controls="profile-menu"
                             aria-haspopup="true"
                         >
-                            <Avatar alt="AdminUser" src="https://i.pravatar.cc/300"/>
+                            <Avatar
+                                alt="AdminUser"
+                                src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
+                            />
                         </IconButton>
                         <Menu
                             id="profile-menu"
