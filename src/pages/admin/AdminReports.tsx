@@ -57,18 +57,13 @@ import {
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../redux/store'; // Adjust path as necessary
 
-// Colors for Pie Charts
-const PIE_COLORS_TICKET_TYPES = ['#1976d2', '#ff9800', '#4caf50', '#9c27b0', '#00bcd4', '#ffeb3b'];
-const PIE_COLORS_SCAN_STATUS = {
-    'scanned': '#4CAF50', // Green
-    'notScanned': '#F44336', // Red
-    // If your backend provides more detailed statuses like duplicate, expired, etc.,
-    // you would map them here. Assuming getEventScanStatus provides 'scanned' and 'notScanned'.
-};
+// Colors for Pie Charts - these will use theme.palette as requested
+const PIE_COLORS_TICKET_TYPES = []; // Populated in component
+const PIE_COLORS_SCAN_STATUS = {}; // Populated in component
 
 // Component to display when there's no data for a chart
 const NoDataOverlay = ({ message }: { message: string }) => {
-    const theme = useTheme(); // Access theme here to use theme-dependent styles
+    // This component will use CSS variables for its background and text
     return (
         <Box
             sx={{
@@ -80,18 +75,20 @@ const NoDataOverlay = ({ message }: { message: string }) => {
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                zIndex: 10,
-                borderRadius: theme.shape.borderRadius, // Use theme.shape.borderRadius
-                flexDirection: 'column',
+                backgroundColor: 'var(--color-my-base-100)', // Using custom theme base color
+                color: 'var(--color-my-base-content)', // Using custom theme text color
+                borderRadius: 'var(--rounded-box, 0.5rem)', // Fallback if --rounded-box is not defined
                 textAlign: 'center',
                 p: 2,
+                flexDirection: 'column',
+                boxSizing: 'border-box',
+                zIndex: 10,
             }}
         >
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" sx={{ color: 'inherit' }}>
                 {message}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'inherit' }}>
                 Check back later!
             </Typography>
         </Box>
@@ -101,7 +98,19 @@ const NoDataOverlay = ({ message }: { message: string }) => {
 
 // --- React Component ---
 export const AdminReports = () => {
-    const theme = useTheme();
+    const theme = useTheme(); // Use theme for palette colors where requested
+
+    // Populate PIE_COLORS using theme palette colors
+    PIE_COLORS_TICKET_TYPES[0] = theme.palette.primary.main;
+    PIE_COLORS_TICKET_TYPES[1] = theme.palette.secondary.main;
+    PIE_COLORS_TICKET_TYPES[2] = theme.palette.success.main;
+    PIE_COLORS_TICKET_TYPES[3] = theme.palette.info.main;
+    PIE_COLORS_TICKET_TYPES[4] = theme.palette.warning.main;
+    PIE_COLORS_TICKET_TYPES[5] = theme.palette.error.main;
+
+    PIE_COLORS_SCAN_STATUS['scanned'] = theme.palette.success.main; // Green
+    PIE_COLORS_SCAN_STATUS['notScanned'] = theme.palette.error.main; // Red
+
 
     // Get current organizer email from Redux store
     const user = useSelector((state: RootState) => state.user.user);
@@ -248,59 +257,58 @@ export const AdminReports = () => {
     const eventSpecificRefundsIssued = 0; // Placeholder for refunds, as it's not in provided data
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom>
+        <Box sx={{ flexGrow: 1, p: 3, backgroundColor: 'var(--color-my-base-200)', color: 'var(--color-my-base-content)', minHeight: '100vh', width: '100%' }}>
+            <Typography variant="h4" gutterBottom sx={{ color: 'var(--color-my-primary)' }}>
                 Analytics & Reports
             </Typography>
 
             {overallLoading && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                    <CircularProgress />
-                    <Typography sx={{ ml: 2 }}>Loading overall reports data...</Typography>
+                    <CircularProgress sx={{ color: 'var(--color-my-primary)' }} />
+                    <Typography sx={{ ml: 2, color: 'var(--color-my-base-content)' }}>Loading overall reports data...</Typography>
                 </Box>
             )}
 
             {overallError && (
-                <Alert severity="error" sx={{ mt: 2 }}>{overallErrorMessage}</Alert>
+                <Alert severity="error" sx={{ mt: 2, backgroundColor: 'var(--color-my-error)', color: 'var(--color-my-error-content)' }}>{overallErrorMessage}</Alert>
             )}
 
             {!overallLoading && !overallError && adminDashboardSummary && platformSummaryData && (
                 <>
                     {/* Overall Account analytics Section */}
-                    <Paper elevation={3} sx={{ p: 3, mb: 4 }} id="overall-reports-section">
+                    <Paper elevation={3} sx={{ p: 3, mb: 4, backgroundColor: 'var(--color-my-base-100)' }} id="overall-reports-section">
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h5" component="h2">
+                            <Typography variant="h5" component="h2" sx={{ color: 'var(--color-my-base-content)' }}>
                                 Overall Account Analytics
                             </Typography>
-                            {/* Download buttons are removed as per instruction */}
                         </Box>
-                        <Divider sx={{ mb: 3 }} />
+                        <Divider sx={{ mb: 3, borderColor: 'var(--color-my-base-300)' }} />
 
                         {/* Overall Key Metrics */}
                         <Grid container spacing={3} mb={4}>
                             <Grid item xs={12} sm={6} md={3}>
-                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.primary.light, 0.1) }}>
+                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.primary.main, 0.1) }}>
                                     <EventIcon color="primary" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Total Events</Typography>
                                     <Typography variant="h4" color="primary">{platformSummaryData.totalEvents}</Typography>
                                 </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.secondary.light, 0.1) }}>
+                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.secondary.main, 0.1) }}>
                                     <SellIcon color="secondary" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Total Tickets Sold</Typography>
                                     <Typography variant="h4" color="secondary">{platformSummaryData.totalTicketsSold}</Typography>
                                 </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.light, 0.1) }}>
+                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.main, 0.1) }}>
                                     <AttachMoneyIcon color="success" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Total Revenue</Typography>
                                     <Typography variant="h4" color="success">${platformSummaryData.totalRevenue.toLocaleString()}</Typography>
                                 </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.info.light, 0.1) }}>
+                                <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.info.main, 0.1) }}>
                                     <CheckCircleOutlineIcon color="info" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Avg. Tickets/Event</Typography>
                                     <Typography variant="h4" color="info">{platformSummaryData.avgTicketsPerEvent}</Typography>
@@ -315,11 +323,11 @@ export const AdminReports = () => {
                                     <Typography variant="h6" gutterBottom>Monthly Sales Trend (Tickets & Revenue)</Typography>
                                     <ResponsiveContainer width="100%" height="80%">
                                         <LineChart data={monthlySalesChartData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="month" />
+                                            <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                            <XAxis dataKey="month" stroke={theme.palette.text.secondary} />
                                             <YAxis yAxisId="left" orientation="left" stroke={theme.palette.primary.main} label={{ value: 'Tickets', angle: -90, position: 'insideLeft' }} />
                                             <YAxis yAxisId="right" orientation="right" stroke={theme.palette.success.main} label={{ value: 'Revenue ($)', angle: 90, position: 'insideRight' }} />
-                                            <Tooltip formatter={(value, name) => [`${name}: ${name === 'revenue' ? '$' : ''}${value.toLocaleString()}`]} />
+                                            <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
                                             <Legend />
                                             <Line yAxisId="left" type="monotone" dataKey="tickets" stroke={theme.palette.primary.main} name="Tickets Sold" />
                                             <Line yAxisId="right" type="monotone" dataKey="revenue" stroke={theme.palette.success.main} name="Revenue" />
@@ -334,10 +342,10 @@ export const AdminReports = () => {
                                     <Typography variant="h6" gutterBottom>Top Selling Events (Tickets)</Typography>
                                     <ResponsiveContainer width="100%" height="80%">
                                         <BarChart data={topSellingEventsChartData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="name" angle={-15} textAnchor="end" height={60} interval={0} />
-                                            <YAxis label={{ value: 'Tickets Sold', angle: -90, position: 'insideLeft' }} />
-                                            <Tooltip />
+                                            <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                            <XAxis dataKey="name" angle={-15} textAnchor="end" height={60} interval={0} stroke={theme.palette.text.secondary} />
+                                            <YAxis label={{ value: 'Tickets Sold', angle: -90, position: 'insideLeft', fill: theme.palette.text.secondary }} stroke={theme.palette.text.secondary} />
+                                            <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
                                             <Legend />
                                             <Bar dataKey="ticketsSold" fill={theme.palette.secondary.main} name="Tickets Sold" />
                                         </BarChart>
@@ -364,8 +372,8 @@ export const AdminReports = () => {
                                                     <Cell key={`cell-overall-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name as keyof typeof PIE_COLORS_SCAN_STATUS] || '#CCCCCC'} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip />
-                                            <Legend />
+                                            <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
+                                            <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
                                         </PieChart>
                                     </ResponsiveContainer>
                                 </Paper>
@@ -374,30 +382,52 @@ export const AdminReports = () => {
                     </Paper>
 
                     {/* Event-Specific Analytics Section */}
-                    <Paper elevation={3} sx={{ p: 3 }} id="event-specific-reports-section">
+                    <Paper elevation={3} sx={{ p: 3, backgroundColor: 'var(--color-my-base-100)' }} id="event-specific-reports-section">
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h5" component="h2">
+                            <Typography variant="h5" component="h2" sx={{ color: 'var(--color-my-base-content)' }}>
                                 Event-Specific Analytics
                             </Typography>
-                            {/* Download buttons are removed as per instruction */}
                         </Box>
-                        <Divider sx={{ mb: 3 }} />
+                        <Divider sx={{ mb: 3, borderColor: 'var(--color-my-base-300)' }} />
 
                         <FormControl fullWidth sx={{ mb: 4 }}>
-                            <InputLabel id="select-event-report-label">Select Event for Details</InputLabel>
+                            <InputLabel id="select-event-report-label" sx={{ color: 'var(--color-my-base-content)' }}>Select Event for Details</InputLabel>
                             <Select
                                 labelId="select-event-report-label"
                                 id="select-event-report"
                                 value={selectedEventId}
                                 label="Select Event for Details"
                                 onChange={handleEventChange}
+                                sx={{
+                                    color: 'var(--color-my-base-content)',
+                                    '.MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-base-300)',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-primary)',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-primary)',
+                                    },
+                                    '.MuiSvgIcon-root': {
+                                        color: 'var(--color-my-base-content)',
+                                    },
+                                }}
+                                MenuProps={{
+                                    PaperProps: {
+                                        sx: {
+                                            backgroundColor: 'var(--color-my-base-100)',
+                                            color: 'var(--color-my-base-content)',
+                                        },
+                                    },
+                                }}
                             >
-                                <MenuItem value="">
+                                <MenuItem value="" sx={{ color: 'var(--color-my-base-content)' }}>
                                     <em>None Selected</em>
                                 </MenuItem>
                                 {eventOptions.map((event) => (
-                                    <MenuItem key={event.id} value={event.id}>
-                                        {event.name} ({event.startDate}) {/* Display formatted date string directly */}
+                                    <MenuItem key={event.id} value={event.id} sx={{ color: 'var(--color-my-base-content)' }}>
+                                        {event.name} ({event.startDate})
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -405,44 +435,44 @@ export const AdminReports = () => {
 
                         {selectedEventId && eventSpecificLoading && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                                <CircularProgress />
-                                <Typography sx={{ ml: 2 }}>Loading event-specific data...</Typography>
+                                <CircularProgress sx={{ color: 'var(--color-my-primary)' }} />
+                                <Typography sx={{ ml: 2, color: 'var(--color-my-base-content)' }}>Loading event-specific data...</Typography>
                             </Box>
                         )}
 
                         {selectedEventId && eventSpecificError && (
-                            <Alert severity="error" sx={{ mt: 2 }}>{eventSpecificErrorMessage}</Alert>
+                            <Alert severity="error" sx={{ mt: 2, backgroundColor: 'var(--color-my-error)', color: 'var(--color-my-error-content)' }}>{eventSpecificErrorMessage}</Alert>
                         )}
 
                         {selectedEventId && !eventSpecificLoading && !eventSpecificError && eventTicketSummary && (
                             <>
-                                <Typography variant="h6" gutterBottom color="primary">
+                                <Typography variant="h6" gutterBottom sx={{ color: 'var(--color-my-primary)' }}>
                                     Analytics for: {eventOptions.find(e => e.id === selectedEventId)?.name}
                                 </Typography>
                                 <Grid container spacing={3} mb={4}>
                                     <Grid item xs={12} sm={6} md={3}>
-                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.primary.light, 0.1) }}>
+                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.primary.main, 0.1) }}>
                                             <SellIcon color="primary" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Tickets Sold</Typography>
                                             <Typography variant="h4" color="primary">{eventSpecificTicketsSold}</Typography>
                                         </Card>
                                     </Grid>
                                     <Grid item xs={12} sm={6} md={3}>
-                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.light, 0.1) }}>
+                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.main, 0.1) }}>
                                             <AttachMoneyIcon color="success" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Total Revenue</Typography>
                                             <Typography variant="h4" color="success">${eventSpecificTotalRevenue.toLocaleString()}</Typography>
                                         </Card>
                                     </Grid>
                                     <Grid item xs={12} sm={6} md={3}>
-                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.info.light, 0.1) }}>
+                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.info.main, 0.1) }}>
                                             <CheckCircleOutlineIcon color="info" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Attendees Checked In</Typography>
                                             <Typography variant="h4" color="info">{eventSpecificAttendeesCheckedIn}</Typography>
                                         </Card>
                                     </Grid>
                                     <Grid item xs={12} sm={6} md={3}>
-                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.error.light, 0.1) }}>
+                                        <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.error.main, 0.1) }}>
                                             <CancelOutlinedIcon color="error" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Refunds Issued</Typography>
                                             <Typography variant="h4" color="error">{eventSpecificRefundsIssued}</Typography>
@@ -458,10 +488,10 @@ export const AdminReports = () => {
                                             {dailyScansChartData && dailyScansChartData.length > 0 ? (
                                                 <ResponsiveContainer width="100%" height="80%">
                                                     <LineChart data={dailyScansChartData}>
-                                                        <CartesianGrid strokeDasharray="3 3" />
-                                                        <XAxis dataKey="date" />
-                                                        <YAxis label={{ value: 'Scans', angle: -90, position: 'insideLeft' }} />
-                                                        <Tooltip />
+                                                        <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                                        <XAxis dataKey="date" stroke={theme.palette.text.secondary} />
+                                                        <YAxis label={{ value: 'Scans', angle: -90, position: 'insideLeft', fill: theme.palette.text.secondary }} stroke={theme.palette.text.secondary} />
+                                                        <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
                                                         <Legend />
                                                         <Line type="monotone" dataKey="scans" stroke={theme.palette.primary.main} name="Daily Scans" />
                                                     </LineChart>
@@ -492,8 +522,8 @@ export const AdminReports = () => {
                                                                 <Cell key={`cell-event-type-${index}`} fill={PIE_COLORS_TICKET_TYPES[index % PIE_COLORS_TICKET_TYPES.length]} />
                                                             ))}
                                                         </Pie>
-                                                        <Tooltip />
-                                                        <Legend />
+                                                        <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
+                                                        <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
                                                     </PieChart>
                                                 </ResponsiveContainer>
                                             ) : (
@@ -506,7 +536,7 @@ export const AdminReports = () => {
                                     <Grid item xs={12} md={6}>
                                         <Paper elevation={1} sx={{ p: 2, height: 400, position: 'relative' }}>
                                             <Typography variant="h6" gutterBottom>Event Ticket Scan Status</Typography>
-                                            {eventScanStatusPieData && eventScanStatusPieData.some(data => data.value > 0) ? ( // Check if any value is greater than 0
+                                            {eventScanStatusPieData && eventScanStatusPieData.some(data => data.value > 0) ? (
                                                 <ResponsiveContainer width="100%" height="80%">
                                                     <PieChart>
                                                         <Pie
@@ -522,8 +552,8 @@ export const AdminReports = () => {
                                                                 <Cell key={`cell-event-scan-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name as keyof typeof PIE_COLORS_SCAN_STATUS] || '#CCCCCC'} />
                                                             ))}
                                                         </Pie>
-                                                        <Tooltip />
-                                                        <Legend />
+                                                        <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
+                                                        <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
                                                     </PieChart>
                                                 </ResponsiveContainer>
                                             ) : (
@@ -535,12 +565,12 @@ export const AdminReports = () => {
                             </>
                         )}
                         {selectedEventId && !eventSpecificLoading && !eventSpecificError && !eventTicketSummary && (
-                            <Alert severity="info" sx={{ mt: 2 }}>
+                            <Alert severity="info" sx={{ mt: 2, backgroundColor: 'var(--color-my-info)', color: 'var(--color-my-info-content)' }}>
                                 No specific analytics data available for the selected event.
                             </Alert>
                         )}
                         {!selectedEventId && (
-                            <Alert severity="info">Please select an event from the dropdown above to view its specific analytics.</Alert>
+                            <Alert severity="info" sx={{ backgroundColor: 'var(--color-my-info)', color: 'var(--color-my-info-content)' }}>Please select an event from the dropdown above to view its specific analytics.</Alert>
                         )}
                     </Paper>
                 </>

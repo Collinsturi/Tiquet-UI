@@ -1,4 +1,3 @@
-// AdminPayouts.tsx
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -36,7 +35,7 @@ import NorthEastIcon from '@mui/icons-material/NorthEast'; // For withdrawn
 import SouthWestIcon from '@mui/icons-material/SouthWest'; // For available
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles'; // Import alpha for card backgrounds
 
 // --- RTK Query Imports ---
 import {
@@ -65,7 +64,7 @@ const dummyProfileData = {
 // For demonstration, this will simulate the actual request.
 // In a real app, you'd define this as a builder.mutation in adminQuery.ts
 const mockRequestPayout = async (requestData: { amount: number; bankDetails: any; requestedForEventId: string | null; }) => {
-    return new Promise((resolve, reject) => {
+    return new new Promise((resolve, reject) => {
         setTimeout(() => {
             console.log("Mock Payout request submitted:", requestData);
             // Simulate success
@@ -213,17 +212,17 @@ export const AdminPayouts = () => {
 
     if (overallLoading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <CircularProgress />
-                <Typography sx={{ ml: 2 }}>Loading payout information...</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', backgroundColor: 'var(--color-my-base-200)' }}>
+                <CircularProgress sx={{ color: 'var(--color-my-primary)' }} />
+                <Typography sx={{ ml: 2, color: 'var(--color-my-base-content)' }}>Loading payout information...</Typography>
             </Box>
         );
     }
 
     if (overallError) {
         return (
-            <Box sx={{ p: 3 }}>
-                <Alert severity="error">
+            <Box sx={{ p: 3, backgroundColor: 'var(--color-my-base-200)' }}>
+                <Alert severity="error" sx={{ backgroundColor: 'var(--color-my-error)', color: 'var(--color-my-error-content)' }}>
                     Error: {overallErrorMessage}
                 </Alert>
             </Box>
@@ -233,8 +232,8 @@ export const AdminPayouts = () => {
     // Ensure data exists before trying to render
     if (!organizerEarningsSummary) {
         return (
-            <Box sx={{ p: 3 }}>
-                <Alert severity="info">
+            <Box sx={{ p: 3, backgroundColor: 'var(--color-my-base-200)' }}>
+                <Alert severity="info" sx={{ backgroundColor: 'var(--color-my-info)', color: 'var(--color-my-info-content)' }}>
                     No organizer earnings summary available.
                 </Alert>
             </Box>
@@ -243,23 +242,26 @@ export const AdminPayouts = () => {
 
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom>
+        <Box sx={{ flexGrow: 1, p: 3, backgroundColor: 'var(--color-my-base-200)', color: 'var(--color-my-base-content)', minHeight: '100vh', width: '100%' }}>
+            <Typography variant="h4" gutterBottom sx={{ color: 'var(--color-my-primary)' }}>
                 <AccountBalanceWalletIcon sx={{ verticalAlign: 'middle', mr: 1 }} /> My Payouts
             </Typography>
 
             {message.text && (
-                <Alert severity={message.type as "success" | "info" | "warning" | "error"} sx={{ mb: 2 }}>
+                <Alert severity={message.type as "success" | "info" | "warning" | "error"} sx={{ mb: 2,
+                    backgroundColor: `var(--color-my-${message.type})`,
+                    color: `var(--color-my-${message.type}-content)`
+                }}>
                     {message.text}
                 </Alert>
             )}
 
             {/* Overall Financial Summary */}
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h5" gutterBottom>Overall Financial Summary</Typography>
+            <Paper elevation={3} sx={{ p: 3, mb: 4, backgroundColor: 'var(--color-my-base-100)' }}>
+                <Typography variant="h5" gutterBottom sx={{ color: 'var(--color-my-base-content)' }}>Overall Financial Summary</Typography>
                 <Grid container spacing={3}>
                     <Grid item xs={12} sm={6} md={4}>
-                        <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+                        <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', backgroundColor: alpha(theme.palette.success.main, 0.1) }}>
                             <MonetizationOnIcon color="success" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Total Earnings</Typography>
@@ -268,7 +270,7 @@ export const AdminPayouts = () => {
                         </Card>
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
-                        <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+                        <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', backgroundColor: alpha(theme.palette.warning.main, 0.1) }}>
                             <NorthEastIcon color="warning" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Total Withdrawn</Typography>
@@ -277,7 +279,7 @@ export const AdminPayouts = () => {
                         </Card>
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
-                        <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+                        <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', backgroundColor: alpha(theme.palette.primary.main, 0.1) }}>
                             <SouthWestIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Current Available Balance</Typography>
@@ -289,29 +291,52 @@ export const AdminPayouts = () => {
             </Paper>
 
             {/* Request Payout Section */}
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h5" gutterBottom>Request Payout</Typography>
+            <Paper elevation={3} sx={{ p: 3, mb: 4, backgroundColor: 'var(--color-my-base-100)' }}>
+                <Typography variant="h5" gutterBottom sx={{ color: 'var(--color-my-base-content)' }}>Request Payout</Typography>
                 <Grid container spacing={3} alignItems="flex-end">
                     <Grid item xs={12} sm={6} md={4}>
                         <FormControl fullWidth>
-                            <InputLabel id="select-event-payout-label">Select Event (Optional)</InputLabel>
+                            <InputLabel id="select-event-payout-label" sx={{ color: 'var(--color-my-base-content)' }}>Select Event (Optional)</InputLabel>
                             <Select
                                 labelId="select-event-payout-label"
                                 id="select-event-payout"
                                 value={selectedEventForPayout}
                                 label="Select Event (Optional)"
                                 onChange={handleEventForPayoutChange}
+                                sx={{
+                                    color: 'var(--color-my-base-content)',
+                                    '.MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-base-300)',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-primary)',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-primary)',
+                                    },
+                                    '.MuiSvgIcon-root': {
+                                        color: 'var(--color-my-base-content)',
+                                    },
+                                }}
+                                MenuProps={{
+                                    PaperProps: {
+                                        sx: {
+                                            backgroundColor: 'var(--color-my-base-100)',
+                                            color: 'var(--color-my-base-content)',
+                                        },
+                                    },
+                                }}
                             >
-                                <MenuItem value="">
+                                <MenuItem value="" sx={{ color: 'var(--color-my-base-content)' }}>
                                     <em>None (Overall Balance)</em>
                                 </MenuItem>
                                 {eventsForPayoutDisplay.filter(e => e.isFinalized).map((event) => (
-                                    <MenuItem key={event.id} value={event.id}>
+                                    <MenuItem key={event.id} value={event.id} sx={{ color: 'var(--color-my-base-content)' }}>
                                         {event.name} (${event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                                     </MenuItem>
                                 ))}
                             </Select>
-                            <FormHelperText>Select an event to pre-fill its net revenue for payout.</FormHelperText>
+                            <FormHelperText sx={{ color: 'var(--color-my-base-content)' }}>Select an event to pre-fill its net revenue for payout.</FormHelperText>
                         </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
@@ -323,61 +348,89 @@ export const AdminPayouts = () => {
                             onChange={handlePayoutAmountChange}
                             type="text" // Use text to allow partial input like "123."
                             InputProps={{
-                                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                                startAdornment: <InputAdornment position="start" sx={{ color: 'var(--color-my-base-content)' }}>$</InputAdornment>,
+                                sx: {
+                                    color: 'var(--color-my-base-content)',
+                                    '.MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-base-300)',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-primary)',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'var(--color-my-primary)',
+                                    },
+                                }
+                            }}
+                            InputLabelProps={{
+                                sx: { color: 'var(--color-my-base-content)' }
                             }}
                             helperText={`Available: $${organizerEarningsSummary.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            FormHelperTextProps={{
+                                sx: { color: 'var(--color-my-base-content)' }
+                            }}
                         />
                     </Grid>
                     <Grid item xs={12} md={4}>
                         <Button
                             variant="contained"
-                            color="primary"
                             fullWidth
                             onClick={handleRequestPayoutClick}
                             disabled={payoutRequestLoading || !organizerEarningsSummary || organizerEarningsSummary.availableBalance <= 0}
                             startIcon={<AttachMoneyIcon />}
+                            sx={{
+                                backgroundColor: 'var(--color-my-primary)',
+                                color: 'var(--color-my-primary-content)',
+                                '&:hover': {
+                                    backgroundColor: 'var(--color-my-primary-focus)',
+                                }
+                            }}
                         >
                             Request Payout
                         </Button>
                     </Grid>
                 </Grid>
                 {!bankDetails?.accountNumber && (
-                    <Alert severity="warning" sx={{ mt: 2 }}>
+                    <Alert severity="warning" sx={{ mt: 2, backgroundColor: 'var(--color-my-warning)', color: 'var(--color-my-warning-content)' }}>
                         Your bank details are not fully set up. Please update them in your profile to enable payouts.
                     </Alert>
                 )}
             </Paper>
 
             {/* Event Contributions */}
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h5" gutterBottom>Event Revenue Contributions</Typography>
+            <Paper elevation={3} sx={{ p: 3, mb: 4, backgroundColor: 'var(--color-my-base-100)' }}>
+                <Typography variant="h5" gutterBottom sx={{ color: 'var(--color-my-base-content)' }}>Event Revenue Contributions</Typography>
                 <TableContainer>
                     <Table stickyHeader>
                         <TableHead>
-                            <TableRow>
-                                <TableCell>Event Name</TableCell>
-                                <TableCell align="right">Net Revenue Contribution</TableCell>
-                                <TableCell>Payout Ready</TableCell>
+                            <TableRow sx={{ backgroundColor: 'var(--color-my-base-200)' }}>
+                                <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Event Name</TableCell>
+                                <TableCell align="right" sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Net Revenue Contribution</TableCell>
+                                <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Payout Ready</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {eventsForPayoutDisplay.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={3} align="center">No events found or revenue pending.</TableCell>
+                                    <TableCell colSpan={3} align="center" sx={{ color: 'var(--color-my-base-content)' }}>No events found or revenue pending.</TableCell>
                                 </TableRow>
                             ) : (
                                 eventsForPayoutDisplay.map((event) => (
-                                    <TableRow key={event.id}>
-                                        <TableCell>{event.name}</TableCell>
-                                        <TableCell align="right">${event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                        <TableCell>
+                                    <TableRow key={event.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>{event.name}</TableCell>
+                                        <TableCell align="right" sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>${event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                        <TableCell sx={{ borderColor: 'var(--color-my-base-300)' }}>
                                             <Alert
                                                 severity={event.isFinalized ? 'success' : 'info'}
                                                 iconMapping={{
                                                     success: <CheckCircleIcon fontSize="inherit" />,
                                                     info: <HourglassEmptyIcon fontSize="inherit" />,
                                                 }}
-                                                sx={{ p: 0.5, py: 0, '& .MuiAlert-message': { mt: 0, mb: 0 }, minWidth: '80px' }}
+                                                sx={{
+                                                    p: 0.5, py: 0, '& .MuiAlert-message': { mt: 0, mb: 0 }, minWidth: '80px',
+                                                    backgroundColor: `var(--color-my-${event.isFinalized ? 'success' : 'info'})`,
+                                                    color: `var(--color-my-${event.isFinalized ? 'success' : 'info'}-content)`
+                                                }}
                                             >
                                                 {event.isFinalized ? 'Ready' : 'Processing'}
                                             </Alert>
@@ -391,23 +444,23 @@ export const AdminPayouts = () => {
             </Paper>
 
             {/* Payout History - Placeholder for now as you didn't provide its RTK Query */}
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h5" gutterBottom>Payout History</Typography>
+            <Paper elevation={3} sx={{ p: 3, mb: 4, backgroundColor: 'var(--color-my-base-100)' }}>
+                <Typography variant="h5" gutterBottom sx={{ color: 'var(--color-my-base-content)' }}>Payout History</Typography>
                 <TableContainer>
                     <Table stickyHeader>
                         <TableHead>
-                            <TableRow>
-                                <TableCell>Request ID</TableCell>
-                                <TableCell align="right">Amount</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell>Request Date</TableCell>
-                                <TableCell>Completion Date</TableCell>
+                            <TableRow sx={{ backgroundColor: 'var(--color-my-base-200)' }}>
+                                <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Request ID</TableCell>
+                                <TableCell align="right" sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Amount</TableCell>
+                                <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Status</TableCell>
+                                <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Request Date</TableCell>
+                                <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>Completion Date</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {/* This data would come from an RTK Query for payout history, e.g., useGetPayoutHistoryQuery(organizerId) */}
                             <TableRow>
-                                <TableCell colSpan={5} align="center">Payout history data would be loaded here via RTK Query.</TableCell>
+                                <TableCell colSpan={5} align="center" sx={{ color: 'var(--color-my-base-content)' }}>Payout history data would be loaded here via RTK Query.</TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
@@ -420,37 +473,49 @@ export const AdminPayouts = () => {
                 open={payoutDialogOpen}
                 onClose={handlePayoutDialogClose}
                 aria-labelledby="payout-dialog-title"
+                PaperProps={{
+                    sx: {
+                        backgroundColor: 'var(--color-my-base-100)',
+                        color: 'var(--color-my-base-content)',
+                    }
+                }}
             >
-                <DialogTitle id="payout-dialog-title">Confirm Payout Request</DialogTitle>
+                <DialogTitle id="payout-dialog-title" sx={{ color: 'var(--color-my-primary)' }}>Confirm Payout Request</DialogTitle>
                 <DialogContent>
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                        You are requesting a payout of <Typography component="span" variant="h6" color="primary">${parseFloat(payoutAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>.
+                    <Typography variant="body1" sx={{ mb: 2, color: 'var(--color-my-base-content)' }}>
+                        You are requesting a payout of <Typography component="span" variant="h6" sx={{ color: 'var(--color-my-primary)' }}>${parseFloat(payoutAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>.
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>
                         This amount will be transferred to your registered bank account:
                     </Typography>
-                    <Box sx={{ mt: 1, p: 1, border: '1px dashed grey', borderRadius: 1 }}>
-                        <Typography variant="body2">Bank Name: <strong>{bankDetails?.bankName || 'N/A'}</strong></Typography>
-                        <Typography variant="body2">Account Name: <strong>{bankDetails?.accountName || 'N/A'}</strong></Typography>
-                        <Typography variant="body2">Account Number: <strong>{bankDetails?.accountNumber || 'N/A'}</strong></Typography>
+                    <Box sx={{ mt: 1, p: 1, border: '1px dashed var(--color-my-base-300)', borderRadius: 1 }}>
+                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Bank Name: <strong sx={{ color: 'var(--color-my-base-content)' }}>{bankDetails?.bankName || 'N/A'}</strong></Typography>
+                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Account Name: <strong sx={{ color: 'var(--color-my-base-content)' }}>{bankDetails?.accountName || 'N/A'}</strong></Typography>
+                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Account Number: <strong sx={{ color: 'var(--color-my-base-content)' }}>{bankDetails?.accountNumber || 'N/A'}</strong></Typography>
                     </Box>
-                    <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+                    <Typography variant="body2" sx={{ mt: 2, color: 'var(--color-my-error)' }}>
                         Please ensure all details are correct. This action cannot be undone.
                     </Typography>
                     {payoutRequestLoading && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                            <CircularProgress size={20} />
-                            <Typography sx={{ ml: 1 }}>Processing request...</Typography>
+                            <CircularProgress size={20} sx={{ color: 'var(--color-my-primary)' }} />
+                            <Typography sx={{ ml: 1, color: 'var(--color-my-base-content)' }}>Processing request...</Typography>
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handlePayoutDialogClose} disabled={payoutRequestLoading}>Cancel</Button>
+                <DialogActions sx={{ backgroundColor: 'var(--color-my-base-100)' }}>
+                    <Button onClick={handlePayoutDialogClose} disabled={payoutRequestLoading} sx={{ color: 'var(--color-my-base-content)' }}>Cancel</Button>
                     <Button
                         onClick={handleConfirmPayout}
-                        color="primary"
                         variant="contained"
                         disabled={payoutRequestLoading}
+                        sx={{
+                            backgroundColor: 'var(--color-my-primary)',
+                            color: 'var(--color-my-primary-content)',
+                            '&:hover': {
+                                backgroundColor: 'var(--color-my-primary-focus)',
+                            }
+                        }}
                     >
                         Confirm
                     </Button>

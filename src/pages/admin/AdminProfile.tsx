@@ -10,6 +10,7 @@ import {
     Divider,
     Alert,
     CircularProgress,
+    useTheme // Import useTheme hook for spacing, etc.
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
@@ -19,10 +20,11 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { useGetUserDetailsQuery, type ApplicationUser } from '../../queries/general/AuthQuery.ts';
 import { useSelector } from 'react-redux';
 import type {RootState} from '../../redux/store.ts'; // Assuming your RootState is defined here
-// Assuming your RootState is defined here
 
 
 export const AdminProfile = () => {
+    const theme = useTheme(); // Access the theme object for spacing, etc.
+
     // Get user from Redux store to access the ID for the query
     const user = useSelector((state: RootState) => state.user.user);
     const userId = user?.user_id; // Get the user ID from your Redux state
@@ -128,33 +130,37 @@ export const AdminProfile = () => {
     // Show loading spinner if fetching initial data or refetching
     if (isLoading || isFetching || !editableProfileData) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <CircularProgress />
-                <Typography sx={{ ml: 2 }}>Loading profile...</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', backgroundColor: 'var(--color-my-base-200)' }}>
+                <CircularProgress sx={{ color: 'var(--color-my-primary)' }} />
+                <Typography sx={{ ml: 2, color: 'var(--color-my-base-content)' }}>Loading profile...</Typography>
             </Box>
         );
     }
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom>
+        <Box sx={{ flexGrow: 1, p: 3, backgroundColor: 'var(--color-my-base-200)', color: 'var(--color-my-base-content)', minHeight: '100vh', width: '100%' }}>
+            <Typography variant="h4" gutterBottom sx={{ color: 'var(--color-my-primary)' }}>
                 My Profile
             </Typography>
 
             {profileMessage.text && (
-                <Alert severity={profileMessage.type} sx={{ mb: 2 }}>
+                <Alert severity={profileMessage.type} sx={{ mb: 2,
+                    backgroundColor: `var(--color-my-${profileMessage.type})`,
+                    color: `var(--color-my-${profileMessage.type}-content)`
+                }}>
                     {profileMessage.text}
                 </Alert>
             )}
 
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+            <Paper elevation={3} sx={{ p: 3, mb: 4, backgroundColor: 'var(--color-my-base-100)' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h5">My Details</Typography>
+                    <Typography variant="h5" sx={{ color: 'var(--color-my-base-content)' }}>My Details</Typography>
                     {!isEditing ? (
                         <Button
                             variant="outlined"
                             startIcon={<EditIcon />}
                             onClick={handleEditToggle}
+                            sx={{ color: 'var(--color-my-primary)', borderColor: 'var(--color-my-primary)' }}
                         >
                             Edit Profile
                         </Button>
@@ -162,10 +168,9 @@ export const AdminProfile = () => {
                         <Box>
                             <Button
                                 variant="contained"
-                                color="primary"
                                 startIcon={<SaveIcon />}
                                 onClick={handleSave}
-                                sx={{ mr: 1 }}
+                                sx={{ mr: 1, backgroundColor: 'var(--color-my-primary)', color: 'var(--color-my-primary-content)', '&:hover': { backgroundColor: 'var(--color-my-primary-focus)' } }}
                                 // disabled={isUpdating} // Use this if you have an actual mutation
                             >
                                 {/* {isUpdating ? <CircularProgress size={24} /> : 'Save Changes'} */}
@@ -173,9 +178,9 @@ export const AdminProfile = () => {
                             </Button>
                             <Button
                                 variant="outlined"
-                                color="error"
                                 startIcon={<CancelIcon />}
                                 onClick={handleCancel}
+                                sx={{ color: 'var(--color-my-error)', borderColor: 'var(--color-my-error)' }}
                                 // disabled={isUpdating} // Use this if you have an actual mutation
                             >
                                 Cancel
@@ -183,7 +188,7 @@ export const AdminProfile = () => {
                         </Box>
                     )}
                 </Box>
-                <Divider sx={{ mb: 3 }} />
+                <Divider sx={{ mb: 3, borderColor: 'var(--color-my-base-300)' }} />
 
                 <Grid container spacing={3}>
                     {/* Profile Picture */}
@@ -191,10 +196,10 @@ export const AdminProfile = () => {
                         <Avatar
                             alt={`${editableProfileData.firstName} ${editableProfileData.lastName}`}
                             src={editableProfileData.profilePicture || "https://via.placeholder.com/150"} // Placeholder if no picture
-                            sx={{ width: 120, height: 120, mb: 2 }}
+                            sx={{ width: 120, height: 120, mb: 2, border: `2px solid var(--color-my-primary)` }}
                             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src="https://via.placeholder.com/150"; }} // Fallback on error
                         />
-                        <Typography variant="caption" color="text.secondary">Profile Picture</Typography>
+                        <Typography variant="caption" sx={{ color: 'var(--color-my-base-content)' }}>Profile Picture</Typography>
                         {/* Add file upload functionality here if needed for profile picture */}
                     </Grid>
 
@@ -210,6 +215,28 @@ export const AdminProfile = () => {
                                     onChange={handleChange}
                                     disabled={!isEditing}
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)', // Maintain border color when disabled
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)', // Keep text readable when disabled
+                                                opacity: 0.7, // Reduce opacity for disabled fields
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -221,6 +248,28 @@ export const AdminProfile = () => {
                                     onChange={handleChange}
                                     disabled={!isEditing}
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)',
+                                                opacity: 0.7,
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -233,6 +282,28 @@ export const AdminProfile = () => {
                                     onChange={handleChange}
                                     disabled // Email is usually not editable via profile UI
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)',
+                                                opacity: 0.7,
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -245,6 +316,28 @@ export const AdminProfile = () => {
                                     onChange={handleChange}
                                     disabled={!isEditing}
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)',
+                                                opacity: 0.7,
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12}>
@@ -258,6 +351,28 @@ export const AdminProfile = () => {
                                     multiline
                                     rows={2}
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-primary)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)',
+                                                opacity: 0.7,
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -268,6 +383,22 @@ export const AdminProfile = () => {
                                     value={editableProfileData.role || ''}
                                     disabled // Role is typically not editable by the user
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)',
+                                                opacity: 0.7,
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -278,6 +409,22 @@ export const AdminProfile = () => {
                                     value={editableProfileData.isVerified ? 'Yes' : 'No'}
                                     disabled // Display only, not editable
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)',
+                                                opacity: 0.7,
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -288,6 +435,22 @@ export const AdminProfile = () => {
                                     value={editableProfileData.createdAt ? new Date(editableProfileData.createdAt).toLocaleDateString() : ''}
                                     disabled // Display only
                                     variant="outlined"
+                                    InputLabelProps={{ sx: { color: 'var(--color-my-base-content)' } }}
+                                    InputProps={{
+                                        sx: {
+                                            color: 'var(--color-my-base-content)',
+                                            '.MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: 'var(--color-my-base-300)',
+                                            },
+                                            '&.Mui-disabled': {
+                                                color: 'var(--color-my-base-content)',
+                                                opacity: 0.7,
+                                            },
+                                        }
+                                    }}
                                 />
                             </Grid>
                         </Grid>

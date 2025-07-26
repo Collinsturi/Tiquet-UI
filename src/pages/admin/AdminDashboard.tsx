@@ -12,8 +12,9 @@ import {
     ListItemText,
     Divider,
     useTheme,
-    alpha,
-    CircularProgress
+    CircularProgress,
+    Alert,
+    alpha
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EventIcon from '@mui/icons-material/Event';
@@ -44,11 +45,18 @@ import type {RootState} from "../../redux/store.ts";
 import { useGetAdminDashboardSummaryQuery } from '../../queries/admin/adminQuery.ts';
 
 // Colors for the Pie Chart slices (matching Material-UI palette somewhat)
-const PIE_COLORS = ['#1976d2', '#ff9800', '#4caf50', '#9c27b0']; // Example: Primary, Orange, Green, Purple
+const PIE_COLORS = []; // Initialize as empty, populate in component
 
 export const AdminDashboard = () => {
     const theme = useTheme();
     const navigate = useNavigate();
+
+    // Populate PIE_COLORS using theme palette colors
+    // This ensures they match your defined theme colors
+    PIE_COLORS[0] = theme.palette.primary.main;
+    PIE_COLORS[1] = theme.palette.secondary.main;
+    PIE_COLORS[2] = theme.palette.success.main;
+    PIE_COLORS[3] = theme.palette.info.main;
 
     const user = useSelector((state: RootState) => state.user.user);
     const { data, isLoading, isError } = useGetAdminDashboardSummaryQuery(user.email);
@@ -58,7 +66,7 @@ export const AdminDashboard = () => {
         totalEvents = 0,
         totalTicketsSold = 0,
         totalRevenue = 0,
-        upcomingEvents = [], // Backend `upcomingEvents` already provides the list directly
+        upcomingEvents = [],
         recentActivity = [],
         monthlySales = [],
         ticketTypeDistribution = [],
@@ -85,8 +93,8 @@ export const AdminDashboard = () => {
                 height: '100%',
                 minHeight: '200px', // Ensure it has some height even if content is 0
                 width: '100%',
-                backgroundColor: theme.palette.background.default, // Or a slightly lighter color
-                color: theme.palette.text.secondary,
+                backgroundColor: theme.palette.background.default, // Use theme background color
+                color: theme.palette.text.secondary, // Use theme text color
                 borderRadius: theme.shape.borderRadius,
                 textAlign: 'center',
                 p: 2,
@@ -99,7 +107,7 @@ export const AdminDashboard = () => {
 
     if (isLoading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', backgroundColor: theme.palette.background.default }}>
                 <CircularProgress sx={{ color: theme.palette.primary.main }} />
                 <Typography sx={{ ml: 2, color: theme.palette.text.secondary }}>Loading dashboard data...</Typography>
             </Box>
@@ -108,7 +116,7 @@ export const AdminDashboard = () => {
 
     if (isError) {
         return (
-            <Box sx={{ flexGrow: 1, p: 3 }}>
+            <Box sx={{ flexGrow: 1, p: 3, backgroundColor: theme.palette.background.default }}>
                 <Alert severity="error" sx={{ mb: 2 }}>
                     Error loading dashboard data. Please try again later.
                     <Button variant="contained" sx={{ ml: 2 }} onClick={() => navigate('/')}>Go to Home</Button>
@@ -125,8 +133,8 @@ export const AdminDashboard = () => {
 
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
-            <Typography variant="h4" gutterBottom>
+        <Box sx={{ flexGrow: 1, p: 3, backgroundColor: 'var(--color-my-base-200)', color: 'var(--color-my-base-content)', minHeight: '100vh', width: '100%' }}>
+            <Typography variant="h4" gutterBottom sx={{ color: 'var(--color-my-primary)' }}>
                 Welcome, {user.first_name} {user.last_name}!
             </Typography>
 
@@ -164,7 +172,8 @@ export const AdminDashboard = () => {
                         <CalendarTodayIcon color="info" sx={{ fontSize: 40, mr: 2 }} />
                         <CardContent>
                             <Typography variant="h6" color="text.secondary">Upcoming Events</Typography>
-                            <Typography variant="h4" color="info">{upcomingEvents.length}</Typography>                        </CardContent>
+                            <Typography variant="h4" color="info">{upcomingEvents.length}</Typography>
+                        </CardContent>
                     </Card>
                 </Grid>
             </Grid>
@@ -174,8 +183,8 @@ export const AdminDashboard = () => {
             <Grid container spacing={3}>
                 {/* Recent Activity */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <CardHeader title="Recent Activity" />
+                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-my-base-100)' }}>
+                        <CardHeader title="Recent Activity" sx={{ color: 'var(--color-my-base-content)' }}/>
                         {recentActivity && recentActivity.length > 0 ? (
                             <List sx={{ flexGrow: 1, overflowY: 'auto' }}>
                                 {/* Slice to show only the recent 5 activities */}
@@ -183,11 +192,11 @@ export const AdminDashboard = () => {
                                     <Box key={index}>
                                         <ListItem>
                                             <ListItemText
-                                                primary={`User ${activity.user} purchased ${activity.ticketType} ticket for "${activity.eventTitle}"`}
-                                                secondary={new Date(activity.createdAt).toLocaleString()}
+                                                primary={<Typography sx={{ color: 'var(--color-my-base-content)' }}>{`User ${activity.user} purchased ${activity.ticketType} ticket for "${activity.eventTitle}"`}</Typography>}
+                                                secondary={<Typography sx={{ color: 'var(--color-my-base-content)' }}>{new Date(activity.createdAt).toLocaleString()}</Typography>}
                                             />
                                         </ListItem>
-                                        {index < recentActivity.slice(0, 5).length - 1 && <Divider component="li" />}
+                                        {index < recentActivity.slice(0, 5).length - 1 && <Divider component="li" sx={{ borderColor: 'var(--color-my-base-300)' }}/>}
                                     </Box>
                                 ))}
                             </List>
@@ -195,51 +204,40 @@ export const AdminDashboard = () => {
                             <NoDataOverlay message="No recent activity to display. Check back later." />
                         )}
                         <Box sx={{ mt: 2, textAlign: 'right' }}>
-                            <Button variant="text" onClick={() => navigate('/admin/reports')}>View All Activity</Button>
+                            <Button variant="text" onClick={() => navigate('/admin/reports')} sx={{ color: 'var(--color-my-primary)' }}>View All Activity</Button>
                         </Box>
                     </Paper>
                 </Grid>
 
                 {/* Quick Actions / Event Creation */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <CardHeader title="Quick Actions" />
+                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-my-base-100)' }}>
+                        <CardHeader title="Quick Actions" sx={{ color: 'var(--color-my-base-content)' }}/>
                         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                             <Button
                                 variant="contained"
-                                color="primary"
                                 startIcon={<AddIcon />}
-                                sx={{ mb: 2, width: '80%' }}
+                                sx={{ mb: 2, width: '80%', backgroundColor: 'var(--color-my-primary)', color: 'var(--color-my-primary-content)', '&:hover': { backgroundColor: 'var(--color-my-primary-focus)' } }}
                                 onClick={() => navigate('/organizer/create-event')}
                             >
                                 Create New Event
                             </Button>
                             <Button
                                 variant="outlined"
-                                color="secondary"
                                 startIcon={<SellIcon />}
-                                sx={{ mb: 2, width: '80%' }}
+                                sx={{ mb: 2, width: '80%', color: 'var(--color-my-secondary)', borderColor: 'var(--color-my-secondary)', '&:hover': { backgroundColor: 'var(--color-my-secondary)', color: 'var(--color-my-secondary-content)' } }}
                                 onClick={() => navigate('/organizer/my-events')}
                             >
                                 Manage My Events
                             </Button>
-                            {/*<Button*/}
-                            {/* variant="outlined"*/}
-                            {/* color="info"*/}
-                            {/* startIcon={<PeopleIcon />}*/}
-                            {/* sx={{ width: '80%' }}*/}
-                            {/* onClick={() => navigate('/organizer/attendees')}*/}
-                            {/*>*/}
-                            {/* View Attendees*/}
-                            {/*</Button>*/}
                         </Box>
                     </Paper>
                 </Grid>
 
                 {/* Sales Overview Chart (Recharts) */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <CardHeader title="Monthly Ticket Sales Overview" />
+                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.paper }}>
+                        <CardHeader title="Monthly Ticket Sales Overview" sx={{ color: theme.palette.text.primary }}/>
                         {hasMeaningfulSalesData ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart
@@ -251,11 +249,11 @@ export const AdminDashboard = () => {
                                         bottom: 5,
                                     }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis label={{ value: 'Tickets Sold', angle: -90, position: 'insideLeft' }} />
-                                    <Tooltip />
-                                    <Legend />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                    <XAxis dataKey="month" stroke={theme.palette.text.secondary} />
+                                    <YAxis label={{ value: 'Tickets Sold', angle: -90, position: 'insideLeft', fill: theme.palette.text.secondary }} stroke={theme.palette.text.secondary} />
+                                    <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
+                                    <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
                                     <Bar dataKey="tickets" fill={theme.palette.primary.main} name="Tickets Sold" />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -267,8 +265,8 @@ export const AdminDashboard = () => {
 
                 {/* Ticket Type Distribution Chart (Recharts) */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <CardHeader title="Ticket Type Distribution" />
+                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: theme.palette.background.paper }}>
+                        <CardHeader title="Ticket Type Distribution" sx={{ color: theme.palette.text.primary }}/>
                         {hasMeaningfulTicketTypeData ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
@@ -277,7 +275,7 @@ export const AdminDashboard = () => {
                                         cx="50%"
                                         cy="50%"
                                         outerRadius={100}
-                                        fill="#8884d8"
+                                        fill="#8884d8" // This fill color will be overridden by Cell fills
                                         dataKey="value"
                                         labelLine={false}
                                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -286,8 +284,8 @@ export const AdminDashboard = () => {
                                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
-                                    <Legend />
+                                    <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
+                                    <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
@@ -298,8 +296,8 @@ export const AdminDashboard = () => {
 
                 {/* Upcoming Events List */}
                 <Grid item xs={12}>
-                    <Paper elevation={2} sx={{ p: 2 }}>
-                        <CardHeader title="My Events" />
+                    <Paper elevation={2} sx={{ p: 2, backgroundColor: 'var(--color-my-base-100)' }}>
+                        <CardHeader title="My Events" sx={{ color: 'var(--color-my-base-content)' }}/>
                         {upcomingEvents && upcomingEvents.length > 0 ? (
                             <List>
                                 {upcomingEvents.map((event) => (
@@ -307,17 +305,17 @@ export const AdminDashboard = () => {
                                         <ListItem alignItems="flex-start">
                                             <ListItemText
                                                 primary={
-                                                    <Typography variant="h6" component="div">
+                                                    <Typography variant="h6" component="div" sx={{ color: 'var(--color-my-base-content)' }}>
                                                         {event.title}
                                                     </Typography>
                                                 }
                                                 secondary={
                                                     <Box>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.date}
+                                                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>
+                                                            <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: 'var(--color-my-base-content)' }} /> {event.date}
                                                         </Typography>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            <AccessTimeIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.time}
+                                                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>
+                                                            <AccessTimeIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: 'var(--color-my-base-content)' }} /> {event.time}
                                                         </Typography>
                                                     </Box>
                                                 }
@@ -326,11 +324,12 @@ export const AdminDashboard = () => {
                                                 variant="outlined"
                                                 size="small"
                                                 onClick={() => navigate(`/organizer/my-events/${event.id}`)}
+                                                sx={{ color: 'var(--color-my-secondary)', borderColor: 'var(--color-my-secondary)', '&:hover': { backgroundColor: 'var(--color-my-secondary)', color: 'var(--color-my-secondary-content)' } }}
                                             >
                                                 View Details
                                             </Button>
                                         </ListItem>
-                                        <Divider component="li" sx={{ my: 1 }} />
+                                        <Divider component="li" sx={{ my: 1, borderColor: 'var(--color-my-base-300)' }} />
                                     </Box>
                                 ))}
                             </List>
@@ -338,7 +337,7 @@ export const AdminDashboard = () => {
                             <NoDataOverlay message="No upcoming events to display. Start by creating a new event!" />
                         )}
                         <Box sx={{ mt: 2, textAlign: 'right' }}>
-                            <Button variant="text" onClick={() => navigate('/organizer/my-events')}>View All Events</Button>
+                            <Button variant="text" onClick={() => navigate('/organizer/my-events')} sx={{ color: 'var(--color-my-primary)' }}>View All Events</Button>
                         </Box>
                     </Paper>
                 </Grid>

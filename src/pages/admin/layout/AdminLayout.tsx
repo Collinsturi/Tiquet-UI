@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import {
     AppBar,
     Box,
@@ -18,18 +18,20 @@ import {
     Avatar,
     InputBase,
     Collapse,
-    Menu, // Import Menu for dropdowns
-    MenuItem, // Import MenuItem for dropdown items
-    Badge, // Import Badge for notification count
-    CircularProgress // Import CircularProgress for loading indicator
+    Menu,
+    MenuItem,
+    Badge,
+    CircularProgress
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import HowToRegIcon from '@mui/icons-material/HowToReg'; // New icon for CheckIn Staff
+import EventNoteIcon from '@mui/icons-material/EventNote'; // New icon for My Events
 import BarChartIcon from '@mui/icons-material/BarChart';
-import LayersIcon from '@mui/icons-material/Layers';
+import PaymentsIcon from '@mui/icons-material/Payments'; // New icon for Payout
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // New icon for Profile
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
@@ -44,7 +46,7 @@ const drawerWidth = 240;
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
     borderRadius: theme.shape.borderRadius,
-    backgroundColor: '#f1f1f1',
+    backgroundColor: 'var(--color-my-base-100)', // Use custom theme variable
     marginRight: theme.spacing(2),
     marginLeft: 0,
     width: '100%',
@@ -61,11 +63,11 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: 'black',
+    color: 'var(--color-my-base-content)', // Use custom theme variable
 }));
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
-    color: 'black',
+    color: 'var(--color-my-base-content)', // Use custom theme variable
     '& .MuiInputBase-input': {
         padding: theme.spacing(1, 1, 1, 0),
         paddingLeft: `calc(1em + ${theme.spacing(4)})`,
@@ -76,6 +78,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 export const AdminLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const theme = useTheme(); // Access the theme object
     const [mobileOpen, setMobileOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(true); // Initial state for desktop drawer
     const [notificationAnchorEl, setNotificationAnchorEl] = useState(null); // State for notification dropdown
@@ -109,47 +112,43 @@ export const AdminLayout = () => {
     const sections = [
         { kind: 'header', title: 'Main Menu' },
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/organizer' },
-        { text: 'CheckIn Staff', icon: <ShoppingCartIcon />, path: '/organizer/CheckIn-Staff' },
-        { text: 'My Events', icon: <ShoppingCartIcon />, path: '/organizer/My-Events' },
+        { text: 'CheckIn Staff', icon: <HowToRegIcon />, path: '/organizer/CheckIn-Staff' }, // Updated icon
+        { text: 'My Events', icon: <EventNoteIcon />, path: '/organizer/My-Events' }, // Updated icon
         { kind: 'divider' },
         { kind: 'header', title: 'Analytics' },
         { text: 'Reports', icon: <BarChartIcon />, path: '/organizer/Reports' },
-        { text: 'Payout', icon: <BarChartIcon />, path: "/organizer/Payout"},
-        { text: 'Profile', icon: <LayersIcon />, path: '/organizer/profile' },
+        { text: 'Payout', icon: <PaymentsIcon />, path: "/organizer/Payout"}, // Updated icon
+        { text: 'Profile', icon: <AccountCircleIcon />, path: '/organizer/profile' }, // Updated icon
     ];
 
     const drawer = (
         <div>
-            <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', backgroundColor: 'var(--color-my-neutral)' }}> {/* Bolder color for Toolbar in drawer */}
                 {drawerOpen && (
                     <img
                         src={"src/assets/tiquet-logo-no-background.png"}
                         alt={"Logo"}
-                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`}
                     />
                 )}
-                {/* The chevron button for closing/opening the drawer, only visible when drawer is open on large screens */}
-                {/* On large screens, the hamburger in AppBar will handle the initial toggle */}
-                {/* We can keep this for fine-tuning the close if needed, but it's redundant if AppBar handles all toggling */}
-                {/* For consistency, we might remove this and solely rely on the AppBar hamburger for desktop too */}
-                {/* For now, let's keep it but note its redundancy if AppBar's hamburger controls everything */}
-                <IconButton onClick={handleDrawerToggle}>
+                <IconButton onClick={handleDrawerToggle} sx={{ color: 'var(--color-my-neutral-content)' }}> {/* Text color for icons on bolder background */}
                     {drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
                 </IconButton>
             </Toolbar>
 
-            <Divider />
+            <Divider sx={{ borderColor: 'var(--color-my-base-300)' }} />
 
             {/* Mobile-specific content: Search & Avatar */}
-            <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', px: 2, mb: 2 }}>
-                <div className={"flex flex-row gap-3"}>
+            <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', px: 2, mb: 2, backgroundColor: 'var(--color-my-neutral)' }}> {/* Bolder color for mobile drawer header */}
+                <div className={"flex flex-row gap-3 pt-2"}>
                     <Avatar
                         alt="organizer"
                         src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
+                        sx={{ border: '2px solid var(--color-my-primary)' }}
                     />
-                    <Typography className={"pt-2"}>{user.firstName}</Typography>
+                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>{user.firstName}</Typography> {/* Text color on bolder background */}
                 </div>
-                <Search >
+                <Search sx={{ mt: 2 }}>
                     <SearchIconWrapper>
                         <SearchIcon />
                     </SearchIconWrapper>
@@ -157,18 +156,18 @@ export const AdminLayout = () => {
                 </Search>
             </Box>
 
-            <List>
+            <List sx={{ backgroundColor: 'var(--color-my-neutral)' }}> {/* Bolder color for drawer list background */}
                 {sections.map((item, index) => {
                     if (item.kind === 'header') {
                         return drawerOpen ? (
-                            <Typography key={index} variant="caption" sx={{ px: 2, py: 1, fontWeight: 'bold', color: 'gray' }}>
+                            <Typography key={index} variant="caption" sx={{ px: 2, py: 1, fontWeight: 'bold', color: 'var(--color-my-neutral-content)' }}> {/* Text color on bolder background */}
                                 {item.title}
                             </Typography>
                         ) : null;
                     }
 
                     if (item.kind === 'divider') {
-                        return <Divider key={index} sx={{ my: 1 }} />;
+                        return <Divider key={index} sx={{ my: 1, borderColor: 'var(--color-my-base-300)' }} />;
                     }
 
                     return (
@@ -179,6 +178,10 @@ export const AdminLayout = () => {
                                     minHeight: 48,
                                     justifyContent: drawerOpen ? 'initial' : 'center',
                                     px: 2.5,
+                                    backgroundColor: location.pathname === item.path ? 'var(--color-my-primary-focus)' : 'transparent',
+                                    '&:hover': {
+                                        backgroundColor: 'var(--color-my-base-300)', // Adjusted hover for list items on darker background
+                                    },
                                 }}
                                 onClick={() => navigate(item.path)}
                             >
@@ -187,12 +190,13 @@ export const AdminLayout = () => {
                                         minWidth: 0,
                                         mr: drawerOpen ? 3 : 'auto',
                                         justifyContent: 'center',
+                                        color: location.pathname === item.path ? 'var(--color-my-primary-content)' : 'var(--color-my-neutral-content)', // Text color on bolder background
                                     }}
                                 >
                                     {item.icon}
                                 </ListItemIcon>
                                 <Collapse in={drawerOpen} orientation="horizontal">
-                                    <ListItemText primary={item.text} />
+                                    <ListItemText primary={item.text} sx={{ color: location.pathname === item.path ? 'var(--color-my-primary-content)' : 'var(--color-my-neutral-content)' }} /> {/* Text color on bolder background */}
                                 </Collapse>
                             </ListItemButton>
                         </ListItem>
@@ -205,7 +209,7 @@ export const AdminLayout = () => {
     return (
         <Box sx={{ display: 'flex' }}>
             <CssBaseline />
-            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: 'var(--color-my-primary)' }}>
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: 'var(--color-my-neutral)', color: 'var(--color-my-primary-content)' }}>
                 <Toolbar>
                     {/* Hamburger button for mobile screens */}
                     <IconButton
@@ -230,9 +234,9 @@ export const AdminLayout = () => {
                     </IconButton>
 
                     <img
-                        src={"src/assets/tiquet-logo.png"}
+                        src={"src/assets/tiquet-logo-no-background.png"}
                         alt={"Logo"}
-                        className={`h-8 w-20 ml-3 filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
+                        className={`h-8 w-20 ml-3 filter brightness-200'}`}
                     />
 
                     {/* Hide on small screens */}
@@ -244,7 +248,7 @@ export const AdminLayout = () => {
                     }}>
                         <Search>
                             <SearchIconWrapper>
-                                <SearchIcon/>
+                                <SearchIcon />
                             </SearchIconWrapper>
                             <StyledInputBase placeholder="Search…" inputProps={{'aria-label': 'search'}}/>
                         </Search>
@@ -278,25 +282,31 @@ export const AdminLayout = () => {
                             vertical: 'top',
                             horizontal: 'right',
                         }}
+                        PaperProps={{
+                            sx: {
+                                backgroundColor: 'var(--color-my-base-100)',
+                                color: 'var(--color-my-base-content)',
+                            }
+                        }}
                     >
-                        <Typography variant="h6" sx={{ px: 2, py: 1 }}>Notifications</Typography>
-                        <Divider />
+                        <Typography variant="h6" sx={{ px: 2, py: 1, color: 'var(--color-my-primary)' }}>Notifications</Typography>
+                        <Divider sx={{ borderColor: 'var(--color-my-base-300)' }} />
                         {isSummaryLoading ? (
-                            <MenuItem disabled>
-                                <CircularProgress size={20} sx={{ mr: 2 }} /> Loading notifications...
+                            <MenuItem disabled sx={{ color: 'var(--color-my-base-content)' }}>
+                                <CircularProgress size={20} sx={{ mr: 2, color: 'var(--color-my-primary)' }} /> Loading notifications...
                             </MenuItem>
                         ) : summaryError ? (
-                            <MenuItem disabled>Error loading notifications.</MenuItem>
+                            <MenuItem disabled sx={{ color: 'var(--color-my-error)' }}>Error loading notifications.</MenuItem>
                         ) : recentActivities.length > 0 ? (
                             recentActivities.map((activity, index) => (
-                                <MenuItem key={index} onClick={handleNotificationClose}>
+                                <MenuItem key={index} onClick={handleNotificationClose} sx={{ color: 'var(--color-my-base-content)' }}>
                                     <Typography variant="body2">
                                         User {activity.user} purchased {activity.ticketType} ticket for "{activity.eventTitle}" ({new Date(activity.createdAt).toLocaleString()})
                                     </Typography>
                                 </MenuItem>
                             ))
                         ) : (
-                            <MenuItem onClick={handleNotificationClose}>No new notifications</MenuItem>
+                            <MenuItem onClick={handleNotificationClose} sx={{ color: 'var(--color-my-base-content)' }}>No new notifications</MenuItem>
                         )}
                     </Menu>
 
@@ -310,6 +320,7 @@ export const AdminLayout = () => {
                             <Avatar
                                 alt="AdminUser"
                                 src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
+                                sx={{ border: '2px solid var(--color-my-primary-content)' }}
                             />
                         </IconButton>
                         <Menu
@@ -325,8 +336,14 @@ export const AdminLayout = () => {
                                 vertical: 'top',
                                 horizontal: 'right',
                             }}
+                            PaperProps={{
+                                sx: {
+                                    backgroundColor: 'var(--color-my-base-100)',
+                                    color: 'var(--color-my-base-content)',
+                                }
+                            }}
                         >
-                            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                            <MenuItem onClick={handleLogout} sx={{ color: 'var(--color-my-base-content)' }}>Logout</MenuItem>
                         </Menu>
                     </Box>
                 </Toolbar>
@@ -346,7 +363,7 @@ export const AdminLayout = () => {
                     ModalProps={{ keepMounted: true }}
                     sx={{
                         display: { xs: 'block', sm: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, backgroundColor: 'var(--color-my-primary)' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, backgroundColor: 'var(--color-my-neutral)' }, // Bolder color for mobile drawer background
                     }}
                 >
                     {drawer}
@@ -363,7 +380,7 @@ export const AdminLayout = () => {
                             width: drawerOpen ? drawerWidth : 60,
                             transition: 'width 0.3s',
                             overflowX: 'hidden',
-                            backgroundColor: 'var(--color-my-primary)'
+                            backgroundColor: 'var(--color-my-neutral)' // Bolder color for desktop drawer background
                         },
                     }}
                 >
@@ -371,7 +388,7 @@ export const AdminLayout = () => {
                 </Drawer>
             </Box>
 
-            <Box component="main" sx={{ flexGrow: 1 }}>
+            <Box component="main" sx={{ flexGrow: 1, backgroundColor: 'var(--color-my-base-200)' }}>
                 <Toolbar /> {/* This Toolbar is crucial for pushing content below the AppBar */}
                 <Outlet />
             </Box>
