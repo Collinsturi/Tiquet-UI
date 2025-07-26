@@ -10,7 +10,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone'; // For M-Pesa STK push
 import QrCode2Icon from '@mui/icons-material/QrCode2'; // For QR code display
 import DownloadIcon from '@mui/icons-material/Download'; // For download button
-import CreditCardIcon from '@mui/icons-material/CreditCard'; // For card payment
+import CreditCardIcon from '@mui/icons-material/CreditCard'; // For card payment (still imported for Paystack icon)
 import { usePaystackPayment } from 'react-paystack'; // Import Paystack hook
 
 // This would ideally come from a utility or be generated dynamically
@@ -29,7 +29,7 @@ export const Checkout = () => {
     const [paymentStatus, setPaymentStatus] = useState(null); // 'success', 'error', null
     const [message, setMessage] = useState('');
     const [currentStep, setCurrentStep] = useState(0); // 0: Payment Method, 1: Instruction, 2: Waiting, 3: Confirmation/Tickets
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('mpesa'); // 'mpesa' or 'paystack' or 'card'
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('mpesa'); // 'mpesa' or 'paystack'
 
     // Paystack configuration (replace with your actual public key and email)
     const paystackConfig = {
@@ -220,15 +220,15 @@ export const Checkout = () => {
                                         <tr key={index}>
                                             <td className="text-[var(--color-my-base-content)]">{ticket.ticketTypeName}</td>
                                             <td className="text-[var(--color-my-base-content)]">{ticket.quantity}</td>
-                                            <td className="text-right text-[var(--color-my-base-content)]">${ticket.pricePerUnit.toLocaleString('en-KE')}</td>
-                                            <td className="text-right text-[var(--color-my-base-content)]">${(ticket.quantity * ticket.pricePerUnit).toLocaleString('en-KE')}</td>
+                                            <td className="text-right text-[var(--color-my-base-content)]">KSh {ticket.pricePerUnit.toLocaleString('en-KE')}</td>
+                                            <td className="text-right text-[var(--color-my-base-content)]">KSh {(ticket.quantity * ticket.pricePerUnit).toLocaleString('en-KE')}</td>
                                         </tr>
                                     ))}
                                     </tbody>
                                     <tfoot>
                                     <tr>
                                         <th colSpan="3" className="text-right text-lg text-[var(--color-my-base-content)]">Total Payable:</th>
-                                        <th className="text-right text-lg text-[var(--color-my-primary)]">${orderDetails.totalAmount.toLocaleString('en-KE')}</th>
+                                        <th className="text-right text-lg text-[var(--color-my-primary)]">KSh {orderDetails.totalAmount.toLocaleString('en-KE')}</th>
                                     </tr>
                                     </tfoot>
                                 </table>
@@ -254,7 +254,7 @@ export const Checkout = () => {
                                     <span className="label-text text-[var(--color-my-base-content)]">M-Pesa (Mobile Money)</span>
                                 </label>
                             </div>
-                            <div className="form-control mb-4"> {/* Added Paystack radio button */}
+                            <div className="form-control mb-6"> {/* Added Paystack radio button */}
                                 <label className="label cursor-pointer justify-start gap-2 text-[var(--color-my-base-content)]">
                                     <input
                                         type="radio"
@@ -266,19 +266,7 @@ export const Checkout = () => {
                                     <span className="label-text text-[var(--color-my-base-content)]">Paystack (Card/Bank Transfer)</span>
                                 </label>
                             </div>
-                            <div className="form-control mb-6">
-                                <label className="label cursor-pointer justify-start gap-2 text-[var(--color-my-base-content)]">
-                                    <input
-                                        type="radio"
-                                        name="payment-method"
-                                        className="radio radio-primary accent-[var(--color-my-primary)]"
-                                        checked={selectedPaymentMethod === 'card'}
-                                        onChange={() => setSelectedPaymentMethod('card')}
-                                        disabled // Card payment is conceptual for now
-                                    />
-                                    <span className="label-text text-[var(--color-my-base-content)]">Credit/Debit Card (Coming Soon)</span>
-                                </label>
-                            </div>
+                            {/* Removed the Credit/Debit Card (Coming Soon) section */}
 
                             <button
                                 className="btn btn-block bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
@@ -289,7 +277,7 @@ export const Checkout = () => {
                                 {paymentStatus === 'success' ? (
                                     <> <CheckCircleOutlineIcon className="w-5 h-5" /> Payment Confirmed </>
                                 ) : (
-                                    <> <PaymentIcon className="w-5 h-5" /> Confirm and Pay ${orderDetails.totalAmount.toLocaleString('en-KE')} </>
+                                    <> <PaymentIcon className="w-5 h-5" /> Confirm and Pay KSh {orderDetails.totalAmount.toLocaleString('en-KE')} </>
                                 )}
                             </button>
                             {paymentStatus === 'error' && (
@@ -367,30 +355,7 @@ export const Checkout = () => {
                             </>
                         )}
 
-                        {currentStep === 1 && selectedPaymentMethod === 'card' && (
-                            <>
-                                <CreditCardIcon className="w-16 h-16 text-[var(--color-my-primary)] mb-4" />
-                                <p className="text-xl font-semibold mb-2 text-[var(--color-my-base-content)]">Enter Card Details</p>
-                                <p className="text-[var(--color-my-base-content)]/80 mb-4">
-                                    This section would contain a secure form for credit/debit card details (number, expiry, CVV).
-                                </p>
-                                {/* Placeholder for a card form */}
-                                <div className="w-full max-w-xs space-y-2">
-                                    <input type="text" placeholder="Card Number" className="input input-bordered w-full bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)]" disabled />
-                                    <div className="flex gap-2">
-                                        <input type="text" placeholder="MM/YY" className="input input-bordered w-1/2 bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)]" disabled />
-                                        <input type="text" placeholder="CVV" className="input input-bordered w-1/2 bg-[var(--color-my-base-100)] text-[var(--color-my-base-content)] border-[var(--color-my-base-300)]" disabled />
-                                    </div>
-                                </div>
-                                <button
-                                    className="btn bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)] mt-4"
-                                    onClick={executeMpesaPaymentProcess} // Changed to generic executePaymentProcess for card
-                                    disabled={loading}
-                                >
-                                    {loading ? <span className="loading loading-spinner loading-sm"></span> : 'Submit Card Details'}
-                                </button>
-                            </>
-                        )}
+                        {/* Removed the conditional rendering for currentStep === 1 && selectedPaymentMethod === 'card' */}
 
                         {currentStep === 2 && (
                             <>

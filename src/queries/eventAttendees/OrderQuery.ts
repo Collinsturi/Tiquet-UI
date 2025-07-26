@@ -34,10 +34,13 @@ export type OrderRequest = {
 };
 
 // Combined type for the create order request body
-export type APICreateOrderRequest = {
-    order: Omit<OrderRequest, 'status'>; // Status will be defaulted to 'in_progress' by backend
-    orderItems: OrderItemRequest[];
-};
+// export type APICreateOrderRequest = {
+//     userId: number;
+//     orderItems: {
+//         ticketTypeId: number;
+//         quantity: number;
+//     }[];
+// };
 
 // Type for a single order item in the response (might include an ID)
 export type OrderItemResponse = {
@@ -61,6 +64,17 @@ export type OrderResponse = {
     createdAt: string; // Or Date
     updatedAt: string; // Or Date
     // Add any other fields your backend returns for an order
+};
+
+export type SimpleOrderItemRequest = {
+    ticketTypeId: number;
+    quantity: number;
+};
+
+// Final shape sent to the backend
+export type APICreateOrderRequest = {
+    userId: number;
+    orderItems: SimpleOrderItemRequest[];
 };
 
 // Combined type for the full order response (order details + items)

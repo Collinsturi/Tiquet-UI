@@ -126,7 +126,7 @@ export const EventDetails = () => {
     };
 
     const handleProceedToCheckout = async () => { // Made async
-        console.log("aaaaaa")
+        console.log("Proceeding to checkout...");
 
         if (!eventData || !user?.user_id) { // Ensure eventData and user ID are available
             setMessage({ type: 'error', text: 'Event data or user information is missing. Cannot proceed with checkout.' });
@@ -154,29 +154,24 @@ export const EventDetails = () => {
                     const parsedId = parseInt(id);
                     const ticketType = eventData.ticketTypes.find(t => t.id === parsedId);
                     if (!ticketType) {
+                        // This should ideally not happen if ticketQuantities are initialized from eventData.ticketTypes
                         throw new Error(`Ticket type with ID ${parsedId} not found.`);
                     }
                     return {
                         ticketTypeId: parsedId,
                         quantity: ticketQuantities[parsedId],
-                        pricePerUnit: ticketType.price,
-                        subtotal: ticketQuantities[parsedId] * ticketType.price,
+                        pricePerUnit: ticketType.price, // Include price per unit
+                        subtotal: ticketQuantities[parsedId] * ticketType.price, // Include subtotal for the item
                     };
                 });
 
             // Prepare the main order data
             const orderPayload: APICreateOrderRequest = {
-                order: {
-                    userId: user.user_id,
-                    totalAmount: totalPrice,
-                    // Status is defaulted by backend to 'in_progress', so we omit it here
-                    paymentMethod: 'mpesa', // Default to 'mpesa' for initial order creation
-                    transactionId: null, // Will be updated after actual payment
-                },
+                userId: user.user_id,
                 orderItems: orderItemsPayload,
             };
 
-            console.log("2222", orderPayload);
+            console.log("Order Payload to be sent:", orderPayload);
             // Call the createOrder mutation
             const createdOrder = await createOrder(orderPayload).unwrap();
 
@@ -391,7 +386,7 @@ export const EventDetails = () => {
                                                 disabled={(ticketQuantities[type.id] || 0) >= type.quantityAvailable}
                                             >+</button>
                                         </div>
-                                        <span className="font-bold text-lg text-[var(--color-my-primary)]">${type.price.toLocaleString('en-KE')}</span>
+                                        <span className="font-bold text-lg text-[var(--color-my-primary)]">KSh {type.price.toLocaleString('en-KE')}</span>
                                     </div>
                                 ))
                             ) : (
@@ -404,7 +399,7 @@ export const EventDetails = () => {
 
                         <div className="flex justify-between items-center text-xl font-bold mb-4 text-[var(--color-my-base-content)]">
                             <span>Total:</span>
-                            <span>${calculateTotalPrice().toLocaleString('en-KE')}</span>
+                            <span>KSh {calculateTotalPrice().toLocaleString('en-KE')}</span>
                         </div>
 
                         <button
@@ -516,8 +511,8 @@ export const EventDetails = () => {
                                         <tr key={type.id}>
                                             <td className="text-[var(--color-my-base-content)]">{type.typeName}</td>
                                             <td className="text-[var(--color-my-base-content)]">{qty}</td>
-                                            <td className="text-right text-[var(--color-my-base-content)]">${type.price.toLocaleString('en-KE')}</td>
-                                            <td className="text-right text-[var(--color-my-base-content)]">${subtotal.toLocaleString('en-KE')}</td>
+                                            <td className="text-right text-[var(--color-my-base-content)]">KSh {type.price.toLocaleString('en-KE')}</td>
+                                            <td className="text-right text-[var(--color-my-base-content)]">KSh {subtotal.toLocaleString('en-KE')}</td>
                                         </tr>
                                     );
                                 })}
@@ -525,22 +520,30 @@ export const EventDetails = () => {
                             <tfoot>
                             <tr>
                                 <th colSpan="3" className="text-right text-[var(--color-my-base-content)]">Total Payable:</th>
-                                <th className="text-right text-lg text-[var(--color-my-primary)]">${calculateTotalPrice().toLocaleString('en-KE')}</th>
+                                <th className="text-right text-xl text-[var(--color-my-primary)]">KSh {calculateTotalPrice().toLocaleString('en-KE')}</th>
                             </tr>
                             </tfoot>
                         </table>
                     </div>
                     <div className="modal-action">
                         <form method="dialog">
-                            <button className="btn btn-ghost text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-300)]" disabled={buyTicketLoading || isCreatingOrder}>Cancel</button>
+                            <button
+                                className="btn bg-[var(--color-my-base-300)] text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-content)] hover:text-[var(--color-my-base-100)]"
+                                onClick={() => {
+                                    setBuyTicketLoading(false); // Reset loading state if modal is closed
+                                    setMessage({ type: '', text: '' }); // Clear any messages
+                                }}
+                            >
+                                Cancel
+                            </button>
                         </form>
                         <button
                             className="btn bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
                             onClick={handleProceedToCheckout}
-                            disabled={buyTicketLoading || isCreatingOrder} // Disable if order is being created
+                            disabled={buyTicketLoading || isCreatingOrder}
                         >
                             {(buyTicketLoading || isCreatingOrder) && <span className="loading loading-spinner loading-sm mr-2"></span>}
-                            <CheckCircleOutlineIcon className="w-5 h-5" /> Proceed to Checkout
+                            Proceed to Payment
                         </button>
                     </div>
                 </div>

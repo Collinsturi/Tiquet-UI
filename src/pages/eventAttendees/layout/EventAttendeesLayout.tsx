@@ -20,7 +20,8 @@ import {
     Collapse,
     Menu, // Import Menu for dropdowns
     MenuItem, // Import MenuItem for dropdown items
-    Badge // Import Badge for notification count
+    Badge, // Import Badge for notification count
+    CircularProgress // Import CircularProgress for loading indicator
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu'; // Hamburger icon
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -31,7 +32,9 @@ import EventIcon from '@mui/icons-material/Event'; // Icon for Events
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // Icon for Profile
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import {useSelector} from "react-redux";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../redux/store.ts";
+import { useGetUserNotificationsQuery } from '../../../queries/general/AuthQuery.ts'; // Assuming this is the correct path for notification query
 
 const drawerWidth = 240;
 
@@ -77,12 +80,28 @@ export const EventAttendeesLayout = () => {
     const [profileAnchorEl, setProfileAnchorEl] = useState(null); // State for profile dropdown
     const user = useSelector((state: RootState) => state.user.user);
 
+    // Fetch user notifications
+    const {
+        data: notificationsData,
+        isLoading: isNotificationsLoading,
+        isError: isNotificationsError,
+        error: notificationsError,
+        refetch: refetchNotifications // Allows manual refetching
+    } = useGetUserNotificationsQuery(user?.email, {
+        skip: !user?.email, // Skip query if user email is not available
+    });
+
+    const notifications = notificationsData || [];
+
     const handleMobileToggle = () => setMobileOpen(!mobileOpen);
 
     // This function will now be responsible for toggling the desktop drawer
     const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
 
-    const handleNotificationClick = (event) => setNotificationAnchorEl(event.currentTarget);
+    const handleNotificationClick = (event) => {
+        setNotificationAnchorEl(event.currentTarget);
+        refetchNotifications(); // Refetch notifications when the dropdown is opened
+    };
     const handleNotificationClose = () => setNotificationAnchorEl(null);
 
     const handleProfileClick = (event) => setProfileAnchorEl(event.currentTarget);
@@ -95,12 +114,6 @@ export const EventAttendeesLayout = () => {
         handleProfileClose();
     };
 
-    // Dummy notifications for demonstration
-    const notifications = [
-        'New event "Tech Summit" created.',
-        'Your report for May is ready.',
-        'User John Doe checked in for "Marketing Meetup".',
-    ];
 
     const sections = [
         { kind: 'header', title: 'Main Menu' },
@@ -133,7 +146,7 @@ export const EventAttendeesLayout = () => {
                     <Avatar alt="AdminUser"
                             src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
                             sx={{ border: '2px solid var(--color-my-primary)' }} />
-                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>AdminUser Name</Typography> {/* Text color on bolder background */}
+                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>{user?.firstName || 'User'}</Typography> {/* Text color on bolder background */}
                 </div>
                 <Search sx={{ mt: 2 }}>
                     <SearchIconWrapper>
@@ -196,7 +209,7 @@ export const EventAttendeesLayout = () => {
     return (
         <Box sx={{ display: 'flex' }}>
             <CssBaseline />
-            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1,  backgroundColor: 'var(--color-my-neutral)', color: 'var(--color-my-primary-content)' }}>
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1,  backgroundColor: 'var(--color-my-primary)', color: 'var(--color-my-primary-content)' }}>
                 <Toolbar>
                     {/* Hamburger button for mobile screens */}
                     <IconButton
@@ -248,9 +261,13 @@ export const EventAttendeesLayout = () => {
                         aria-controls="notification-menu"
                         aria-haspopup="true"
                     >
-                        <Badge badgeContent={notifications.length} color="error">
-                            <NotificationsIcon />
-                        </Badge>
+                        {isNotificationsLoading ? (
+                            <CircularProgress size={24} color="inherit" />
+                        ) : (
+                            <Badge badgeContent={notifications.length} color="error">
+                                <NotificationsIcon />
+                            </Badge>
+                        )}
                     </IconButton>
                     <Menu
                         id="notification-menu"
@@ -274,10 +291,16 @@ export const EventAttendeesLayout = () => {
                     >
                         <Typography variant="h6" sx={{ px: 2, py: 1, color: 'var(--color-my-primary)' }}>Notifications</Typography>
                         <Divider sx={{ borderColor: 'var(--color-my-base-300)' }} />
-                        {notifications.length > 0 ? (
+                        {isNotificationsLoading ? (
+                            <MenuItem disabled sx={{ color: 'var(--color-my-base-content)' }}>
+                                <CircularProgress size={20} sx={{ mr: 2, color: 'var(--color-my-primary)' }} /> Loading notifications...
+                            </MenuItem>
+                        ) : isNotificationsError ? (
+                            <MenuItem disabled sx={{ color: 'var(--color-my-error)' }}>Error loading notifications.</MenuItem>
+                        ) : notifications.length > 0 ? (
                             notifications.map((notification, index) => (
                                 <MenuItem key={index} onClick={handleNotificationClose} sx={{ color: 'var(--color-my-base-content)' }}>
-                                    <Typography variant="body2">{notification}</Typography>
+                                    <Typography variant="body2">{notification}</Typography> {/* Assuming notification object has a 'message' property */}
                                 </MenuItem>
                             ))
                         ) : (

@@ -60,6 +60,8 @@ export type ApplicationUser ={
     profilePicture: string,
 }
 
+export type TNotificationResponse = string[];
+
 export const AuthQuery = createApi({
     reducerPath: 'LoginQuery',
     baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),
@@ -97,7 +99,15 @@ export const AuthQuery = createApi({
                 method: 'GET'
             }),
             invalidateTags: [`ApplicationUser`]
-        })
+        }),
+        getUserNotifications: builder.query<TNotificationResponse, string>({
+            query: (email) => ({
+                url: `/platform/attendee/notifications/${email}`,
+                method: 'GET',
+            }),
+            providesTags: ['ApplicationUser'],
+        }),
+
     })
 })
 
@@ -106,4 +116,5 @@ export const {
     useRegisterUserMutation,
     useVerificationMutation,
     useGetUserDetailsQuery,
+    useGetUserNotificationsQuery,
 } = AuthQuery
