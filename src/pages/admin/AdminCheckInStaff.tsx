@@ -30,6 +30,7 @@ export const AdminCheckInStaff = ({ organizerEmail }: { organizerEmail: string }
     const { data: availableStaff = [], isLoading: isLoadingStaff } = useAvailableStaffQuery();
     const { data: organizerEvents = [], isLoading: isLoadingEvents } = useGetOrganizerEventsQuery(user.email);
 
+    console.log(organizerEvents)
     // CORRECTED: Fetch assigned staff for the selected event using the new query
     const { data: assignedStaffForEvent = [], isLoading: isLoadingAssignedStaff } = useGetStaffForAssignedEventQuery(
         { organizerEmail: user.email, eventId: selectedEventId as number },

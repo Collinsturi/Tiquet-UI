@@ -13,6 +13,7 @@ import {
     Divider,
     useTheme,
     alpha,
+    CircularProgress
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EventIcon from '@mui/icons-material/Event';
@@ -42,69 +43,8 @@ import {useSelector} from "react-redux";
 import type {RootState} from "../../redux/store.ts";
 import { useGetAdminDashboardSummaryQuery } from '../../queries/admin/adminQuery.ts';
 
-// Dummy data for demonstration
-const totalEvents = 15;
-const upcomingEvents = 5;
-const totalTicketsSold = 1250;
-const totalRevenue = 75000; // USD
-
-const salesData = [
-    { month: 'Jan', tickets: 200 },
-    { month: 'Feb', tickets: 250 },
-    { month: 'Mar', tickets: 300 },
-    { month: 'Apr', tickets: 280 },
-    { month: 'May', tickets: 350 },
-    { month: 'Jun', tickets: 400 },
-];
-
-// const ticketTypeData = [
-//     { name: 'Standard', value: 400 },
-//     { name: 'VIP', value: 250 },
-//     { name: 'Early Bird', value: 150 },
-//     { name: 'Student', value: 50 },
-// ];
-
-
 // Colors for the Pie Chart slices (matching Material-UI palette somewhat)
 const PIE_COLORS = ['#1976d2', '#ff9800', '#4caf50', '#9c27b0']; // Example: Primary, Orange, Green, Purple
-
-const recentActivities = [
-    "Sold 5 'Concert Live' tickets.",
-    "New event 'Tech Summit 2025' created.",
-    "Received payout for 'Art Exhibition' ($1,200).",
-    "Customer 'Alice Smith' refunded ticket for 'Comedy Night'.",
-    "Updated 'Festival Vibes' event details.",
-];
-
-const upcomingEventsList = [
-    {
-        id: 1,
-        name: 'Summer Music Festival',
-        date: '2025-07-20',
-        time: '18:00',
-        location: 'Central Park',
-        ticketsSold: 120,
-        totalTickets: 500,
-    },
-    {
-        id: 2,
-        name: 'Startup Pitch Day',
-        date: '2025-08-05',
-        time: '10:00',
-        location: 'Innovation Hub',
-        ticketsSold: 45,
-        totalTickets: 100,
-    },
-    {
-        id: 3,
-        name: 'Community Art Fair',
-        date: '2025-08-15',
-        time: '14:00',
-        location: 'Old Town Square',
-        ticketsSold: 80,
-        totalTickets: 200,
-    },
-];
 
 export const AdminDashboard = () => {
     const theme = useTheme();
@@ -113,16 +53,18 @@ export const AdminDashboard = () => {
     const user = useSelector((state: RootState) => state.user.user);
     const { data, isLoading, isError } = useGetAdminDashboardSummaryQuery(user.email);
 
+    // Destructure data with default empty arrays for safe access
     const {
         totalEvents = 0,
         totalTicketsSold = 0,
         totalRevenue = 0,
-        upcomingEvents = [],
+        upcomingEvents = [], // Backend `upcomingEvents` already provides the list directly
         recentActivity = [],
         monthlySales = [],
         ticketTypeDistribution = [],
-    } = data ?? {};
+    } = data ?? {}; // Use nullish coalescing to ensure data is an object
 
+    // Prepare data for charts
     const salesData = monthlySales.map((item) => ({
         month: new Date(item.month).toLocaleString('default', { month: 'short' }),
         tickets: item.ticket_count,
@@ -133,6 +75,53 @@ export const AdminDashboard = () => {
         value: item.sold,
     }));
 
+    // Helper component for "No Data" overlay
+    const NoDataOverlay = ({ message = "No data available right now. Please check back later." }) => (
+        <Box
+            sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100%',
+                minHeight: '200px', // Ensure it has some height even if content is 0
+                width: '100%',
+                backgroundColor: theme.palette.background.default, // Or a slightly lighter color
+                color: theme.palette.text.secondary,
+                borderRadius: theme.shape.borderRadius,
+                textAlign: 'center',
+                p: 2,
+                boxSizing: 'border-box'
+            }}
+        >
+            <Typography variant="body1">{message}</Typography>
+        </Box>
+    );
+
+    if (isLoading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+                <CircularProgress sx={{ color: theme.palette.primary.main }} />
+                <Typography sx={{ ml: 2, color: theme.palette.text.secondary }}>Loading dashboard data...</Typography>
+            </Box>
+        );
+    }
+
+    if (isError) {
+        return (
+            <Box sx={{ flexGrow: 1, p: 3 }}>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    Error loading dashboard data. Please try again later.
+                    <Button variant="contained" sx={{ ml: 2 }} onClick={() => navigate('/')}>Go to Home</Button>
+                </Alert>
+            </Box>
+        );
+    }
+
+    // Determine if sales data is meaningful (has at least one entry with tickets > 0)
+    const hasMeaningfulSalesData = salesData && salesData.length > 0 && salesData.some(item => item.tickets > 0);
+
+    // Determine if ticket type data is meaningful (has at least one entry with value > 0)
+    const hasMeaningfulTicketTypeData = ticketTypeData && ticketTypeData.length > 0 && ticketTypeData.some(item => item.value > 0);
 
 
     return (
@@ -180,29 +169,31 @@ export const AdminDashboard = () => {
                 </Grid>
             </Grid>
 
-            ---
 
             {/* Main Content Area */}
             <Grid container spacing={3}>
                 {/* Recent Activity */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <CardHeader title="Recent Activity" />
-                        <List>
-                            {recentActivity.length > 0 ? recentActivity.map((activity, index) => (
-                                <Box key={index}>
-                                    <ListItem>
-                                        <ListItemText
-                                            primary={`Buyer ${activity.buyerId} purchased ticket #${activity.ticketId} for "${activity.eventTitle}"`}
-                                            secondary={new Date(activity.createdAt).toLocaleString()}
-                                        />
-                                    </ListItem>
-                                    {index < recentActivity.length - 1 && <Divider component="li" />}
-                                </Box>
-                            )) : (
-                                <ListItem><ListItemText primary="No recent activity." /></ListItem>
-                            )}
-                        </List>
+                        {recentActivity && recentActivity.length > 0 ? (
+                            <List sx={{ flexGrow: 1, overflowY: 'auto' }}>
+                                {/* Slice to show only the recent 5 activities */}
+                                {recentActivity.slice(0, 5).map((activity, index) => (
+                                    <Box key={index}>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary={`User ${activity.user} purchased ${activity.ticketType} ticket for "${activity.eventTitle}"`}
+                                                secondary={new Date(activity.createdAt).toLocaleString()}
+                                            />
+                                        </ListItem>
+                                        {index < recentActivity.slice(0, 5).length - 1 && <Divider component="li" />}
+                                    </Box>
+                                ))}
+                            </List>
+                        ) : (
+                            <NoDataOverlay message="No recent activity to display. Check back later." />
+                        )}
                         <Box sx={{ mt: 2, textAlign: 'right' }}>
                             <Button variant="text" onClick={() => navigate('/admin/reports')}>View All Activity</Button>
                         </Box>
@@ -232,121 +223,123 @@ export const AdminDashboard = () => {
                             >
                                 Manage My Events
                             </Button>
-                            <Button
-                                variant="outlined"
-                                color="info"
-                                startIcon={<PeopleIcon />}
-                                sx={{ width: '80%' }}
-                                onClick={() => navigate('/organizer/attendees')}
-                            >
-                                View Attendees
-                            </Button>
+                            {/*<Button*/}
+                            {/* variant="outlined"*/}
+                            {/* color="info"*/}
+                            {/* startIcon={<PeopleIcon />}*/}
+                            {/* sx={{ width: '80%' }}*/}
+                            {/* onClick={() => navigate('/organizer/attendees')}*/}
+                            {/*>*/}
+                            {/* View Attendees*/}
+                            {/*</Button>*/}
                         </Box>
                     </Paper>
                 </Grid>
 
                 {/* Sales Overview Chart (Recharts) */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2 }}>
+                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <CardHeader title="Monthly Ticket Sales Overview" />
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart
-                                data={salesData}
-                                margin={{
-                                    top: 5,
-                                    right: 30,
-                                    left: 20,
-                                    bottom: 5,
-                                }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis label={{ value: 'Tickets Sold', angle: -90, position: 'insideLeft' }} />
-                                <Tooltip />
-                                <Legend />
-                                <Bar dataKey="tickets" fill={theme.palette.primary.main} name="Tickets Sold" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {hasMeaningfulSalesData ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart
+                                    data={salesData}
+                                    margin={{
+                                        top: 5,
+                                        right: 30,
+                                        left: 20,
+                                        bottom: 5,
+                                    }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis label={{ value: 'Tickets Sold', angle: -90, position: 'insideLeft' }} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="tickets" fill={theme.palette.primary.main} name="Tickets Sold" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <NoDataOverlay message="No monthly sales data available. Tickets might not have been sold yet." />
+                        )}
                     </Paper>
                 </Grid>
 
                 {/* Ticket Type Distribution Chart (Recharts) */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2 }}>
+                    <Paper elevation={2} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <CardHeader title="Ticket Type Distribution" />
-                        <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                                <Pie
-                                    data={ticketTypeData}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={100}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    labelLine={false}
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                >
-                                    {ticketTypeData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        {hasMeaningfulTicketTypeData ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={ticketTypeData}
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={100}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                        labelLine={false}
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    >
+                                        {ticketTypeData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <NoDataOverlay message="No ticket type distribution data available. Tickets might not have been sold yet or ticket types have no sales." />
+                        )}
                     </Paper>
                 </Grid>
-
-                ---
 
                 {/* Upcoming Events List */}
                 <Grid item xs={12}>
                     <Paper elevation={2} sx={{ p: 2 }}>
-                        {/* Upcoming Events List */}
-                        <Grid item xs={12}>
-                            <Paper elevation={2} sx={{ p: 2 }}>
-                                <CardHeader title="Your Upcoming Events" />
-                                <List>
-                                    {upcomingEvents.map((event) => (
-                                        <Box key={event.id}>
-                                            <ListItem alignItems="flex-start">
-                                                <ListItemText
-                                                    primary={
-                                                        <Typography variant="h6" component="div">
-                                                            {event.title}
+                        <CardHeader title="My Events" />
+                        {upcomingEvents && upcomingEvents.length > 0 ? (
+                            <List>
+                                {upcomingEvents.map((event) => (
+                                    <Box key={event.id}>
+                                        <ListItem alignItems="flex-start">
+                                            <ListItemText
+                                                primary={
+                                                    <Typography variant="h6" component="div">
+                                                        {event.title}
+                                                    </Typography>
+                                                }
+                                                secondary={
+                                                    <Box>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.date}
                                                         </Typography>
-                                                    }
-                                                    secondary={
-                                                        <Box>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.date}
-                                                            </Typography>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                <AccessTimeIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.time}
-                                                            </Typography>
-                                                        </Box>
-                                                    }
-                                                />
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    onClick={() => navigate(`/organizer/my-events/${event.id}`)}
-                                                >
-                                                    View Details
-                                                </Button>
-                                            </ListItem>
-                                            <Divider component="li" sx={{ my: 1 }} />
-                                        </Box>
-                                    ))}
-                                </List>
-                                <Box sx={{ mt: 2, textAlign: 'right' }}>
-                                    <Button variant="text" onClick={() => navigate('/organizer/my-events')}>View All Events</Button>
-                                </Box>
-                            </Paper>
-                        </Grid>
-                        {/*<Box sx={{ mt: 2, textAlign: 'right' }}>*/}
-                        {/*    <Button variant="text" onClick={() => navigate('/admin/my-events')}>View All Events</Button>*/}
-                        {/*</Box>*/}
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            <AccessTimeIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {event.time}
+                                                        </Typography>
+                                                    </Box>
+                                                }
+                                            />
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => navigate(`/organizer/my-events/${event.id}`)}
+                                            >
+                                                View Details
+                                            </Button>
+                                        </ListItem>
+                                        <Divider component="li" sx={{ my: 1 }} />
+                                    </Box>
+                                ))}
+                            </List>
+                        ) : (
+                            <NoDataOverlay message="No upcoming events to display. Start by creating a new event!" />
+                        )}
+                        <Box sx={{ mt: 2, textAlign: 'right' }}>
+                            <Button variant="text" onClick={() => navigate('/organizer/my-events')}>View All Events</Button>
+                        </Box>
                     </Paper>
                 </Grid>
             </Grid>

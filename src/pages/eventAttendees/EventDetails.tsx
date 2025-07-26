@@ -25,6 +25,9 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../redux/store';
 // Import APIEventResponseItem as the actual data type returned by getEventById
 import { useGetEventByIdQuery, type APIEventResponseItem } from '../../queries/general/EventQuery.ts'; // ADJUST PATH if different
+// Import the order creation mutation and types
+import { useCreateOrderMutation, type APICreateOrderRequest, type APIOrderResponseItem, type PaymentMethod } from '../../queries/eventAttendees/OrderQuery.ts';
+
 
 // For PDF generation
 import html2canvas from 'html2canvas-pro';
@@ -51,13 +54,16 @@ const formatTimeOnly = (dateString: string) => { // Added type for dateString
 export const EventDetails = () => {
     const { eventId } = useParams(); // Get eventId from URL
     const navigate = useNavigate();
-    const user = useSelector((state: RootState) => state.user.user); // Get logged-in user
+    const user = useSelector((state: RootState) => state.user.user);// Get logged-in user
 
     // Use RTK Query hook to fetch event details
     // The data received here will be APIEventResponseItem (or null if not found)
     const { data: eventData, isLoading, error } = useGetEventByIdQuery(parseInt(eventId!), {
         skip: !eventId || isNaN(parseInt(eventId!)), // Skip if eventId is missing or invalid
     });
+
+    // RTK Query hook for creating an order
+    const [createOrder, { isLoading: isCreatingOrder, error: createOrderError }] = useCreateOrderMutation();
 
     const [message, setMessage] = useState({ type: '', text: '' });
     const [ticketQuantities, setTicketQuantities] = useState<{ [key: number]: number }>({}); // Added type for state
@@ -119,51 +125,89 @@ export const EventDetails = () => {
         return total;
     };
 
-    const handleProceedToCheckout = () => {
-        if (!eventData) { // Ensure eventData is available
-            setMessage({ type: 'error', text: 'Event data is not available for checkout.' });
+    const handleProceedToCheckout = async () => { // Made async
+        console.log("aaaaaa")
+
+        if (!eventData || !user?.user_id) { // Ensure eventData and user ID are available
+            setMessage({ type: 'error', text: 'Event data or user information is missing. Cannot proceed with checkout.' });
+            setBuyTicketLoading(false);
             return;
         }
 
-        const totalTicketsSelected = Object.values(ticketQuantities).reduce((sum: number, qty: number) => sum + qty, 0); // Added types
+        const totalTicketsSelected = Object.values(ticketQuantities).reduce((sum: number, qty: number) => sum + qty, 0);
         const totalPrice = calculateTotalPrice();
 
         if (totalTicketsSelected === 0) {
             setMessage({ type: 'error', text: 'Please select at least one ticket.' });
+            setBuyTicketLoading(false);
             return;
         }
 
         setMessage({ type: '', text: '' }); // Clear previous messages
         setBuyTicketLoading(true); // Indicate loading for checkout process
 
-        // Construct order details to pass to the checkout page
-        const orderDetails = {
-            eventId: eventData.id, // Directly access eventData.id
-            eventName: eventData.title, // Directly access eventData.title
-            eventDate: `${formatDateTime(`${eventData.eventDate}T${eventData.eventTime}`)}`, // Directly access eventData.eventDate/Time
-            eventLocation: eventData.venue?.address || eventData.venueAddress || 'Venue Not Specified', // Use venue.address or venueAddress
-            totalAmount: totalPrice,
-            tickets: Object.keys(ticketQuantities)
-                .filter(id => ticketQuantities[parseInt(id)] > 0) // Parse id to number
+        try {
+            // Prepare the order items for the backend
+            const orderItemsPayload = Object.keys(ticketQuantities)
+                .filter(id => ticketQuantities[parseInt(id)] > 0)
                 .map(id => {
                     const parsedId = parseInt(id);
                     const ticketType = eventData.ticketTypes.find(t => t.id === parsedId);
+                    if (!ticketType) {
+                        throw new Error(`Ticket type with ID ${parsedId} not found.`);
+                    }
                     return {
                         ticketTypeId: parsedId,
-                        ticketTypeName: ticketType?.typeName,
                         quantity: ticketQuantities[parsedId],
-                        pricePerUnit: ticketType?.price,
+                        pricePerUnit: ticketType.price,
+                        subtotal: ticketQuantities[parsedId] * ticketType.price,
                     };
-                }),
-            userId: user?.user_id, // Use actual user ID from Redux
-        };
+                });
 
-        // Simulate a delay or actual API call for checkout
-        setTimeout(() => {
+            // Prepare the main order data
+            const orderPayload: APICreateOrderRequest = {
+                order: {
+                    userId: user.user_id,
+                    totalAmount: totalPrice,
+                    // Status is defaulted by backend to 'in_progress', so we omit it here
+                    paymentMethod: 'mpesa', // Default to 'mpesa' for initial order creation
+                    transactionId: null, // Will be updated after actual payment
+                },
+                orderItems: orderItemsPayload,
+            };
+
+            console.log("2222", orderPayload);
+            // Call the createOrder mutation
+            const createdOrder = await createOrder(orderPayload).unwrap();
+
             setBuyTicketLoading(false);
             buyTicketsModalRef.current?.close(); // Close the modal
-            navigate('/attendee/checkout', { state: { orderDetails } });
-        }, 1000); // Simulate network delay
+
+            // Construct order details to pass to the checkout page, including the new order ID
+            const orderDetailsToPass = {
+                orderId: createdOrder.order.id, // Use the ID from the created order
+                eventName: eventData.title,
+                eventDate: `${formatDateTime(`${eventData.eventDate}T${eventData.eventTime}`)}`,
+                eventLocation: eventData.venue?.address || eventData.venueAddress || 'Venue Not Specified',
+                totalAmount: totalPrice,
+                tickets: orderItemsPayload.map(item => ({
+                    ticketTypeId: item.ticketTypeId,
+                    ticketTypeName: eventData.ticketTypes.find(t => t.id === item.ticketTypeId)?.typeName,
+                    quantity: item.quantity,
+                    pricePerUnit: item.pricePerUnit,
+                })),
+                userId: user.user_id,
+                userEmail: user.email, // Pass user email for Paystack
+            };
+
+            navigate('/attendee/checkout', { state: { orderDetails: orderDetailsToPass } });
+
+        } catch (err: any) {
+            setBuyTicketLoading(false);
+            const apiErrorMessage = createOrderError ? (createOrderError as any)?.data?.message || 'Failed to create order.' : err.message || 'An unexpected error occurred during order creation.';
+            setMessage({ type: 'error', text: apiErrorMessage });
+            console.error("Order creation failed:", err);
+        }
     };
 
     const handleDownloadPdf = async () => {
@@ -366,9 +410,9 @@ export const EventDetails = () => {
                         <button
                             className="btn btn-block bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
                             onClick={() => buyTicketsModalRef.current?.showModal()}
-                            disabled={calculateTotalPrice() === 0 || buyTicketLoading}
+                            disabled={calculateTotalPrice() === 0 || buyTicketLoading || isCreatingOrder} // Disable if order is being created
                         >
-                            {buyTicketLoading && <span className="loading loading-spinner loading-sm mr-2"></span>}
+                            {(buyTicketLoading || isCreatingOrder) && <span className="loading loading-spinner loading-sm mr-2"></span>}
                             <ShoppingCartIcon className="w-5 h-5" /> Buy Tickets
                         </button>
                     </div>
@@ -488,14 +532,14 @@ export const EventDetails = () => {
                     </div>
                     <div className="modal-action">
                         <form method="dialog">
-                            <button className="btn btn-ghost text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-300)]" disabled={buyTicketLoading}>Cancel</button>
+                            <button className="btn btn-ghost text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-300)]" disabled={buyTicketLoading || isCreatingOrder}>Cancel</button>
                         </form>
                         <button
                             className="btn bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
                             onClick={handleProceedToCheckout}
-                            disabled={buyTicketLoading}
+                            disabled={buyTicketLoading || isCreatingOrder} // Disable if order is being created
                         >
-                            {buyTicketLoading && <span className="loading loading-spinner loading-sm mr-2"></span>}
+                            {(buyTicketLoading || isCreatingOrder) && <span className="loading loading-spinner loading-sm mr-2"></span>}
                             <CheckCircleOutlineIcon className="w-5 h-5" /> Proceed to Checkout
                         </button>
                     </div>

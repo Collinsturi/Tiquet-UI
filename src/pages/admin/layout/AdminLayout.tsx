@@ -20,7 +20,8 @@ import {
     Collapse,
     Menu, // Import Menu for dropdowns
     MenuItem, // Import MenuItem for dropdown items
-    Badge // Import Badge for notification count
+    Badge, // Import Badge for notification count
+    CircularProgress // Import CircularProgress for loading indicator
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -31,6 +32,12 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import LayersIcon from '@mui/icons-material/Layers';
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+
+// Redux imports for data fetching
+import { useSelector } from "react-redux";
+import type { RootState } from "../../redux/store.ts";
+import { useGetAdminDashboardSummaryQuery } from '../../../queries/admin/adminQuery.ts';
+
 
 const drawerWidth = 240;
 
@@ -74,9 +81,16 @@ export const AdminLayout = () => {
     const [notificationAnchorEl, setNotificationAnchorEl] = useState(null); // State for notification dropdown
     const [profileAnchorEl, setProfileAnchorEl] = useState(null); // State for profile dropdown
 
-    const handleMobileToggle = () => setMobileOpen(!mobileOpen);
+    // Fetch user and dashboard summary data
+    const user = useSelector((state: RootState) => state.user.user);
+    const { data: dashboardSummary, isLoading: isSummaryLoading, error: summaryError } = useGetAdminDashboardSummaryQuery(user?.email, {
+        skip: !user?.email, // Skip query if user email is not available
+    });
 
-    // This function will now be responsible for toggling the desktop drawer
+    // Extract recent activity, limiting to the most recent 5
+    const recentActivities = dashboardSummary?.recentActivity?.slice(0, 5) || [];
+
+    const handleMobileToggle = () => setMobileOpen(!mobileOpen);
     const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
 
     const handleNotificationClick = (event) => setNotificationAnchorEl(event.currentTarget);
@@ -91,13 +105,6 @@ export const AdminLayout = () => {
         navigate('/auth'); // Example: navigate to login page
         handleProfileClose();
     };
-
-    // Dummy notifications for demonstration
-    const notifications = [
-        'New event "Tech Summit" created.',
-        'Your report for May is ready.',
-        'User John Doe checked in for "Marketing Meetup".',
-    ];
 
     const sections = [
         { kind: 'header', title: 'Main Menu' },
@@ -247,9 +254,13 @@ export const AdminLayout = () => {
                         aria-controls="notification-menu"
                         aria-haspopup="true"
                     >
-                        <Badge badgeContent={notifications.length} color="error">
-                            <NotificationsIcon />
-                        </Badge>
+                        {isSummaryLoading ? (
+                            <CircularProgress size={24} color="inherit" />
+                        ) : (
+                            <Badge badgeContent={recentActivities.length} color="error">
+                                <NotificationsIcon />
+                            </Badge>
+                        )}
                     </IconButton>
                     <Menu
                         id="notification-menu"
@@ -267,10 +278,18 @@ export const AdminLayout = () => {
                     >
                         <Typography variant="h6" sx={{ px: 2, py: 1 }}>Notifications</Typography>
                         <Divider />
-                        {notifications.length > 0 ? (
-                            notifications.map((notification, index) => (
+                        {isSummaryLoading ? (
+                            <MenuItem disabled>
+                                <CircularProgress size={20} sx={{ mr: 2 }} /> Loading notifications...
+                            </MenuItem>
+                        ) : summaryError ? (
+                            <MenuItem disabled>Error loading notifications.</MenuItem>
+                        ) : recentActivities.length > 0 ? (
+                            recentActivities.map((activity, index) => (
                                 <MenuItem key={index} onClick={handleNotificationClose}>
-                                    <Typography variant="body2">{notification}</Typography>
+                                    <Typography variant="body2">
+                                        User {activity.user} purchased {activity.ticketType} ticket for "{activity.eventTitle}" ({new Date(activity.createdAt).toLocaleString()})
+                                    </Typography>
                                 </MenuItem>
                             ))
                         ) : (

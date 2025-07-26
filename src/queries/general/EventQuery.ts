@@ -147,8 +147,6 @@ export const EventQuery = createApi({
     baseQuery: staggeredBaseQuery,
     tagTypes: ['Events', 'FeaturedEventsList', 'CategorizedEventsList', 'Venues', 'DetailedOrganizerEvents', 'AssignedEvents'],
     endpoints: (builder) => ({
-        // ... (other endpoints remain the same) ...
-
         // 3. Get Event by ID and normalize (No change, as it expects similar detailed response)
         getEventById: builder.query<APIEventResponseItem | null, number>({ // Changed return type
             query: (id) => `/events/${id}`,
@@ -172,7 +170,7 @@ export const EventQuery = createApi({
                 }
                 return `/events?${params.toString()}`;
             },
-            // CORRECTED transformResponse:
+
             transformResponse: (response: APIEventResponseItem[]) => { // Expect array of APIEventResponseItem
                 console.log("getAllEvents transformResponse: Incoming API response:", response); // Debugging
                 // The API already returns the data in the desired format (array of events)
@@ -199,7 +197,7 @@ export const EventQuery = createApi({
         }),
         // ... (rest of the endpoints remain the same) ...
         getOrganizerEvents: builder.query<AssignedEvents[], string>({
-            query: (email) => BASE_URL + `/events/organizer/past/${email}`,
+            query: (email) => BASE_URL + `/events/organizer/current/${email}`,
             providesTags: ['AssignedEvents']
         }),
         getDetailedUpcomingOrganizerEvents: builder.query<OrganizerEventDetails[], string>({

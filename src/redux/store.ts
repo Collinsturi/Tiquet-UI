@@ -7,6 +7,7 @@ import {TicketQuery} from "../queries/eventAttendees/TicketQuery.ts";
 import {EventQuery} from "../queries/general/EventQuery.ts"
 import {StaffScannedQuery} from "../queries/checkInStaff/StaffScannedQuery.ts";
 import { AdminQuery } from '../queries/admin/adminQuery.ts';
+import {OrderQuery} from '../queries/eventAttendees/OrderQuery.ts';
 
 const persistConfig = {
     key: 'root',
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
     [EventQuery.reducerPath]: EventQuery.reducer,
     [StaffScannedQuery.reducerPath]: StaffScannedQuery.reducer,
     [AdminQuery.reducerPath]: AdminQuery.reducer,
+    [OrderQuery.reducerPath]: OrderQuery.reducer,
     user: ApplicationUserSlice
 })
 
@@ -38,6 +40,7 @@ export const store = configureStore({
         .concat(EventQuery.middleware)
         .concat(StaffScannedQuery.middleware)
         .concat(AdminQuery.middleware)
+        .concat(OrderQuery.middleware)
 })
 
 export const persistedStore = persistStore(store);
