@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -21,10 +21,13 @@ import {
     Select,
     InputLabel,
     FormControl,
+    IconButton, // Import IconButton
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EventIcon from '@mui/icons-material/Event';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'; // Import upload icon
+import ImageIcon from '@mui/icons-material/Image'; // Icon for image preview
 
 // Date/Time Pickers
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -40,6 +43,10 @@ import {
 } from '../../queries/general/EventQuery.ts';
 import {useSelector} from "react-redux";
 import type {RootState} from "../../redux/store.ts";
+
+// --- Cloudinary Configuration ---
+const CLOUDINARY_CLOUD_NAME = 'dd9wneqwy'; // Replace with your Cloud Name
+const CLOUDINARY_UPLOAD_PRESET = 'Tiquet'; // Replace with your unsigned upload preset name
 
 export const AdminCreateEvent = () => {
     const navigate = useNavigate();
@@ -60,12 +67,9 @@ export const AdminCreateEvent = () => {
         description: '',
         startDate: dayjs().toISOString(),
         endDate: dayjs().add(1, 'hour').toISOString(),
-        // Initialize address, city, country to null/undefined
-        // This makes it clear they are not present by default for *new* venue creation.
-        // They will be populated if venueOption is 'new'.
-        address: null, // Changed from '' to null
-        city: null,    // Changed from '' to null
-        country: null, // Changed from '' to null
+        address: '',
+        city: '',
+        country: '',
         latitude: null,
         longitude: null,
         posterImageUrl: '',
@@ -86,14 +90,20 @@ export const AdminCreateEvent = () => {
     const [message, setMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+    // State for image upload loading
+    const [isUploadingPoster, setIsUploadingPoster] = useState(false);
+    const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+
+    // Refs for file inputs to programmatically click them
+    const posterInputRef = useRef<HTMLInputElement>(null);
+    const thumbnailInputRef = useRef<HTMLInputElement>(null);
+
     // Effect to handle success/error messages from RTK Query
     useEffect(() => {
         if (isSuccess) {
             setMessage({ type: 'success', text: 'Event created successfully!' });
-            // Optionally redirect after a delay
             setTimeout(() => {
-                // If createEvent response includes eventId, navigate there
-                navigate('/organizer/my-events'); // Or /admin/my-events/${response.eventId} if available
+                navigate('/organizer/my-events');
             }, 2000);
         } else if (isError) {
             console.error("Error creating event:", error);
@@ -115,12 +125,10 @@ export const AdminCreateEvent = () => {
         }
 
         if (eventData.venueOption === 'new') {
-            // Check for non-null/non-empty string
             if (!eventData.address) newErrors.address = 'Address is required for a new venue.';
             if (!eventData.city) newErrors.city = 'City is required for a new venue.';
             if (!eventData.country) newErrors.country = 'Country is required for a new venue.';
         } else if (eventData.venueOption === 'existing') {
-            // Ensure selectedVenueId is a number and not empty string
             if (typeof eventData.selectedVenueId !== 'number' || !eventData.selectedVenueId) {
                 newErrors.selectedVenueId = 'Please select an existing venue.';
             }
@@ -138,12 +146,14 @@ export const AdminCreateEvent = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        // Convert empty string for address/city/country back to null if they are meant to be optional
-        const newValue = (name === 'address' || name === 'city' || name === 'country') && value === '' ? null : value;
+        let processedValue: any = value;
+        if (name === 'latitude' || name === 'longitude') {
+            processedValue = value === '' ? null : parseFloat(value);
+        }
 
         setEventData(prev => ({
             ...prev,
-            [name]: newValue,
+            [name]: processedValue,
         }));
         if (errors[name]) {
             setErrors(prev => {
@@ -157,7 +167,7 @@ export const AdminCreateEvent = () => {
     const handleDateChange = (name: 'startDate' | 'endDate', date: dayjs.Dayjs | null) => {
         setEventData(prev => ({
             ...prev,
-            [name]: date ? dayjs(date).toISOString() : '', // Store as ISO string or empty string
+            [name]: date ? dayjs(date).toISOString() : '',
         }));
         if (errors[name]) {
             setErrors(prev => {
@@ -179,7 +189,7 @@ export const AdminCreateEvent = () => {
         const errorKey = `ticketTypes.${index}.${field}`;
         if (errors[errorKey]) {
             setErrors(prevErrors => {
-                const updatedErrors = { ...prevErrors }; // Corrected: use prevErrors here
+                const updatedErrors = { ...prevErrors };
                 delete updatedErrors[errorKey];
                 return updatedErrors;
             });
@@ -192,7 +202,7 @@ export const AdminCreateEvent = () => {
             ticketTypes: [
                 ...prev.ticketTypes,
                 {
-                    id: `ticket-${Date.now()}-${prev.ticketTypes.length + 1}`, // Generate unique ID
+                    id: `ticket-${Date.now()}-${prev.ticketTypes.length + 1}`,
                     typeName: `New Ticket Type ${prev.ticketTypes.length + 1}`,
                     price: 0.00,
                     quantityAvailable: 0,
@@ -216,6 +226,57 @@ export const AdminCreateEvent = () => {
         }
     };
 
+    // --- Cloudinary Upload Logic ---
+    const uploadImageToCloudinary = async (file: File, type: 'poster' | 'thumbnail') => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET); // Your unsigned upload preset
+
+        const uploadStateSetter = type === 'poster' ? setIsUploadingPoster : setIsUploadingThumbnail;
+        const imageUrlSetter = type === 'poster' ? 'posterImageUrl' : 'thumbnailImageUrl';
+
+        uploadStateSetter(true);
+        setMessage({ type: '', text: '' }); // Clear any previous messages
+
+        try {
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                {
+                    method: 'POST',
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message || `Cloudinary upload failed for ${type} image.`);
+            }
+
+            const data = await response.json();
+            setEventData(prev => ({
+                ...prev,
+                [imageUrlSetter]: data.secure_url, // Cloudinary returns secure_url
+            }));
+            setMessage({ type: 'success', text: `${type.charAt(0).toUpperCase() + type.slice(1)} image uploaded successfully!` });
+        } catch (error: any) {
+            console.error(`Error uploading ${type} image to Cloudinary:`, error);
+            setMessage({ type: 'error', text: `Failed to upload ${type} image: ${error.message}` });
+        } finally {
+            uploadStateSetter(false);
+        }
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'poster' | 'thumbnail') => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5 MB limit
+                setMessage({ type: 'error', text: 'File size exceeds 5MB. Please choose a smaller image.' });
+                return;
+            }
+            uploadImageToCloudinary(file, type);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!validateForm()) {
             setMessage({ type: 'error', text: 'Please correct the errors in the form.' });
@@ -224,36 +285,25 @@ export const AdminCreateEvent = () => {
 
         setMessage({ type: '', text: '' }); // Clear previous messages
 
+        if (isUploadingPoster || isUploadingThumbnail) {
+            setMessage({ type: 'error', text: 'Please wait for image uploads to complete.' });
+            return;
+        }
+
         try {
             const organizerEmail = user?.email;
-
-            console.log(organizerEmail)
 
             if (!organizerEmail) {
                 setMessage({ type: 'error', text: 'Organizer email not found. Please log in.' });
                 return;
             }
 
-            console.log("here")
-
-            // Start with a base object that mirrors CreateEventRequest
-            // Initialize optional fields to undefined to ensure they are omitted unless explicitly set
-            const dataToSubmit: CreateEventRequest = {
+            const dataToSubmit: any = {
                 category: eventData.category,
                 name: eventData.name,
                 description: eventData.description,
                 startDate: eventData.startDate,
                 endDate: eventData.endDate,
-                // These are conditional and will be added later
-                venueId: undefined,
-                address: undefined,
-                city: undefined,
-                country: undefined,
-                // Latitude/Longitude can be null in the request, or undefined if you prefer to omit entirely
-                latitude: eventData.latitude,
-                longitude: eventData.longitude,
-                posterImageUrl: eventData.posterImageUrl || undefined, // Send undefined if empty string
-                thumbnailImageUrl: eventData.thumbnailImageUrl || undefined, // Send undefined if empty string
                 organizerEmail: organizerEmail,
                 ticketTypes: eventData.ticketTypes.map(ticket => ({
                     typeName: ticket.typeName,
@@ -262,34 +312,31 @@ export const AdminCreateEvent = () => {
                     description: ticket.description,
                 })),
             };
-            console.log("there")
 
-            console.log("Event Data Venue Option:", eventData.venueOption);
+            if (eventData.latitude !== null && eventData.latitude !== undefined) {
+                dataToSubmit.latitude = eventData.latitude;
+            }
+            if (eventData.longitude !== null && eventData.longitude !== undefined) {
+                dataToSubmit.longitude = eventData.longitude;
+            }
+            if (eventData.posterImageUrl && eventData.posterImageUrl.trim() !== '') {
+                dataToSubmit.posterImageUrl = eventData.posterImageUrl;
+            }
+            if (eventData.thumbnailImageUrl && eventData.thumbnailImageUrl.trim() !== '') {
+                dataToSubmit.thumbnailImageUrl = eventData.thumbnailImageUrl;
+            }
+
             if (eventData.venueOption === 'existing') {
-                // We've ensured selectedVenueId is a number during validation
                 dataToSubmit.venueId = eventData.selectedVenueId as number;
-                // Explicitly ensure new venue fields are undefined/not present
-                dataToSubmit.address = undefined;
-                dataToSubmit.city = undefined;
-                dataToSubmit.country = undefined;
-                console.log("gone")
-
             } else if (eventData.venueOption === 'new') {
-                // Ensure these are non-null strings from validation
                 dataToSubmit.address = eventData.address as string;
                 dataToSubmit.city = eventData.city as string;
                 dataToSubmit.country = eventData.country as string;
-                // Explicitly ensure venueId is undefined/not present
-                dataToSubmit.venueId = undefined;
-                console.log("also gone")
-
             }
-
-            console.log("Submitting Event Data:", dataToSubmit); // Crucial for debugging
 
             await createEvent({ CreateEventRequest: dataToSubmit, organizerEmail: organizerEmail }).unwrap();
         } catch (err) {
-            // Error handling is now managed by the useEffect hook watching `isError` and `error`
+            console.error("Error in handleSubmit:", err);
         }
     };
 
@@ -378,28 +425,76 @@ export const AdminCreateEvent = () => {
                         />
                     </Grid>
 
+                    {/* Poster Image Upload */}
                     <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Poster Image URL (Optional)"
-                            name="posterImageUrl"
-                            value={eventData.posterImageUrl}
-                            onChange={handleChange}
-                            variant="outlined"
-                            helperText="Paste a URL for your event's main poster image."
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                            <Button
+                                variant="contained"
+                                component="label"
+                                startIcon={<CloudUploadIcon />}
+                                disabled={isUploadingPoster}
+                            >
+                                Upload Poster Image
+                                <input
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    ref={posterInputRef}
+                                    onChange={(e) => handleFileChange(e, 'poster')}
+                                />
+                            </Button>
+                            {isUploadingPoster && <CircularProgress size={24} />}
+                        </Box>
+                        {eventData.posterImageUrl ? (
+                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <ImageIcon color="action" />
+                                <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {eventData.posterImageUrl.split('/').pop()} {/* Display file name from URL */}
+                                </Typography>
+                                <IconButton size="small" onClick={() => setEventData(prev => ({ ...prev, posterImageUrl: '' }))}>
+                                    <DeleteIcon fontSize="small" color="error" />
+                                </IconButton>
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" color="textSecondary">No poster image selected.</Typography>
+                        )}
                     </Grid>
+
+                    {/* Thumbnail Image Upload */}
                     <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Thumbnail Image URL (Optional)"
-                            name="thumbnailImageUrl"
-                            value={eventData.thumbnailImageUrl}
-                            onChange={handleChange}
-                            variant="outlined"
-                            helperText="Paste a URL for a smaller thumbnail image."
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                            <Button
+                                variant="contained"
+                                component="label"
+                                startIcon={<CloudUploadIcon />}
+                                disabled={isUploadingThumbnail}
+                            >
+                                Upload Thumbnail Image
+                                <input
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    ref={thumbnailInputRef}
+                                    onChange={(e) => handleFileChange(e, 'thumbnail')}
+                                />
+                            </Button>
+                            {isUploadingThumbnail && <CircularProgress size={24} />}
+                        </Box>
+                        {eventData.thumbnailImageUrl ? (
+                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <ImageIcon color="action" />
+                                <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {eventData.thumbnailImageUrl.split('/').pop()} {/* Display file name from URL */}
+                                </Typography>
+                                <IconButton size="small" onClick={() => setEventData(prev => ({ ...prev, thumbnailImageUrl: '' }))}>
+                                    <DeleteIcon fontSize="small" color="error" />
+                                </IconButton>
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" color="textSecondary">No thumbnail image selected.</Typography>
+                        )}
                     </Grid>
+
 
                     <Grid item xs={12} sm={6}>
                         <TextField
@@ -407,8 +502,6 @@ export const AdminCreateEvent = () => {
                             label="Latitude (Optional)"
                             name="latitude"
                             type="number"
-                            // If latitude/longitude can truly be null in the request, keep this.
-                            // If they should be omitted if not provided, change to (eventData.latitude ?? '')
                             value={eventData.latitude === null ? '' : eventData.latitude}
                             onChange={handleChange}
                             variant="outlined"
@@ -440,11 +533,10 @@ export const AdminCreateEvent = () => {
                             setEventData(prev => ({
                                 ...prev,
                                 venueOption: selectedOption,
-                                // Reset venue-related fields when switching option
-                                selectedVenueId: selectedOption === 'existing' ? prev.selectedVenueId : '', // Keep current if existing, clear if new
-                                address: selectedOption === 'new' ? (prev.address || '') : null, // Keep existing if new, clear if existing
-                                city: selectedOption === 'new' ? (prev.city || '') : null,
-                                country: selectedOption === 'new' ? (prev.country || '') : null,
+                                selectedVenueId: selectedOption === 'existing' ? prev.selectedVenueId : '',
+                                address: selectedOption === 'new' ? (prev.address || '') : '', // Reset to empty string
+                                city: selectedOption === 'new' ? (prev.city || '') : '',
+                                country: selectedOption === 'new' ? (prev.country || '') : '',
                             }));
                         }}
                     >
@@ -464,7 +556,6 @@ export const AdminCreateEvent = () => {
                                     name="selectedVenueId"
                                     value={eventData.selectedVenueId}
                                     onChange={(e) => {
-                                        // Crucial: Convert value to number if not empty string
                                         const value = e.target.value;
                                         setEventData(prev => ({
                                             ...prev,
@@ -501,7 +592,6 @@ export const AdminCreateEvent = () => {
                                 fullWidth
                                 label="Address"
                                 name="address"
-                                // Ensure display value is '' if null for TextField
                                 value={eventData.address ?? ''}
                                 onChange={handleChange}
                                 variant="outlined"
@@ -634,7 +724,7 @@ export const AdminCreateEvent = () => {
                     size="large"
                     startIcon={<AddIcon />}
                     onClick={handleSubmit}
-                    disabled={isCreatingEvent}
+                    disabled={isCreatingEvent || isUploadingPoster || isUploadingThumbnail}
                 >
                     {isCreatingEvent ? <CircularProgress size={24} color="inherit" /> : 'Create Event'}
                 </Button>

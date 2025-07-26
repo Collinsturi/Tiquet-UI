@@ -88,6 +88,8 @@ export type OrganizerEventDetails = {
     eventTime: string; // "HH:MM:SS"
     category: string;
     venueName: string;
+    posterImageUrl: string,
+    thumbnailImageUrl: string,
     venueAddress: string;
     ticketsSold: string; // These are strings in your example JSON, consider making them numbers
     ticketsScanned: string; // Consider making them numbers

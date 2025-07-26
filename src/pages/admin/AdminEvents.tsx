@@ -38,10 +38,6 @@ import {
 // --- END: Uncomment and import RTK Query hooks and types ---
 
 
-// --- REMOVE all placeholder data (placeholderUpcomingEvents, placeholderCurrentEvents, placeholderPastEvents) ---
-// You will no longer need these static arrays as data will come from the backend.
-
-
 // Styled Search Bar (reused from AdminLayout)
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
@@ -148,8 +144,8 @@ export const AdminEvents = () => {
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
         return events.filter(event =>
             event.title.toLowerCase().includes(lowerCaseSearchTerm) ||
-            event.venueName.toLowerCase().includes(lowerCaseSearchTerm) ||
-            event.venueAddress.toLowerCase().includes(lowerCaseSearchTerm) ||
+            (event.venueName && event.venueName.toLowerCase().includes(lowerCaseSearchTerm)) || // Check for null/undefined
+            (event.venueAddress && event.venueAddress.toLowerCase().includes(lowerCaseSearchTerm)) || // Check for null/undefined
             event.category.toLowerCase().includes(lowerCaseSearchTerm)
         );
     };
@@ -194,6 +190,7 @@ export const AdminEvents = () => {
         }
     };
 
+    console.log("eventsToDisplay", eventsToDisplay);
 
     return (
         <Box sx={{ flexGrow: 1, p: 3, minHeight: '100vh', height: 'auto' }}>
@@ -265,7 +262,7 @@ export const AdminEvents = () => {
                                     <Box sx={{ height: 180, overflow: 'hidden' }}>
                                         {/* Use event.posterImageUrl if available, otherwise fallback to placeholder */}
                                         <img
-                                            src={event.posterImageUrl || `https://via.placeholder.com/400x200?text=${encodeURIComponent(event.title)}`}
+                                            src={event.posterImageUrl || `https://placehold.co/600x400?text=${encodeURIComponent(event.title)}`}
                                             alt={event.title}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://placehold.co/400x200/E0E0E0/000000?text=No+Image"; }}
@@ -281,8 +278,12 @@ export const AdminEvents = () => {
                                         <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                             <AccessTimeIcon sx={{ fontSize: 16, mr: 1 }} /> {formatTime(event.eventTime)}
                                         </Typography>
+                                        {/* Improved venue display logic */}
                                         <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                            <LocationOnIcon sx={{ fontSize: 16, mr: 1 }} /> {event.venueName}, {event.venueAddress}
+                                            <LocationOnIcon sx={{ fontSize: 16, mr: 1 }} />
+                                            {event.venueName && event.venueAddress
+                                                ? `${event.venueName}, ${event.venueAddress}`
+                                                : event.venueName || event.venueAddress || 'Venue Not Specified'}
                                         </Typography>
                                         <Typography variant="body1" color="primary">
                                             <SellIcon sx={{ verticalAlign: 'middle', mr: 0.5, fontSize: 18 }} /> Tickets Sold: {event.ticketsSold}
