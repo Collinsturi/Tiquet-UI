@@ -30,8 +30,8 @@ import dayjs from 'dayjs'; // Import dayjs
 // --- RTK Query Imports ---
 import {
     useGetEventByIdQuery,
-    type EventDetailResponseData, // <--- CHANGED: Import EventDetailResponseData
-    type TicketType,               // Import TicketType for clarity
+    type EventDetailResponseData,
+    type TicketType,
 } from '../../queries/general/EventQuery'; // Adjust path as necessary
 
 
@@ -52,7 +52,6 @@ export const AdminEventDetails = () => {
     });
 
     // Local state for editing purposes, initialized with fetched data
-    // <--- CHANGED: State type to EventDetailResponseData ---
     const [editableEventData, setEditableEventData] = useState<EventDetailResponseData | null>(null);
     const [originalEditableEventData, setOriginalEditableEventData] = useState<EventDetailResponseData | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -69,7 +68,17 @@ export const AdminEventDetails = () => {
     }, [fetchedEvent, isEventLoading, isEventFetching, isEventError, eventError]);
 
 
+    // Determine if the event date and time are in the past
+    const isEventPast = editableEventData && editableEventData.eventDate && editableEventData.eventTime
+        ? dayjs(`${editableEventData.eventDate}T${editableEventData.eventTime}`).isBefore(dayjs())
+        : false;
+
     const handleEditToggle = () => {
+        // Prevent editing if the event is in the past
+        if (isEventPast) {
+            setMessage({ type: 'info', text: 'This event has already occurred and cannot be edited.' });
+            return;
+        }
         setIsEditing(prev => !prev);
         if (isEditing) {
             setEditableEventData(originalEditableEventData);
@@ -84,7 +93,7 @@ export const AdminEventDetails = () => {
         setEditableEventData(prev => {
             if (!prev) return null;
 
-            // --- CHANGED: Handle properties based on EventDetailResponseData structure ---
+            // Handle properties based on EventDetailResponseData structure
             // Direct properties of EventDetailResponseData
             if (['title', 'description', 'category', 'eventDate', 'eventTime', 'posterImageUrl', 'thumbnailImageUrl', 'latitude', 'longitude', 'venueName', 'venueAddress', 'venueCapacity', 'totalTicketsSold', 'totalTicketsAvailable'].includes(name)) {
                 return {
@@ -99,8 +108,6 @@ export const AdminEventDetails = () => {
                     venue: { ...prev.venue, [name]: value }
                 };
             }
-            // If you add `city` or `country` to your `Venue` type for `EventDetailResponseData.venue`,
-            // you'd add similar logic here.
             return prev;
         });
     };
@@ -219,8 +226,6 @@ export const AdminEventDetails = () => {
         );
     }
 
-    // --- CHANGED: Direct access to properties from `editableEventData` ---
-    // `editableEventData` itself is the main event object
     const event = editableEventData;
     const venue = editableEventData.venue;
     const ticketTypes = editableEventData.ticketTypes;
@@ -231,36 +236,39 @@ export const AdminEventDetails = () => {
                 <Typography variant="h4" component="h1">
                     Event Details: {event.title}
                 </Typography>
-                {!isEditing ? (
-                    <Button
-                        variant="outlined"
-                        startIcon={<EditIcon />}
-                        onClick={handleEditToggle}
-                    >
-                        Edit Event
-                    </Button>
-                ) : (
-                    <Box>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<SaveIcon />}
-                            onClick={handleSave}
-                            sx={{ mr: 1 }}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? <CircularProgress size={24} /> : 'Save Changes'}
-                        </Button>
+                {/* Hide Edit/Save/Cancel buttons if event is in the past */}
+                {!isEventPast && (
+                    !isEditing ? (
                         <Button
                             variant="outlined"
-                            color="error"
-                            startIcon={<CancelIcon />}
-                            onClick={handleCancel}
-                            disabled={isLoading}
+                            startIcon={<EditIcon />}
+                            onClick={handleEditToggle}
                         >
-                            Cancel
+                            Edit Event
                         </Button>
-                    </Box>
+                    ) : (
+                        <Box>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<SaveIcon />}
+                                onClick={handleSave}
+                                sx={{ mr: 1 }}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? <CircularProgress size={24} /> : 'Save Changes'}
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                startIcon={<CancelIcon />}
+                                onClick={handleCancel}
+                                disabled={isLoading}
+                            >
+                                Cancel
+                            </Button>
+                        </Box>
+                    )
                 )}
             </Box>
 
@@ -290,7 +298,7 @@ export const AdminEventDetails = () => {
                                     <Typography>No Poster Image</Typography>
                                 </Box>
                             )}
-                            {isEditing && (
+                            {isEditing && !isEventPast && ( // Disable if not editing OR if event is past
                                 <TextField
                                     fullWidth
                                     margin="normal"
@@ -319,7 +327,7 @@ export const AdminEventDetails = () => {
                                     <Typography>No Thumbnail</Typography>
                                 </Box>
                             )}
-                            {isEditing && (
+                            {isEditing && !isEventPast && ( // Disable if not editing OR if event is past
                                 <TextField
                                     fullWidth
                                     margin="normal"
@@ -341,7 +349,7 @@ export const AdminEventDetails = () => {
                             name="category"
                             value={event.category || ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             variant="outlined"
                         />
                     </Grid>
@@ -352,7 +360,7 @@ export const AdminEventDetails = () => {
                             name="title"
                             value={event.title || ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             variant="outlined"
                         />
                     </Grid>
@@ -363,7 +371,7 @@ export const AdminEventDetails = () => {
                             name="description"
                             value={event.description || ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             multiline
                             rows={4}
                             variant="outlined"
@@ -381,7 +389,7 @@ export const AdminEventDetails = () => {
                                     handleDateChange('eventTime', newValue);
                                 }
                             }}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             renderInput={(params) => <TextField {...params} fullWidth variant="outlined" />}
                         />
                     </Grid>
@@ -404,7 +412,7 @@ export const AdminEventDetails = () => {
                             name="venueName"
                             value={event.venueName || ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             variant="outlined"
                         />
                     </Grid>
@@ -415,7 +423,7 @@ export const AdminEventDetails = () => {
                             name="venueAddress"
                             value={event.venueAddress || ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             multiline
                             rows={2}
                             variant="outlined"
@@ -429,7 +437,7 @@ export const AdminEventDetails = () => {
                             type="number"
                             value={event.venueCapacity || ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             variant="outlined"
                         />
                     </Grid>
@@ -441,7 +449,7 @@ export const AdminEventDetails = () => {
                             type="number"
                             value={event.latitude ?? ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             variant="outlined"
                         />
                     </Grid>
@@ -453,7 +461,7 @@ export const AdminEventDetails = () => {
                             type="number"
                             value={event.longitude ?? ''}
                             onChange={handleChange}
-                            disabled={!isEditing}
+                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                             variant="outlined"
                         />
                     </Grid>
@@ -464,7 +472,7 @@ export const AdminEventDetails = () => {
             <Paper elevation={3} sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h5" gutterBottom>Ticket Types</Typography>
-                    {isEditing && (
+                    {isEditing && !isEventPast && ( // Hide if not editing OR if event is past
                         <Button
                             variant="outlined"
                             startIcon={<AddIcon />}
@@ -491,7 +499,7 @@ export const AdminEventDetails = () => {
                                             label="Ticket Type Name"
                                             value={ticket.typeName || ''}
                                             onChange={(e) => handleTicketTypeChange(ticket.id, 'typeName', e.target.value)}
-                                            disabled={!isEditing}
+                                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                                             variant="outlined"
                                         />
                                         <TextField
@@ -501,7 +509,7 @@ export const AdminEventDetails = () => {
                                             type="number"
                                             value={ticket.price || 0}
                                             onChange={(e) => handleTicketTypeChange(ticket.id, 'price', parseFloat(e.target.value))}
-                                            disabled={!isEditing}
+                                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                                             variant="outlined"
                                             InputProps={{
                                                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
@@ -514,7 +522,7 @@ export const AdminEventDetails = () => {
                                             type="number"
                                             value={ticket.quantityAvailable || 0}
                                             onChange={(e) => handleTicketTypeChange(ticket.id, 'quantityAvailable', parseInt(e.target.value))}
-                                            disabled={!isEditing}
+                                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                                             variant="outlined"
                                         />
                                         <TextField
@@ -523,13 +531,13 @@ export const AdminEventDetails = () => {
                                             label="Description"
                                             value={ticket.description || ''}
                                             onChange={(e) => handleTicketTypeChange(ticket.id, 'description', e.target.value)}
-                                            disabled={!isEditing}
+                                            disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
                                             multiline
                                             rows={2}
                                             variant="outlined"
                                         />
                                     </CardContent>
-                                    {isEditing && (
+                                    {isEditing && !isEventPast && ( // Hide if not editing OR if event is past
                                         <CardActions sx={{ justifyContent: 'flex-end' }}>
                                             <Button
                                                 size="small"
