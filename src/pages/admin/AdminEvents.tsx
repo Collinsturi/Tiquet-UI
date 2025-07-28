@@ -206,7 +206,7 @@ export const AdminEvents = () => {
                             placeholder="Search events..."
                             inputProps={{ 'aria-label': 'search events' }}
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                             sx={{ color: 'var(--color-my-base-content)' }}
                         />
                     </Search>

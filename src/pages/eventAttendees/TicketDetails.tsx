@@ -199,7 +199,7 @@ export const TicketDetails = () => {
     // Determine check-in status and styling
     const checkInStatus = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
     let statusColorClass = '';
-    let statusIcon: JSX.Element | null = null; // Explicitly type statusIcon
+    let statusIcon: React.ReactElement | null = null;
     switch (checkInStatus) {
         case 'Checked In':
             statusColorClass = 'bg-[var(--color-my-success)] text-[var(--color-my-success-content)]';

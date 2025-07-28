@@ -41,7 +41,7 @@ import React from 'react';
 interface NavItem {
     kind: 'nav'; // Added discriminant property
     text: string;
-    icon: JSX.Element;
+    icon: React.ReactElement;
     path: string; // Nav items always have a path
 }
 
