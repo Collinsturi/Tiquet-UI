@@ -11,6 +11,9 @@
     "css:build": "pnpm exec tailwindcss -i ./src/index.css -o ./src/output.css --watch"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.1.1",
     "@mui/icons-material": "^5.14.16",
     "@mui/material": "^5.15.18",
