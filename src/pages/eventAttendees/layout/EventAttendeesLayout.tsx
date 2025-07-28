@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { styled, useTheme } from '@mui/material/styles'; // Import useTheme
+import { styled } from '@mui/material/styles'; // Import useTheme
 import {
     AppBar,
     Box,
@@ -33,8 +33,29 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // Icon for P
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useSelector } from "react-redux";
-import type { RootState } from "../../redux/store.ts";
+import type { RootState } from "../../../redux/store.ts";
 import { useGetUserNotificationsQuery } from '../../../queries/general/AuthQuery.ts'; // Assuming this is the correct path for notification query
+import React from 'react';
+
+// Define types for different kinds of sidebar items
+interface NavItem {
+    kind: 'nav'; // Added discriminant property
+    text: string;
+    icon: JSX.Element;
+    path: string; // Nav items always have a path
+}
+
+interface HeaderItem {
+    kind: 'header';
+    title: string;
+}
+
+interface DividerItem {
+    kind: 'divider';
+}
+
+// Union type for all possible section items
+type SectionItem = NavItem | HeaderItem | DividerItem;
 
 const drawerWidth = 240;
 
@@ -73,11 +94,11 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 export const EventAttendeesLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const theme = useTheme(); // Access the theme object
+    // const theme = useTheme(); // Access the theme object
     const [mobileOpen, setMobileOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(true); // Initial state for desktop drawer
-    const [notificationAnchorEl, setNotificationAnchorEl] = useState(null); // State for notification dropdown
-    const [profileAnchorEl, setProfileAnchorEl] = useState(null); // State for profile dropdown
+    const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null); // State for notification dropdown
+    const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(null); // State for profile dropdown
     const user = useSelector((state: RootState) => state.user.user);
 
     // Fetch user notifications
@@ -85,9 +106,8 @@ export const EventAttendeesLayout = () => {
         data: notificationsData,
         isLoading: isNotificationsLoading,
         isError: isNotificationsError,
-        error: notificationsError,
         refetch: refetchNotifications // Allows manual refetching
-    } = useGetUserNotificationsQuery(user?.email, {
+    } = useGetUserNotificationsQuery(user?.email!, { // Added non-null assertion as per previous conversation
         skip: !user?.email, // Skip query if user email is not available
     });
 
@@ -98,13 +118,13 @@ export const EventAttendeesLayout = () => {
     // This function will now be responsible for toggling the desktop drawer
     const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
 
-    const handleNotificationClick = (event) => {
+    const handleNotificationClick = (event: React.MouseEvent<HTMLButtonElement>) => { // Explicitly type event
         setNotificationAnchorEl(event.currentTarget);
         refetchNotifications(); // Refetch notifications when the dropdown is opened
     };
     const handleNotificationClose = () => setNotificationAnchorEl(null);
 
-    const handleProfileClick = (event) => setProfileAnchorEl(event.currentTarget);
+    const handleProfileClick = (event: React.MouseEvent<HTMLButtonElement>) => setProfileAnchorEl(event.currentTarget); // Explicitly type event
     const handleProfileClose = () => setProfileAnchorEl(null);
 
     const handleLogout = () => {
@@ -114,13 +134,13 @@ export const EventAttendeesLayout = () => {
         handleProfileClose();
     };
 
-
-    const sections = [
+    // Explicitly type the sections array
+    const sections: SectionItem[] = [
         { kind: 'header', title: 'Main Menu' },
-        { text: 'Dashboard', icon: <DashboardIcon />, path: '/attendee' },
-        { text: 'My tickets', icon: <ConfirmationNumberIcon />, path: '/attendee/My-tickets' }, // Updated icon
-        { text: 'Events', icon: <EventIcon />, path: '/attendee/events'}, // Updated icon
-        { text: 'Profile', icon: <AccountCircleIcon />, path: '/attendee/profile' }, // Updated icon
+        { kind: 'nav', text: 'Dashboard', icon: <DashboardIcon />, path: '/attendee' }, // Added kind
+        { kind: 'nav', text: 'My tickets', icon: <ConfirmationNumberIcon />, path: '/attendee/My-tickets' }, // Added kind
+        { kind: 'nav', text: 'Events', icon: <EventIcon />, path: '/attendee/events'}, // Added kind
+        { kind: 'nav', text: 'Profile', icon: <AccountCircleIcon />, path: '/attendee/profile' }, // Added kind
     ];
 
     const drawer = (
@@ -146,7 +166,7 @@ export const EventAttendeesLayout = () => {
                     <Avatar alt="AdminUser"
                             src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
                             sx={{ border: '2px solid var(--color-my-primary)' }} />
-                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>{user?.firstName || 'User'}</Typography> {/* Text color on bolder background */}
+                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>{user?.first_name || 'User'}</Typography> {/* Text color on bolder background */}
                 </div>
                 <Search sx={{ mt: 2 }}>
                     <SearchIconWrapper>
@@ -160,7 +180,7 @@ export const EventAttendeesLayout = () => {
                 {sections.map((item, index) => {
                     if (item.kind === 'header') {
                         return drawerOpen ? (
-                            <Typography key={index} variant="caption" sx={{ px: 2, py: 1, fontWeight: 'bold', color: 'var(--color-my-neutral-content)' }}> {/* Text color on bolder background */}
+                            <Typography key={index} variant="caption" sx={{ px: 2, py: 1, fontWeight: 'bold', color: 'var(--color-my-neutral-content)' }}>
                                 {item.title}
                             </Typography>
                         ) : null;
@@ -170,6 +190,7 @@ export const EventAttendeesLayout = () => {
                         return <Divider key={index} sx={{ my: 1, borderColor: 'var(--color-my-base-300)' }} />;
                     }
 
+                    // At this point, TypeScript knows 'item' must be a NavItem due to discriminated union
                     return (
                         <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
                             <ListItemButton

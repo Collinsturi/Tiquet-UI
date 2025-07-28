@@ -23,12 +23,10 @@ export const Auth = () => {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [formMessage, setFormMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false); // For overall form submission status
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
 
     // RTK Query hooks
-    const [loginUser, { isLoading: isLoginLoading, isSuccess: isLoginSuccess, error: loginError, data: loginData }] = useLoginUserMutation();
-    const [registerUser, { isLoading: isRegisterLoading, isSuccess: isRegisterSuccess, error: registerError, data: registerData }] = useRegisterUserMutation();
+    const [loginUser, { isLoading: isLoginLoading}] = useLoginUserMutation();
+    const [registerUser, { isLoading: isRegisterLoading}] = useRegisterUserMutation();
 
     // Yup validation schema for login
     const loginSchema = yup.object().shape({
@@ -44,10 +42,10 @@ export const Auth = () => {
         email: yup.string().trim().email('Invalid email').required('Email is required'),
         password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
         confirmPassword: yup.string()
-            .oneOf([yup.ref('password'), null], 'Passwords must match')
+            .oneOf([yup.ref('password')], 'Passwords must match')
             .required('Confirm Password is required'),
         role: yup.string().oneOf(['event_attendee', 'organizer'], 'Invalid role selected').required('Role is required'),
-        address: yup.string().nullable(true).notRequired() // Address is optional for registration
+        address: yup.string().nullable().notRequired() // Address is optional for registration
     });
 
     const dispatch = useDispatch();
@@ -87,7 +85,7 @@ export const Auth = () => {
                     last_name: res.user.last_name,
                     email: res.user.email,
                     role: res.user.role,
-                    profilePicture: res.user.profilePicture
+                    // profilePicture: res.user.profilePicture
                 }
             };
 

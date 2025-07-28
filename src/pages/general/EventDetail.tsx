@@ -12,7 +12,7 @@ import {EventTicketDetails} from "../../components/eventDetail/eventTicketDetail
 export const EventDetail = () => {
     return (
         <>
-            <Nav                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    bar />
+            <Navbar />
             <EventImages />
             <EventDescription />
             <EventMetaData />

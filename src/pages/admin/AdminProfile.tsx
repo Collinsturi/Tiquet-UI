@@ -10,7 +10,7 @@ import {
     Divider,
     Alert,
     CircularProgress,
-    useTheme // Import useTheme hook for spacing, etc.
+    type AlertColor, // ADD THIS IMPORT for AlertColor
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
@@ -23,7 +23,7 @@ import type {RootState} from '../../redux/store.ts'; // Assuming your RootState 
 
 
 export const AdminProfile = () => {
-    const theme = useTheme(); // Access the theme object for spacing, etc.
+    // const theme = useTheme(); // Access the theme object for spacing, etc.
 
     // Get user from Redux store to access the ID for the query
     const user = useSelector((state: RootState) => state.user.user);
@@ -45,7 +45,8 @@ export const AdminProfile = () => {
     const [editableProfileData, setEditableProfileData] = useState<ApplicationUser | null>(null);
     const [originalProfileData, setOriginalProfileData] = useState<ApplicationUser | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
+    // FIX 1: Change type for profileMessage.type to AlertColor | undefined
+    const [profileMessage, setProfileMessage] = useState<{ type: AlertColor | undefined; text: string }>({ type: undefined, text: '' });
 
     // Use a mutation hook if you have one for updating user details
     // For now, we'll simulate the update since it wasn't provided in AuthQuery.ts
@@ -77,7 +78,7 @@ export const AdminProfile = () => {
             // If exiting edit mode without saving, revert to original data
             setEditableProfileData({ ...originalProfileData });
         }
-        setProfileMessage({ type: '', text: '' }); // Clear messages
+        setProfileMessage({ type: undefined, text: '' }); // FIX 1: Set type to undefined when clearing
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -102,7 +103,7 @@ export const AdminProfile = () => {
         // }
 
         // --- Simulating save for demonstration since mutation is not yet defined ---
-        setProfileMessage({ type: '', text: '' }); // Clear message before simulating
+        setProfileMessage({ type: undefined, text: '' }); // FIX 1: Set type to undefined when clearing
         // Simulate loading state
         // setIsUpdating(true); // If you had an actual isUpdating state from mutation
         console.log("Simulating profile save:", editableProfileData);
@@ -124,7 +125,7 @@ export const AdminProfile = () => {
             setEditableProfileData(originalProfileData);
         }
         setIsEditing(false);
-        setProfileMessage({ type: '', text: '' });
+        setProfileMessage({ type: undefined, text: '' }); // FIX 1: Set type to undefined when clearing
     };
 
     // Show loading spinner if fetching initial data or refetching
@@ -197,7 +198,8 @@ export const AdminProfile = () => {
                             alt={`${editableProfileData.firstName} ${editableProfileData.lastName}`}
                             src={editableProfileData.profilePicture || "https://via.placeholder.com/150"} // Placeholder if no picture
                             sx={{ width: 120, height: 120, mb: 2, border: `2px solid var(--color-my-primary)` }}
-                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src="https://via.placeholder.com/150"; }} // Fallback on error
+                            // FIX 2: Explicitly type the event for onError to HTMLImageElement
+                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.onerror = null; e.currentTarget.src="https://via.placeholder.com/150"; }} // Fallback on error
                         />
                         <Typography variant="caption" sx={{ color: 'var(--color-my-base-content)' }}>Profile Picture</Typography>
                         {/* Add file upload functionality here if needed for profile picture */}

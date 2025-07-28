@@ -87,7 +87,7 @@ export const AdminCreateEvent = () => {
         ],
     });
 
-    const [message, setMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
+    const [message, setMessage] = useState<{ type?: 'success' | 'error'; text: string }>({ text: '' });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // State for image upload loading
@@ -236,7 +236,7 @@ export const AdminCreateEvent = () => {
         const imageUrlSetter = type === 'poster' ? 'posterImageUrl' : 'thumbnailImageUrl';
 
         uploadStateSetter(true);
-        setMessage({ type: '', text: '' }); // Clear any previous messages
+        // setMessage({ type: '', text: '' }); // Clear any previous messages
 
         try {
             const response = await fetch(
@@ -283,7 +283,7 @@ export const AdminCreateEvent = () => {
             return;
         }
 
-        setMessage({ type: '', text: '' }); // Clear previous messages
+        // setMessage({ type: '', text: '' }); // Clear previous messages
 
         if (isUploadingPoster || isUploadingThumbnail) {
             setMessage({ type: 'error', text: 'Please wait for image uploads to complete.' });

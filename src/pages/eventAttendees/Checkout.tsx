@@ -7,42 +7,82 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import EventIcon from "@mui/icons-material/Event";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
-import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone'; // For M-Pesa STK push
-import QrCode2Icon from '@mui/icons-material/QrCode2'; // For QR code display
-import DownloadIcon from '@mui/icons-material/Download'; // For download button
-import CreditCardIcon from '@mui/icons-material/CreditCard'; // For card payment (still imported for Paystack icon)
-import { usePaystackPayment } from 'react-paystack'; // Import Paystack hook
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
+import DownloadIcon from '@mui/icons-material/Download';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import { usePaystackPayment} from 'react-paystack';
 
-// This would ideally come from a utility or be generated dynamically
-const generateDummyQRCode = (ticketDetails) => {
+interface TicketItem {
+    ticketTypeName: string;
+    quantity: number;
+    pricePerUnit: number;
+}
+
+type PaystackCustomField = {
+    display_name: string;
+    variable_name: string;
+    value: string;
+};
+
+type PaystackMetadata = {
+    custom_fields: PaystackCustomField[];
+};
+
+type PaystackProps = {
+    reference: string;
+    email: string;
+    amount: number;
+    publicKey: string;
+    metadata?: PaystackMetadata;
+};
+
+
+interface OrderDetails {
+    eventName: string;
+    eventDate: string;
+    eventLocation: string;
+    totalAmount: number;
+    userEmail: string;
+    eventId: string;
+    tickets: TicketItem[];
+}
+
+interface LocationState {
+    orderDetails?: OrderDetails;
+}
+
+const generateDummyQRCode = (ticketDetails: OrderDetails): string => {
     const data = JSON.stringify(ticketDetails);
     return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data)}`;
 };
 
 export const Checkout = () => {
+    // Remove generic type from useLocation - it's not needed in newer versions
     const location = useLocation();
     const navigate = useNavigate();
-    const checkoutModalRef = useRef(null); // Ref for the checkout modal
+    const checkoutModalRef = useRef<HTMLDialogElement>(null);
 
-    const [orderDetails, setOrderDetails] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [paymentStatus, setPaymentStatus] = useState(null); // 'success', 'error', null
-    const [message, setMessage] = useState('');
-    const [currentStep, setCurrentStep] = useState(0); // 0: Payment Method, 1: Instruction, 2: Waiting, 3: Confirmation/Tickets
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('mpesa'); // 'mpesa' or 'paystack'
+    const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    // Fix the type to include 'success' in the union
+    const [paymentStatus, setPaymentStatus] = useState<'success' | 'error' | null>(null);
+    const [message, setMessage] = useState<string>('');
+    const [currentStep, setCurrentStep] = useState<number>(0);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mpesa' | 'paystack'>('mpesa');
 
-    // Paystack configuration (replace with your actual public key and email)
-    const paystackConfig = {
-        reference: (new Date()).getTime().toString(), // Unique reference for the transaction
-        email: orderDetails?.userEmail || 'customer@example.com', // Use actual user email from orderDetails
-        amount: orderDetails?.totalAmount ? orderDetails.totalAmount * 100 : 0, // Amount in kobo/cents
+    // Paystack configuration with proper typing
+    const paystackConfig: PaystackProps = {
+        reference: (new Date()).getTime().toString(),
+        email: orderDetails?.userEmail || 'customer@example.com',
+        amount: orderDetails?.totalAmount ? Math.round(orderDetails.totalAmount * 100) : 0,
         publicKey: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your Paystack Public Key
         metadata: {
             custom_fields: [
                 {
                     display_name: "Order ID",
                     variable_name: "order_id",
-                    value: orderDetails?.eventId // Or a unique order ID from your backend
+                    value: orderDetails?.eventId || 'N/A'
                 }
             ]
         }
@@ -52,8 +92,10 @@ export const Checkout = () => {
     const initializePaystackPayment = usePaystackPayment(paystackConfig);
 
     useEffect(() => {
-        if (location.state && location.state.orderDetails) {
-            setOrderDetails(location.state.orderDetails);
+        // Cast the location.state to our expected type
+        const state = location.state as LocationState | null;
+        if (state && state.orderDetails) {
+            setOrderDetails(state.orderDetails);
             setMessage('');
             setPaymentStatus(null);
         } else {
@@ -63,7 +105,6 @@ export const Checkout = () => {
         }
     }, [location.state, navigate]);
 
-    // Function to handle opening the modal and starting the process
     const handleInitiatePayment = () => {
         if (!orderDetails) {
             setMessage('Order details missing. Cannot proceed with payment.');
@@ -72,76 +113,63 @@ export const Checkout = () => {
         }
         setMessage('');
         setPaymentStatus(null);
-        setCurrentStep(1); // Go to instruction step
+        setCurrentStep(1);
         checkoutModalRef.current?.showModal();
     };
 
-    // Function to simulate the M-Pesa payment process (STK push)
     const executeMpesaPaymentProcess = async () => {
         setLoading(true);
-        setCurrentStep(2); // Move to waiting for confirmation step
+        setCurrentStep(2);
         setMessage('Waiting for M-Pesa payment confirmation...');
 
         try {
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate API call for STK push
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
-            const paymentSuccessful = Math.random() > 0.1; // 90% success rate for demo
+            const paymentSuccessful = Math.random() > 0.1;
 
             if (paymentSuccessful) {
                 setMessage('M-Pesa Payment successful! Your tickets have been confirmed.');
                 setPaymentStatus('success');
-                setCurrentStep(3); // Move to success/ticket display step
+                setCurrentStep(3);
             } else {
                 throw new Error('M-Pesa Payment failed. Please try a different method or try again.');
             }
 
-        } catch (error) {
+        } catch (error: any) {
             setMessage(error.message || 'An unexpected error occurred during M-Pesa payment.');
             setPaymentStatus('error');
-            setCurrentStep(3); // Move to error/ticket display step
+            setCurrentStep(3);
         } finally {
             setLoading(false);
         }
     };
 
-    // Function to handle Paystack payment
     const handlePaystackPayment = () => {
         setLoading(true);
-        // Close our modal before initiating Paystack to prevent z-index issues
         checkoutModalRef.current?.close();
+
         initializePaystackPayment({
-            onSuccess: (response) => {
-                // Payment successful
+            onSuccess: (response: any) => {
                 console.log('Paystack Success:', response);
                 setMessage('Paystack Payment successful! Your tickets have been confirmed.');
                 setPaymentStatus('success');
-                setCurrentStep(3); // Move to success/ticket display step
+                setCurrentStep(3);
                 setLoading(false);
             },
             onClose: () => {
-                // Payment modal closed by user
                 console.log('Paystack Closed');
                 setMessage('Paystack payment was interrupted. Please try again.');
                 setPaymentStatus('error');
-                setCurrentStep(1); // Go back to instructions or initial step
+                setCurrentStep(1);
                 setLoading(false);
-                checkoutModalRef.current?.showModal(); // Re-open our modal if Paystack is closed
+                checkoutModalRef.current?.showModal();
             },
-            onLoad: () => {
-                // Paystack modal loaded
-                setMessage('Redirecting to Paystack...');
-                // No need to set currentStep here, as our modal is closed
-            },
-            // onError: (error) => { // This callback is not officially part of usePaystackPayment
-            //     console.error('Paystack Error:', error);
-            //     setMessage(`Paystack Payment failed: ${error.message || 'An unexpected error occurred.'}`);
-            //     setPaymentStatus('error');
-            //     setCurrentStep(3);
-            //     setLoading(false);
-            // }
+            // Remove onLoad as it's not supported in the current version
+            // onLoad: () => {
+            //     setMessage('Redirecting to Paystack...');
+            // },
         });
     };
-
 
     const handleDownloadTicket = () => {
         if (orderDetails && paymentStatus === 'success') {
@@ -161,14 +189,11 @@ export const Checkout = () => {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            alert('Simulated ticket download. Check your downloads!');
+            setMessage('Simulated ticket download. Check your downloads!');
         }
     };
 
-    const totalTicketsSelected = orderDetails?.tickets?.reduce((sum, ticket) => sum + ticket.quantity, 0) || 0;
-
     return (
-        // Apply base-200 background and font-sans from custom theme
         <div className="container mx-auto p-4 md:p-8 min-h-screen bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]">
             <h1 className="text-3xl font-bold mb-6 flex items-center gap-2 text-[var(--color-my-primary)]">
                 <ShoppingCartCheckoutIcon className="text-4xl text-[var(--color-my-primary)]" /> Secure Checkout
@@ -176,7 +201,7 @@ export const Checkout = () => {
             <hr className="my-6 border-[var(--color-my-base-content)]/10" />
 
             {/* Global Alert for initial order details issues */}
-            {message && !checkoutModalRef.current?.open && paymentStatus !== 'success' && (
+            {message && !checkoutModalRef.current?.open && (
                 <div role="alert" className={`alert ${paymentStatus === 'success' ? 'bg-[var(--color-my-success)] text-[var(--color-my-success-content)]' : 'bg-[var(--color-my-error)] text-[var(--color-my-error-content)]'} mb-6`}>
                     {paymentStatus === 'success' ? (
                         <CheckCircleOutlineIcon className="w-6 h-6" />
@@ -227,7 +252,7 @@ export const Checkout = () => {
                                     </tbody>
                                     <tfoot>
                                     <tr>
-                                        <th colSpan="3" className="text-right text-lg text-[var(--color-my-base-content)]">Total Payable:</th>
+                                        <th colSpan={3} className="text-right text-lg text-[var(--color-my-base-content)]">Total Payable:</th>
                                         <th className="text-right text-lg text-[var(--color-my-primary)]">KSh {orderDetails.totalAmount.toLocaleString('en-KE')}</th>
                                     </tr>
                                     </tfoot>
@@ -254,7 +279,7 @@ export const Checkout = () => {
                                     <span className="label-text text-[var(--color-my-base-content)]">M-Pesa (Mobile Money)</span>
                                 </label>
                             </div>
-                            <div className="form-control mb-6"> {/* Added Paystack radio button */}
+                            <div className="form-control mb-6">
                                 <label className="label cursor-pointer justify-start gap-2 text-[var(--color-my-base-content)]">
                                     <input
                                         type="radio"
@@ -266,11 +291,10 @@ export const Checkout = () => {
                                     <span className="label-text text-[var(--color-my-base-content)]">Paystack (Card/Bank Transfer)</span>
                                 </label>
                             </div>
-                            {/* Removed the Credit/Debit Card (Coming Soon) section */}
 
                             <button
                                 className="btn btn-block bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)]"
-                                onClick={handleInitiatePayment} // This button now opens the modal
+                                onClick={handleInitiatePayment}
                                 disabled={loading || paymentStatus === 'success'}
                             >
                                 {loading && <span className="loading loading-spinner loading-sm mr-2"></span>}
@@ -294,7 +318,6 @@ export const Checkout = () => {
                     <span>No order details to display. Please go back to events to select tickets.</span>
                 </div>
             )}
-
 
             {/* Payment Process Modal */}
             <dialog id="payment_modal" className="modal" ref={checkoutModalRef}>
@@ -323,14 +346,14 @@ export const Checkout = () => {
                                 </p>
                                 <button
                                     className="btn bg-[var(--color-my-primary)] text-[var(--color-my-primary-content)] hover:bg-[var(--color-my-primary-focus)] mt-4"
-                                    onClick={executeMpesaPaymentProcess} // Changed to M-Pesa specific function
+                                    onClick={executeMpesaPaymentProcess}
                                     disabled={loading}
                                 >
                                     {loading ? <span className="loading loading-spinner loading-sm"></span> : 'I have entered my PIN'}
                                 </button>
                                 <button
                                     className="btn btn-ghost text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-300)] btn-sm mt-2"
-                                    onClick={() => { /* Implement retry logic, maybe resend STK */ alert('Simulating STK Push retry...'); }}
+                                    onClick={() => { console.log('Simulating STK Push retry...'); }}
                                     disabled={loading}
                                 >
                                     Retry STK Push
@@ -355,8 +378,6 @@ export const Checkout = () => {
                             </>
                         )}
 
-                        {/* Removed the conditional rendering for currentStep === 1 && selectedPaymentMethod === 'card' */}
-
                         {currentStep === 2 && (
                             <>
                                 <span className="loading loading-spinner loading-lg text-[var(--color-my-primary)] mb-4"></span>
@@ -375,7 +396,6 @@ export const Checkout = () => {
                                     Your tickets for **{orderDetails?.eventName}** have been confirmed.
                                     You can view and download them below.
                                 </p>
-                                {/* Simulated QR Code */}
                                 {orderDetails && (
                                     <div className="bg-white p-4 rounded-lg shadow-md mb-4">
                                         <QrCode2Icon className="w-32 h-32 mx-auto text-[var(--color-my-base-content)]" />
@@ -411,7 +431,7 @@ export const Checkout = () => {
                                 <button
                                     className="btn bg-[var(--color-my-error)] text-[var(--color-my-error-content)] hover:bg-[var(--color-my-error-focus)] mt-4"
                                     onClick={() => {
-                                        setCurrentStep(1); // Go back to instructions
+                                        setCurrentStep(1);
                                         setPaymentStatus(null);
                                         setMessage('');
                                     }}
@@ -432,9 +452,7 @@ export const Checkout = () => {
                     </div>
 
                     <div className="modal-action">
-                        {/* The close button for the modal */}
                         <form method="dialog">
-                            {/* Do not show close button if payment is in progress or successful */}
                             {(!loading && paymentStatus !== 'success' && currentStep !== 2) && (
                                 <button className="btn bg-[var(--color-my-base-300)] text-[var(--color-my-base-content)] hover:bg-[var(--color-my-base-content)] hover:text-[var(--color-my-base-100)]" onClick={() => setCurrentStep(0)}>Close</button>
                             )}

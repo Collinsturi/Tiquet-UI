@@ -10,11 +10,11 @@ import {
     Divider,
     CircularProgress,
     Alert,
-    IconButton,
     Card,
     CardContent,
     CardActions,
     InputAdornment,
+    type AlertColor,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
@@ -30,10 +30,15 @@ import dayjs from 'dayjs'; // Import dayjs
 // --- RTK Query Imports ---
 import {
     useGetEventByIdQuery,
-    type EventDetailResponseData,
+    type APIEventResponseItem,
     type TicketType,
 } from '../../queries/general/EventQuery'; // Adjust path as necessary
 
+// Define message type with proper AlertColor type
+interface MessageState {
+    type: AlertColor | '';
+    text: string;
+}
 
 export const AdminEventDetails = () => {
     const { eventId: eventIdParam } = useParams<{ eventId: string }>();
@@ -52,10 +57,10 @@ export const AdminEventDetails = () => {
     });
 
     // Local state for editing purposes, initialized with fetched data
-    const [editableEventData, setEditableEventData] = useState<EventDetailResponseData | null>(null);
-    const [originalEditableEventData, setOriginalEditableEventData] = useState<EventDetailResponseData | null>(null);
+    const [editableEventData, setEditableEventData] = useState<APIEventResponseItem | null>(null);
+    const [originalEditableEventData, setOriginalEditableEventData] = useState<APIEventResponseItem | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' });
+    const [message, setMessage] = useState<MessageState>({ type: '', text: '' });
 
     // Effect to update local state when fetched data changes
     useEffect(() => {
@@ -93,8 +98,8 @@ export const AdminEventDetails = () => {
         setEditableEventData(prev => {
             if (!prev) return null;
 
-            // Handle properties based on EventDetailResponseData structure
-            // Direct properties of EventDetailResponseData
+            // Handle properties based on APIEventResponseItem structure
+            // Direct properties of APIEventResponseItem
             if (['title', 'description', 'category', 'eventDate', 'eventTime', 'posterImageUrl', 'thumbnailImageUrl', 'latitude', 'longitude', 'venueName', 'venueAddress', 'venueCapacity', 'totalTicketsSold', 'totalTicketsAvailable'].includes(name)) {
                 return {
                     ...prev,
@@ -146,7 +151,7 @@ export const AdminEventDetails = () => {
                     ...prev.ticketTypes,
                     {
                         id: newTicketId,
-                        eventId: prev.id, // Use prev.id (event ID from EventDetailResponseData)
+                        eventId: prev.id, // Use prev.id (event ID from APIEventResponseItem)
                         typeName: `New Ticket Type ${prev.ticketTypes.length + 1}`,
                         price: 0.00,
                         quantityAvailable: 0,
@@ -227,7 +232,7 @@ export const AdminEventDetails = () => {
     }
 
     const event = editableEventData;
-    const venue = editableEventData.venue;
+    // const venue = editableEventData.venue;
     const ticketTypes = editableEventData.ticketTypes;
 
     return (
@@ -272,7 +277,7 @@ export const AdminEventDetails = () => {
                 )}
             </Box>
 
-            {message.text && (
+            {message.text && message.type && (
                 <Alert severity={message.type} sx={{ mb: 2 }}>
                     {message.text}
                 </Alert>
@@ -390,7 +395,12 @@ export const AdminEventDetails = () => {
                                 }
                             }}
                             disabled={!isEditing || isEventPast} // Disable if not editing OR if event is past
-                            renderInput={(params) => <TextField {...params} fullWidth variant="outlined" />}
+                            slotProps={{
+                                textField: {
+                                    fullWidth: true,
+                                    variant: 'outlined'
+                                }
+                            }}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -399,7 +409,13 @@ export const AdminEventDetails = () => {
                             label="End Date & Time (Backend Needs End Date Field)"
                             value={null}
                             disabled={true}
-                            renderInput={(params) => <TextField {...params} fullWidth variant="outlined" helperText="Backend 'Event' type lacks 'endDate' field" />}
+                            slotProps={{
+                                textField: {
+                                    fullWidth: true,
+                                    variant: 'outlined',
+                                    helperText: "Backend 'Event' type lacks 'endDate' field"
+                                }
+                            }}
                         />
                     </Grid>
 

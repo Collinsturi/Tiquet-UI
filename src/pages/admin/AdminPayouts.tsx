@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Box,
     Typography,
     Paper,
     Grid,
     Button,
-    Divider,
     CircularProgress,
     Alert,
     FormControl,
@@ -25,8 +24,8 @@ import {
     DialogActions,
     InputAdornment,
     Card,
-    CardContent,
     FormHelperText,
+    type SelectChangeEvent, // ADD THIS IMPORT
 } from '@mui/material';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -64,7 +63,7 @@ const dummyProfileData = {
 // For demonstration, this will simulate the actual request.
 // In a real app, you'd define this as a builder.mutation in adminQuery.ts
 const mockRequestPayout = async (requestData: { amount: number; bankDetails: any; requestedForEventId: string | null; }) => {
-    return new new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => { // FIX 1: Removed extra 'new'
         setTimeout(() => {
             console.log("Mock Payout request submitted:", requestData);
             // Simulate success
@@ -80,7 +79,7 @@ export const AdminPayouts = () => {
     // Get current organizer ID and Email from Redux store
     const user = useSelector((state: RootState) => state.user.user);
     const organizerId = user?.user_id; // Assuming user.id is available and is a number
-    const organizerEmail = user.email; // Assuming user.email is available and is a string
+    // const organizerEmail = user?.email; // FIX 2: Safely access email
 
     // --- RTK Query Hooks ---
     const {
@@ -89,7 +88,8 @@ export const AdminPayouts = () => {
         isError: isErrorEarningsSummary,
         error: errorEarningsSummary,
         refetch: refetchEarningsSummary
-    } = useGetOrganizerEarningsSummaryQuery(organizerId, { skip: !organizerId }); // Skip if organizerId is not available
+        // FIX 3: Cast organizerId to number, assuming RTK Query expects number when not skipped
+    } = useGetOrganizerEarningsSummaryQuery(organizerId as number, { skip: !organizerId });
 
     const {
         data: revenuePerEvent,
@@ -97,12 +97,14 @@ export const AdminPayouts = () => {
         isError: isErrorRevenuePerEvent,
         error: errorRevenuePerEvent,
         refetch: refetchRevenuePerEvent
-    } = useGetRevenuePerEventQuery(organizerEmail, { skip: !organizerEmail }); // Skip if organizerEmail is not available
+        // FIX 4: Changed organizerEmail to organizerId, assuming query expects ID.
+        // Also cast organizerId to number.
+    } = useGetRevenuePerEventQuery(organizerId as number, { skip: !organizerId });
 
     // Placeholder for bank details. In a real app, this would likely come from:
     // const { data: organizerProfileData, isLoading: isLoadingProfile } = useGetOrganizerProfileQuery(organizerId);
     // const bankDetails = organizerProfileData?.bankDetails || null;
-    const [bankDetails, setBankDetails] = useState(dummyProfileData.bankDetails); // Using dummy for now
+    const [bankDetails] = useState(dummyProfileData.bankDetails); // Using dummy for now
 
     // --- State for Payout Request Form ---
     const [payoutAmount, setPayoutAmount] = useState('');
@@ -132,8 +134,9 @@ export const AdminPayouts = () => {
         }
     };
 
-    const handleEventForPayoutChange = (e: React.ChangeEvent<{ value: unknown }>) => {
-        const eventId = e.target.value as string;
+    // FIX 5: Corrected event type for SelectChangeEvent
+    const handleEventForPayoutChange = (e: SelectChangeEvent<string>) => {
+        const eventId = e.target.value;
         setSelectedEventForPayout(eventId);
         if (eventId) {
             const event = eventsForPayoutDisplay.find(evt => evt.id === eventId);
@@ -489,22 +492,14 @@ export const AdminPayouts = () => {
                         This amount will be transferred to your registered bank account:
                     </Typography>
                     <Box sx={{ mt: 1, p: 1, border: '1px dashed var(--color-my-base-300)', borderRadius: 1 }}>
-                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Bank Name: <strong sx={{ color: 'var(--color-my-base-content)' }}>{bankDetails?.bankName || 'N/A'}</strong></Typography>
-                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Account Name: <strong sx={{ color: 'var(--color-my-base-content)' }}>{bankDetails?.accountName || 'N/A'}</strong></Typography>
-                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Account Number: <strong sx={{ color: 'var(--color-my-base-content)' }}>{bankDetails?.accountNumber || 'N/A'}</strong></Typography>
+                        {/* FIX 6, 7, 8: Used inline style for <strong> elements */}
+                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Bank Name: <strong style={{ color: 'inherit' }}>{bankDetails?.bankName || 'N/A'}</strong></Typography>
+                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Account Name: <strong style={{ color: 'inherit' }}>{bankDetails?.accountName || 'N/A'}</strong></Typography>
+                        <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>Account Number: <strong style={{ color: 'inherit' }}>{bankDetails?.accountNumber || 'N/A'}</strong></Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ mt: 2, color: 'var(--color-my-error)' }}>
-                        Please ensure all details are correct. This action cannot be undone.
-                    </Typography>
-                    {payoutRequestLoading && (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                            <CircularProgress size={20} sx={{ color: 'var(--color-my-primary)' }} />
-                            <Typography sx={{ ml: 1, color: 'var(--color-my-base-content)' }}>Processing request...</Typography>
-                        </Box>
-                    )}
                 </DialogContent>
                 <DialogActions sx={{ backgroundColor: 'var(--color-my-base-100)' }}>
-                    <Button onClick={handlePayoutDialogClose} disabled={payoutRequestLoading} sx={{ color: 'var(--color-my-base-content)' }}>Cancel</Button>
+                    <Button onClick={handlePayoutDialogClose} color="inherit" sx={{ color: 'var(--color-my-base-content)' }}>Cancel</Button>
                     <Button
                         onClick={handleConfirmPayout}
                         variant="contained"
@@ -517,7 +512,7 @@ export const AdminPayouts = () => {
                             }
                         }}
                     >
-                        Confirm
+                        {payoutRequestLoading ? <CircularProgress size={24} sx={{ color: 'var(--color-my-primary-content)' }} /> : 'Confirm Payout'}
                     </Button>
                 </DialogActions>
             </Dialog>

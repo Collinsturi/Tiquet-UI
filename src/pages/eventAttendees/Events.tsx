@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -20,8 +20,20 @@ import type { RootState } from "../../redux/store.ts";
 // Import APIEventResponseItem as the actual data type returned by getAllEvents
 import { useGetAllEventsQuery, type APIEventResponseItem } from '../../queries/general/EventQuery.ts'; // ADJUST PATH if different from previous component
 
+// Define a new interface that extends APIEventResponseItem to include createdAt
+// This assumes that your backend API does provide a 'createdAt' field for events.
+// If not, you might need to adjust your backend or how you derive 'newly added' events.
+interface EventWithCreatedAt extends APIEventResponseItem {
+    createdAt: string; // Assuming createdAt is a string date, e.g., ISO 8601 format
+}
+
 // --- Dummy Data for User Interests (since this is not from API yet) ---
-const dummyUserInterests = {
+// Define a type for dummyUserInterests that allows string keys
+interface UserInterestsMap {
+    [key: string]: string[];
+}
+
+const dummyUserInterests: UserInterestsMap = {
     'user-001': ['Public-key contextually-based superstructure', 'Fundamental value-added projection'],
     'user-002': ['Technology', 'Music', 'Arts & Culture'],
 };
@@ -49,19 +61,18 @@ const formatDateRange = (startDateString: string, endDateString: string) => {
 };
 
 // --- Recommendation Logic (Adapted for APIEventResponseItem structure) ---
-// The 'events' parameter now directly receives APIEventResponseItem[]
-const getRecommendedEvents = (user: any, events: APIEventResponseItem[], userInterests: any, filterType: string) => {
+// The 'events' parameter now directly receives EventWithCreatedAt[]
+const getRecommendedEvents = (user: any, events: EventWithCreatedAt[], userInterests: UserInterestsMap, filterType: string) => {
     if (!user || !events || events.length === 0) return [];
 
-    // Add a recommendationReason property to the APIEventResponseItem type for internal use
-    type RecommendedEvent = APIEventResponseItem & { recommendationReason: string };
+    // Add a recommendationReason property to the EventWithCreatedAt type for internal use
+    type RecommendedEvent = EventWithCreatedAt & { recommendationReason: string };
 
     let recommendations: RecommendedEvent[] = [];
     const now = new Date();
     now.setHours(0, 0, 0, 0); // Normalize 'now' to start of today for date comparison
 
     // Filter out past events
-    // Ensure eventDate is compared correctly as a date
     const upcomingEvents = events.filter(item => {
         const eventDateString = item.eventDate; // Directly access eventDate
         const eventDateTimeString = `${eventDateString}T${item.eventTime}`;
@@ -71,7 +82,8 @@ const getRecommendedEvents = (user: any, events: APIEventResponseItem[], userInt
     });
 
     // Rule 1: Based on User Interests
-    const userCategoryNames = userInterests[user.user_id] || [];
+    // Convert user.user_id to string for indexing dummyUserInterests
+    const userCategoryNames = userInterests[`user-${user.user_id}`] || [];
     const interestBased = upcomingEvents.filter(item =>
         userCategoryNames.includes(item.category) // Directly access 'category'
     ).map(item => ({ ...item, recommendationReason: 'Based on your interests' }));
@@ -136,8 +148,8 @@ export const AttendeeEvents = () => {
 
     // console.log('Raw API Data:', allEventsData); // Log the raw data from RTK Query
 
-    // The state now holds `RecommendedEvent[]` where RecommendedEvent is APIEventResponseItem with `recommendationReason`
-    const [recommendedEvents, setRecommendedEvents] = useState< (APIEventResponseItem & { recommendationReason: string })[]>([]);
+    // The state now holds `RecommendedEvent[]` where RecommendedEvent is EventWithCreatedAt with `recommendationReason`
+    const [recommendedEvents, setRecommendedEvents] = useState< (EventWithCreatedAt & { recommendationReason: string })[]>([]);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [filterType, setFilterType] = useState('all');
 
@@ -163,7 +175,9 @@ export const AttendeeEvents = () => {
 
         // Ensure allEventsData is not null/undefined and is an array before processing
         if (allEventsData && Array.isArray(allEventsData) && allEventsData.length > 0) {
-            const recommendations = getRecommendedEvents(user, allEventsData, dummyUserInterests, filterType);
+            // Cast allEventsData to EventWithCreatedAt[] for type safety in getRecommendedEvents
+            const eventsWithCreatedAt: EventWithCreatedAt[] = allEventsData as EventWithCreatedAt[];
+            const recommendations = getRecommendedEvents(user, eventsWithCreatedAt, dummyUserInterests, filterType);
             // console.log('Processed Recommendations:', recommendations); // Log processed recommendations
             setRecommendedEvents(recommendations);
             if (recommendations.length === 0) {
@@ -234,7 +248,8 @@ export const AttendeeEvents = () => {
                     <button
                         className={`btn ${filterType === 'interests' ? 'btn-primary' : 'btn-outline'}`}
                         onClick={() => handleFilterChange('interests')}
-                        disabled={!user || !dummyUserInterests[user.user_id] || dummyUserInterests[user.user_id].length === 0}
+                        // Corrected indexing for dummyUserInterests
+                        disabled={!user || !dummyUserInterests[`user-${user.user_id}`] || dummyUserInterests[`user-${user.user_id}`].length === 0}
                     >
                         <StarsIcon className="w-5 h-5 mr-1" /> My Interests
                     </button>

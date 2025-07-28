@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import {
     Box,
     Typography,
@@ -9,8 +9,6 @@ import {
     Select,
     MenuItem,
     Card,
-    CardContent,
-    Button,
     CircularProgress,
     Alert,
     Divider,
@@ -57,13 +55,8 @@ import {
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../redux/store'; // Adjust path as necessary
 
-// Colors for Pie Charts - these will use theme.palette as requested
-const PIE_COLORS_TICKET_TYPES = []; // Populated in component
-const PIE_COLORS_SCAN_STATUS = {}; // Populated in component
-
 // Component to display when there's no data for a chart
 const NoDataOverlay = ({ message }: { message: string }) => {
-    // This component will use CSS variables for its background and text
     return (
         <Box
             sx={{
@@ -95,26 +88,30 @@ const NoDataOverlay = ({ message }: { message: string }) => {
     );
 };
 
-
 // --- React Component ---
 export const AdminReports = () => {
     const theme = useTheme(); // Use theme for palette colors where requested
 
-    // Populate PIE_COLORS using theme palette colors
-    PIE_COLORS_TICKET_TYPES[0] = theme.palette.primary.main;
-    PIE_COLORS_TICKET_TYPES[1] = theme.palette.secondary.main;
-    PIE_COLORS_TICKET_TYPES[2] = theme.palette.success.main;
-    PIE_COLORS_TICKET_TYPES[3] = theme.palette.info.main;
-    PIE_COLORS_TICKET_TYPES[4] = theme.palette.warning.main;
-    PIE_COLORS_TICKET_TYPES[5] = theme.palette.error.main;
+    // Fixed: Use proper type definition for color objects
+    const PIE_COLORS_TICKET_TYPES: string[] = [
+        theme.palette.primary.main,
+        theme.palette.secondary.main,
+        theme.palette.success.main,
+        theme.palette.info.main,
+        theme.palette.warning.main,
+        theme.palette.error.main,
+    ];
 
-    PIE_COLORS_SCAN_STATUS['scanned'] = theme.palette.success.main; // Green
-    PIE_COLORS_SCAN_STATUS['notScanned'] = theme.palette.error.main; // Red
-
+    // Fixed: Use proper object type instead of string[]
+    const PIE_COLORS_SCAN_STATUS: Record<string, string> = {
+        scanned: theme.palette.success.main, // Green
+        notScanned: theme.palette.error.main, // Red
+    };
 
     // Get current organizer email from Redux store
     const user = useSelector((state: RootState) => state.user.user);
-    const currentOrganizerEmail = user.email;
+    // Fixed: Add null check for user
+    const currentOrganizerEmail = user?.email || '';
 
     // --- RTK Query Hooks ---
     const {
@@ -182,7 +179,6 @@ export const AdminReports = () => {
         isError: isErrorTicketTypeDistribution,
         error: errorTicketTypeDistribution,
     } = useGetTicketTypeDistributionQuery(selectedEventId as number, { skip: !selectedEventId || isNaN(Number(selectedEventId)) });
-
 
     // Combine all loading and error states for overall analytics
     const overallLoading = isLoadingDashboard || isLoadingPlatformSummary || isLoadingMonthlySales || isLoadingTopSelling || isLoadingOverallScanStatus;
@@ -365,11 +361,11 @@ export const AdminReports = () => {
                                                 cy="50%"
                                                 outerRadius={120}
                                                 dataKey="value"
-                                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
                                                 labelLine={false}
                                             >
                                                 {overallTicketScanStatusPieData.map((entry, index) => (
-                                                    <Cell key={`cell-overall-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name as keyof typeof PIE_COLORS_SCAN_STATUS] || '#CCCCCC'} />
+                                                    <Cell key={`cell-overall-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name] || '#CCCCCC'} />
                                                 ))}
                                             </Pie>
                                             <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />
@@ -515,10 +511,10 @@ export const AdminReports = () => {
                                                             cy="50%"
                                                             outerRadius={120}
                                                             dataKey="value"
-                                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                            label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
                                                             labelLine={false}
                                                         >
-                                                            {eventTicketTypePieData.map((entry, index) => (
+                                                            {eventTicketTypePieData.map((_, index) => (
                                                                 <Cell key={`cell-event-type-${index}`} fill={PIE_COLORS_TICKET_TYPES[index % PIE_COLORS_TICKET_TYPES.length]} />
                                                             ))}
                                                         </Pie>
@@ -545,11 +541,11 @@ export const AdminReports = () => {
                                                             cy="50%"
                                                             outerRadius={120}
                                                             dataKey="value"
-                                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                            label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
                                                             labelLine={false}
                                                         >
                                                             {eventScanStatusPieData.map((entry, index) => (
-                                                                <Cell key={`cell-event-scan-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name as keyof typeof PIE_COLORS_SCAN_STATUS] || '#CCCCCC'} />
+                                                                <Cell key={`cell-event-scan-${index}`} fill={PIE_COLORS_SCAN_STATUS[entry.name] || '#CCCCCC'} />
                                                             ))}
                                                         </Pie>
                                                         <Tooltip contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }} />

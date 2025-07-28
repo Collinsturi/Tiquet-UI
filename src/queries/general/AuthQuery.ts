@@ -20,7 +20,7 @@ type LoginRequest = {
 export type RegisterRequest = {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    contactPhone : string;
     email: string;
     password: string;
     role: string
@@ -98,7 +98,6 @@ export const AuthQuery = createApi({
                 url: `/auth/user/${id}`,
                 method: 'GET'
             }),
-            invalidateTags: [`ApplicationUser`]
         }),
         getUserNotifications: builder.query<TNotificationResponse, string>({
             query: (email) => ({

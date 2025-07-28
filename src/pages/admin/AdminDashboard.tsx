@@ -19,11 +19,10 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EventIcon from '@mui/icons-material/Event';
 import SellIcon from '@mui/icons-material/Sell';
-import PeopleIcon from '@mui/icons-material/People';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
+// import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { useNavigate } from 'react-router-dom';
 
 // Recharts imports
@@ -39,27 +38,69 @@ import {
     PieChart,
     Pie,
     Cell,
+    type PieLabelRenderProps,
 } from 'recharts';
-import {useSelector} from "react-redux";
-import type {RootState} from "../../redux/store.ts";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../redux/store.ts";
 import { useGetAdminDashboardSummaryQuery } from '../../queries/admin/adminQuery.ts';
 
+// --- Type Definitions ---
+
+interface MonthlySale {
+    month: string;
+    ticket_count: string;
+}
+
+interface TicketTypeDistribution {
+    ticketType: string;
+    sold: number;
+}
+
+// Updated to match actual API response structure
+interface UpcomingEvent {
+    id: number; // Changed from string to number
+    title: string;
+    date: Date; // Changed from string to Date
+    time: string;
+    // Removed location as it's not in the actual API response
+}
+
+// Updated to match actual API response structure
+interface RecentActivity {
+    ticketId: number;
+    buyerId: number;
+    eventId: number;
+    eventTitle: string;
+    createdAt: Date;
+}
+
+// Props for NoDataOverlay
+interface NoDataOverlayProps {
+    message?: string;
+}
+
 // Colors for the Pie Chart slices (matching Material-UI palette somewhat)
-const PIE_COLORS = []; // Initialize as empty, populate in component
+const PIE_COLORS: string[] = [];
 
 export const AdminDashboard = () => {
     const theme = useTheme();
     const navigate = useNavigate();
 
     // Populate PIE_COLORS using theme palette colors
-    // This ensures they match your defined theme colors
     PIE_COLORS[0] = theme.palette.primary.main;
     PIE_COLORS[1] = theme.palette.secondary.main;
     PIE_COLORS[2] = theme.palette.success.main;
     PIE_COLORS[3] = theme.palette.info.main;
+    PIE_COLORS[4] = theme.palette.warning.main;
+    PIE_COLORS[5] = theme.palette.error.main;
+    PIE_COLORS[6] = theme.palette.primary.light;
+    PIE_COLORS[7] = theme.palette.secondary.light;
 
     const user = useSelector((state: RootState) => state.user.user);
-    const { data, isLoading, isError } = useGetAdminDashboardSummaryQuery(user.email);
+    // Type the data returned by the query
+    const { data, isLoading, isError } = useGetAdminDashboardSummaryQuery(user?.email || '', {
+        skip: !user?.email, // Skip query if user email is not available
+    });
 
     // Destructure data with default empty arrays for safe access
     const {
@@ -73,28 +114,28 @@ export const AdminDashboard = () => {
     } = data ?? {}; // Use nullish coalescing to ensure data is an object
 
     // Prepare data for charts
-    const salesData = monthlySales.map((item) => ({
+    const salesData = monthlySales.map((item: MonthlySale) => ({
         month: new Date(item.month).toLocaleString('default', { month: 'short' }),
-        tickets: item.ticket_count,
+        tickets: parseInt(item.ticket_count, 10),
     }));
 
-    const ticketTypeData = ticketTypeDistribution.map((item) => ({
+    const ticketTypeData = ticketTypeDistribution.map((item: TicketTypeDistribution) => ({
         name: item.ticketType,
         value: item.sold,
     }));
 
     // Helper component for "No Data" overlay
-    const NoDataOverlay = ({ message = "No data available right now. Please check back later." }) => (
+    const NoDataOverlay = ({ message = "No data available right now. Please check back later." }: NoDataOverlayProps) => (
         <Box
             sx={{
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
                 height: '100%',
-                minHeight: '200px', // Ensure it has some height even if content is 0
+                minHeight: '200px',
                 width: '100%',
-                backgroundColor: theme.palette.background.default, // Use theme background color
-                color: theme.palette.text.secondary, // Use theme text color
+                backgroundColor: theme.palette.background.default,
+                color: theme.palette.text.secondary,
                 borderRadius: theme.shape.borderRadius,
                 textAlign: 'center',
                 p: 2,
@@ -110,6 +151,18 @@ export const AdminDashboard = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', backgroundColor: theme.palette.background.default }}>
                 <CircularProgress sx={{ color: theme.palette.primary.main }} />
                 <Typography sx={{ ml: 2, color: theme.palette.text.secondary }}>Loading dashboard data...</Typography>
+            </Box>
+        );
+    }
+
+    // Handle case where user is not logged in or email is missing
+    if (!user?.email) {
+        return (
+            <Box sx={{ flexGrow: 1, p: 3, backgroundColor: theme.palette.background.default }}>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    Admin user not found. Please log in as an administrator to view the dashboard.
+                    <Button variant="contained" sx={{ ml: 2 }} onClick={() => navigate('/login')}>Go to Login</Button>
+                </Alert>
             </Box>
         );
     }
@@ -130,7 +183,6 @@ export const AdminDashboard = () => {
 
     // Determine if ticket type data is meaningful (has at least one entry with value > 0)
     const hasMeaningfulTicketTypeData = ticketTypeData && ticketTypeData.length > 0 && ticketTypeData.some(item => item.value > 0);
-
 
     return (
         <Box sx={{ flexGrow: 1, p: 3, backgroundColor: 'var(--color-my-base-200)', color: 'var(--color-my-base-content)', minHeight: '100vh', width: '100%' }}>
@@ -178,7 +230,6 @@ export const AdminDashboard = () => {
                 </Grid>
             </Grid>
 
-
             {/* Main Content Area */}
             <Grid container spacing={3}>
                 {/* Recent Activity */}
@@ -188,11 +239,11 @@ export const AdminDashboard = () => {
                         {recentActivity && recentActivity.length > 0 ? (
                             <List sx={{ flexGrow: 1, overflowY: 'auto' }}>
                                 {/* Slice to show only the recent 5 activities */}
-                                {recentActivity.slice(0, 5).map((activity, index) => (
+                                {recentActivity.slice(0, 5).map((activity: RecentActivity, index: number) => (
                                     <Box key={index}>
                                         <ListItem>
                                             <ListItemText
-                                                primary={<Typography sx={{ color: 'var(--color-my-base-content)' }}>{`User ${activity.user} purchased ${activity.ticketType} ticket for "${activity.eventTitle}"`}</Typography>}
+                                                primary={<Typography sx={{ color: 'var(--color-my-base-content)' }}>{`Buyer ${activity.buyerId} purchased ticket ${activity.ticketId} for "${activity.eventTitle}"`}</Typography>}
                                                 secondary={<Typography sx={{ color: 'var(--color-my-base-content)' }}>{new Date(activity.createdAt).toLocaleString()}</Typography>}
                                             />
                                         </ListItem>
@@ -275,12 +326,15 @@ export const AdminDashboard = () => {
                                         cx="50%"
                                         cy="50%"
                                         outerRadius={100}
-                                        fill="#8884d8" // This fill color will be overridden by Cell fills
+                                        fill="#8884d8"
                                         dataKey="value"
                                         labelLine={false}
-                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                        label={(props: PieLabelRenderProps) => {
+                                            const { name, percent } = props;
+                                            return `${name} ${((percent ?? 0) * 100).toFixed(0)}%`;
+                                        }}
                                     >
-                                        {ticketTypeData.map((entry, index) => (
+                                        {ticketTypeData.map((_entry: { name: string; value: number }, index: number) => (
                                             <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                                         ))}
                                     </Pie>
@@ -300,7 +354,7 @@ export const AdminDashboard = () => {
                         <CardHeader title="My Events" sx={{ color: 'var(--color-my-base-content)' }}/>
                         {upcomingEvents && upcomingEvents.length > 0 ? (
                             <List>
-                                {upcomingEvents.map((event) => (
+                                {upcomingEvents.map((event: UpcomingEvent) => (
                                     <Box key={event.id}>
                                         <ListItem alignItems="flex-start">
                                             <ListItemText
@@ -312,7 +366,7 @@ export const AdminDashboard = () => {
                                                 secondary={
                                                     <Box>
                                                         <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>
-                                                            <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: 'var(--color-my-base-content)' }} /> {event.date}
+                                                            <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: 'var(--color-my-base-content)' }} /> {new Date(event.date).toLocaleDateString()}
                                                         </Typography>
                                                         <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>
                                                             <AccessTimeIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: 'var(--color-my-base-content)' }} /> {event.time}

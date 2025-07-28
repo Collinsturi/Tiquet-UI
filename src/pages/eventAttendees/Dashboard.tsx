@@ -10,7 +10,6 @@ import {
     Alert,
     Card,
     Chip,
-    Avatar,
 } from '@mui/material';
 import EventIcon from '@mui/icons-material/Event';
 import TicketIcon from '@mui/icons-material/ConfirmationNumber';
@@ -21,27 +20,73 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../redux/store';
-import {useGetTicketsUserQuery} from '../../queries/eventAttendees/TicketQuery.ts';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useGetTicketsUserQuery } from '../../queries/eventAttendees/TicketQuery.ts';
+import { useNavigate } from 'react-router-dom';
 
+// --- Type Definitions ---
 
-// Helper to generate a placeholder QR code image URL
-const generateQRCodePlaceholderUrl = (data) => {
-    const size = 150; // Size of the QR code image
-    const color = '000000'; // Black text
-    const bgColor = 'FFFFFF'; // White background
-    // Using a more robust placeholder for QR codes from placehold.co
-    // In a real app, this would be a server-generated QR code image or a client-side QR library
+// Define the structure of a Ticket as it comes from the API
+interface Ticket {
+    id: number; // Changed from string to number to match actual API response
+    uniqueCode: string;
+    isScanned: boolean;
+    // Add any other properties of the raw ticket object here
+}
+
+// Define the structure of an Event as it comes from the API
+interface Event {
+    id: string; // Assuming 'id' is the unique identifier for an event
+    title: string;
+    eventDate: string; // e.g., "YYYY-MM-DD"
+    eventTime: string; // e.g., "HH:MM:SS"
+    posterImageUrl?: string; // Optional, as you provide a fallback
+    VenueId?: string; // Optional, or specify its actual type if always present
+    // Add any other properties of the raw event object here
+}
+
+// Define the structure of a TicketType as it comes from the API
+interface TicketType {
+    id: string; // Assuming 'id' is the unique identifier for a ticket type
+    typeName: string;
+    // Add any other properties of the raw ticket type object here
+}
+
+// Define the structure of an item in the `ticketsData` array from RTK Query
+interface TicketApiResponseItem {
+    ticket: Ticket;
+    event: Event;
+    ticketType: TicketType;
+}
+
+// Define the structure of a processed ticket, combining data for display
+interface ProcessedTicket extends Ticket {
+    checkInStatus: 'Checked In' | 'Pending Check-in';
+    ticketTypeName: string;
+    quantity: number; // Assuming 1 per entry, but good to be explicit
+    eventDetails: {
+        id: string;
+        title: string;
+        posterImageUrl: string;
+        startDate: string; // Combined date-time string
+        endDate: string;   // Combined date-time string (or actual end date if different)
+        VenueId?: string;
+    };
+}
+
+// --- Helper Functions ---
+const generateQRCodePlaceholderUrl = (data: string): string => {
+    const size = 150;
+    const color = '000000';
+    const bgColor = 'FFFFFF';
     return `https://placehold.co/${size}x${size}/${bgColor}/${color}?text=QR+Code%0A${encodeURIComponent(data.substring(0, 30))}...`;
 };
 
-// Helper function to format dates using native Date methods
-const formatDate = (dateString) => {
+const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid Date';
 
-    const optionsDate = { month: 'short', day: 'numeric', year: 'numeric' };
-    const optionsTime = { hour: 'numeric', minute: 'numeric', hour12: true };
+    const optionsDate: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    const optionsTime: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: 'numeric', hour12: true };
 
     const formattedDate = date.toLocaleDateString(undefined, optionsDate);
     const formattedTime = date.toLocaleTimeString(undefined, optionsTime);
@@ -49,53 +94,54 @@ const formatDate = (dateString) => {
     return `${formattedDate} ${formattedTime}`;
 };
 
-// Helper to format only the date part
-const formatOnlyDate = (dateString) => {
+const formatOnlyDate = (dateString: string): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid Date';
-    const optionsDate = { month: 'short', day: 'numeric', year: 'numeric' };
+    const optionsDate: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
     return date.toLocaleDateString(undefined, optionsDate);
 };
-
 
 export const Dashboard = () => {
     const user = useSelector((state: RootState) => state.user.user);
     const userId = user?.user_id;
-    const navigate = useNavigate(); // Initialize useNavigate
+    const navigate = useNavigate();
 
+    // Type the data property of the RTK Query hook
     const { data: ticketsData, isLoading, error } = useGetTicketsUserQuery(userId!, {
-        skip: !userId, // Prevent query if userId is undefined
-    });
+        skip: !userId,
+    }) as { data?: TicketApiResponseItem[]; isLoading: boolean; error?: unknown };
 
-    const [upcomingTickets, setUpcomingTickets] = useState([]);
-    const [pastTickets, setPastTickets] = useState([]);
-    const [message, setMessage] = useState({ type: '', text: '' }); // type: 'info', 'error', 'success'
+    // Type the state variables to hold arrays of ProcessedTicket
+    const [upcomingTickets, setUpcomingTickets] = useState<ProcessedTicket[]>([]);
+    const [pastTickets, setPastTickets] = useState<ProcessedTicket[]>([]);
+    const [message, setMessage] = useState<{ type: string; text: string }>({ type: '', text: '' });
 
     useEffect(() => {
         if (!userId) {
             setMessage({ type: "error", text: "User not found. Please log in." });
-            setUpcomingTickets([]); // Clear tickets
-            setPastTickets([]); // Clear tickets
+            setUpcomingTickets([]);
+            setPastTickets([]);
             return;
         }
 
         if (isLoading) {
-            // While loading, we don't set messages here, the main return handles the spinner.
-            return;
+            return; // Handled by the main return's CircularProgress
         }
 
         if (error) {
+            // Type assertion for the error object from RTK Query
             const apiErrorMessage = (error as any)?.data?.message;
             if (apiErrorMessage && apiErrorMessage.includes("not found")) {
                 setMessage({ type: "info", text: "You currently have no tickets. Explore events and purchase your first ticket!" });
             } else {
                 setMessage({ type: "error", text: apiErrorMessage || "Failed to fetch tickets. Please try again later." });
             }
-            setUpcomingTickets([]); // Clear tickets on error
-            setPastTickets([]); // Clear tickets on error
+            setUpcomingTickets([]);
+            setPastTickets([]);
             return;
         }
 
+        // Ensure ticketsData is an array before processing
         if (ticketsData && Array.isArray(ticketsData)) {
             if (ticketsData.length === 0) {
                 setMessage({ type: "info", text: "You currently have no tickets. Explore events and purchase your first ticket!" });
@@ -105,35 +151,33 @@ export const Dashboard = () => {
             }
 
             const now = new Date();
-            const upcoming: any[] = [];
-            const past: any[] = [];
+            const upcoming: ProcessedTicket[] = []; // Explicitly type arrays
+            const past: ProcessedTicket[] = [];
 
-            ticketsData.forEach((item) => {
+            ticketsData.forEach((item: TicketApiResponseItem) => { // Explicitly type 'item'
                 const ticket = item.ticket;
                 const event = item.event;
-                const ticketType = item.ticketType; // Access the ticketType object
+                const ticketType = item.ticketType;
 
-                // Derive checkInStatus from isScanned
-                const checkInStatus = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
+                const checkInStatus: 'Checked In' | 'Pending Check-in' = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
 
-                // Combine eventDate and eventTime for a robust Date object
                 const eventDateTimeString = `${event.eventDate}T${event.eventTime}`;
                 const eventDateObj = new Date(eventDateTimeString);
 
-                // Add a default posterImageUrl if missing
                 const posterImageUrl = event.posterImageUrl || `https://placehold.co/400x200/E0E0E0/000000?text=Event+Poster`;
 
-
-                const ticketWithEvent = {
+                const ticketWithEvent: ProcessedTicket = { // Explicitly type the new object
                     ...ticket,
-                    checkInStatus: checkInStatus, // Add derived checkInStatus
-                    ticketTypeName: ticketType?.typeName || 'General Ticket', // Use typeName from ticketType, with fallback
-                    quantity: 1, // Assuming each 'ticket' entry represents a quantity of 1
+                    checkInStatus: checkInStatus,
+                    ticketTypeName: ticketType?.typeName || 'General Ticket',
+                    quantity: 1, // Assuming quantity is 1 per unique ticket entry
                     eventDetails: {
-                        ...event,
-                        posterImageUrl: posterImageUrl, // Use the potentially defaulted image URL
-                        startDate: eventDateTimeString, // Use combined string for consistency with formatDate
-                        endDate: eventDateTimeString, // Assuming end date is same for simplicity or adjust as per API
+                        id: event.id, // Ensure event ID is part of eventDetails
+                        title: event.title,
+                        posterImageUrl: posterImageUrl,
+                        startDate: eventDateTimeString,
+                        endDate: eventDateTimeString,
+                        VenueId: event.VenueId,
                     }
                 };
 
@@ -144,6 +188,7 @@ export const Dashboard = () => {
                 }
             });
 
+            // Sort tickets - ensure the comparison function is correctly typed
             upcoming.sort(
                 (a, b) =>
                     new Date(a.eventDetails.startDate).getTime() -
@@ -159,19 +204,17 @@ export const Dashboard = () => {
             setUpcomingTickets(upcoming);
             setPastTickets(past);
 
-            // If ticketsData had items but none were categorized (e.g., all invalid dates), show info message
             if (upcoming.length === 0 && past.length === 0) {
                 setMessage({ type: "info", text: "No valid tickets could be displayed. You might have no upcoming or past events." });
             } else {
-                setMessage({ type: "", text: "" }); // Clear any previous messages on successful data load and categorization
+                setMessage({ type: "", text: "" });
             }
         }
-    }, [ticketsData, userId, isLoading, error]);
+    }, [ticketsData, userId, isLoading, error]); // Add all relevant dependencies
 
-    const handleViewTicketDetails = (ticketId) => {
+    const handleViewTicketDetails = (ticketId: number) => { // Changed from string to number
         navigate(`/attendee/tickets/${ticketId}`);
     };
-
 
     if (isLoading) {
         return (
@@ -182,7 +225,6 @@ export const Dashboard = () => {
         );
     }
 
-    // If user is null (not logged in or session expired)
     if (!user) {
         return (
             <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -200,17 +242,15 @@ export const Dashboard = () => {
                 <PersonIcon sx={{ verticalAlign: 'middle', mr: 1 }} /> Welcome, {`${user.first_name} ${user.last_name}`}!
             </Typography>
 
-            {/* Display general messages (e.g., "no tickets found" or API errors) */}
             {message.text && (
                 <Alert severity={message.type === 'info' ? 'info' : 'error'} sx={{ mb: 2 }}>
                     {message.text}
-                    {message.type === 'info' && ( // Add browse events button only for info message (no tickets)
+                    {message.type === 'info' && (
                         <Button variant="contained" sx={{ mt: 2, ml: 2 }} onClick={() => navigate('/attendee/events')}>Browse Events</Button>
                     )}
                 </Alert>
             )}
 
-            {/* Dashboard Summary Cards */}
             <Grid container spacing={3} mb={4}>
                 <Grid item xs={12} sm={6} md={4}>
                     <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
@@ -241,7 +281,6 @@ export const Dashboard = () => {
                 </Grid>
             </Grid>
 
-            {/* My Upcoming Tickets */}
             <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
                 <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <EventIcon /> My Upcoming Tickets
@@ -250,27 +289,27 @@ export const Dashboard = () => {
                 <Grid container spacing={3}>
                     {upcomingTickets.length > 0 ? (
                         upcomingTickets.map(ticket => (
-                            <Grid item xs={12} md={6} key={ticket.id}> {/* Changed key to ticket.id */}
+                            <Grid item xs={12} md={6} key={ticket.id}>
                                 <Card variant="outlined" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, p: 1 }}>
                                     <Box sx={{ flexShrink: 0, mr: { xs: 0, sm: 2 }, mb: { xs: 2, sm: 0 }, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                         <img
-                                            src={generateQRCodePlaceholderUrl(ticket.uniqueCode)} // Use uniqueCode for QR
+                                            src={generateQRCodePlaceholderUrl(ticket.uniqueCode)}
                                             alt={`QR Code for ${ticket.ticketTypeName}`}
                                             style={{ width: 120, height: 120, border: '1px solid #ddd', borderRadius: '8px' }}
                                         />
                                     </Box>
                                     <Box sx={{ flexGrow: 1 }}>
-                                        <Typography variant="h6" component="div">{ticket.eventDetails.title}</Typography> {/* Use eventDetails.title */}
+                                        <Typography variant="h6" component="div">{ticket.eventDetails.title}</Typography>
                                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                            <TicketIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {ticket.ticketTypeName || 'Ticket Type'} (x{ticket.quantity || 1}) {/* Default quantity */}
+                                            <TicketIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} /> {ticket.ticketTypeName || 'Ticket Type'} (x{ticket.quantity || 1})
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
                                             <CalendarTodayIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
-                                            {formatDate(ticket.eventDetails.startDate)} - {formatDate(ticket.eventDetails.endDate)} {/* Use formatDate for both */}
+                                            {formatDate(ticket.eventDetails.startDate)} - {formatDate(ticket.eventDetails.endDate)}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                             <LocationOnIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
-                                            {ticket.eventDetails.VenueId || 'Venue Not Specified'} {/* Use VenueId for location */}
+                                            {ticket.eventDetails.VenueId || 'Venue Not Specified'}
                                         </Typography>
                                         <Chip
                                             label={ticket.checkInStatus}
@@ -278,7 +317,7 @@ export const Dashboard = () => {
                                             icon={ticket.checkInStatus === 'Checked In' ? <CheckCircleOutlineIcon /> : <HourglassEmptyIcon />}
                                             size="small"
                                         />
-                                        <Button variant="outlined" size="small" sx={{ ml: 1 }}>View Ticket</Button>
+                                        <Button variant="outlined" size="small" sx={{ ml: 1 }} onClick={() => handleViewTicketDetails(ticket.id)}>View Ticket</Button>
                                     </Box>
                                 </Card>
                             </Grid>
@@ -292,7 +331,6 @@ export const Dashboard = () => {
                 </Grid>
             </Paper>
 
-            {/* My Past Events */}
             <Paper elevation={3} sx={{ p: 3 }}>
                 <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CalendarTodayIcon /> My Past Events
@@ -301,14 +339,17 @@ export const Dashboard = () => {
                 <Grid container spacing={3}>
                     {pastTickets.length > 0 ? (
                         pastTickets.map(ticket => (
-                            <Grid item xs={12} md={6} key={ticket.id}> {/* Changed key to ticket.id */}
+                            <Grid item xs={12} md={6} key={ticket.id}>
                                 <Card variant="outlined" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, p: 1, opacity: 0.8 }}>
                                     <Box sx={{ flexShrink: 0, mr: { xs: 0, sm: 2 }, mb: { xs: 2, sm: 0 }, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                         <img
-                                            src={ticket.eventDetails.posterImageUrl} // Now uses the potentially defaulted URL
+                                            src={ticket.eventDetails.posterImageUrl}
                                             alt={`Event Poster for ${ticket.eventDetails.title}`}
                                             style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: '8px' }}
-                                            onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/120x120/E0E0E0/000000?text=Event"; }}
+                                            onError={(e) => {
+                                                e.currentTarget.onerror = null;
+                                                e.currentTarget.src = "https://placehold.co/120x120/E0E0E0/000000?text=Event";
+                                            }}
                                         />
                                     </Box>
                                     <Box sx={{ flexGrow: 1 }}>

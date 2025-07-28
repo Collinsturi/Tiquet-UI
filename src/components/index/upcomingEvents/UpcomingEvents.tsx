@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export const UpcomingEvents = () => {
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(12);
+    const [limit] = useState(12);
     const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
     const { data: apiEvents, error, isLoading, isFetching } = useGetAllEventsQuery({

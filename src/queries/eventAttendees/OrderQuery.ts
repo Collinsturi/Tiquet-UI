@@ -2,10 +2,6 @@ import { createApi, fetchBaseQuery, retry } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "../APIConfiguration.ts";
 import type { RootState } from "../../redux/store.ts";
 
-// Define the types for your order data based on your backend's expectations
-// These types should match the structure of your Drizzle schema for Order and OrderItem
-// and what your backend's order service expects/returns.
-
 // Enums from your Drizzle schema
 export type OrderStatus = 'completed' | 'in_progress';
 
@@ -113,7 +109,6 @@ export const OrderQuery = createApi({
         // Get order by ID
         getOrderById: builder.query<APIOrderResponseItem, number>({
             query: (id) => `/orders/${id}`,
-            providesTags: (result, error, id) => [{ type: 'Orders', id }],
         }),
         // Create a new order
         createOrder: builder.mutation<APIOrderResponseItem, APICreateOrderRequest>({
@@ -131,7 +126,6 @@ export const OrderQuery = createApi({
                 method: "PATCH",
                 body: data,
             }),
-            invalidatesTags: (result, error, { id }) => [{ type: 'Orders', id }],
         }),
         // Delete an order
         deleteOrder: builder.mutation<void, number>({

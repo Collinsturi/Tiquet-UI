@@ -15,30 +15,78 @@ import {
     Tab,
 } from '@mui/material';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
-import EventIcon from '@mui/icons-material/Event';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import {useSelector} from "react-redux";
-import type {RootState} from "../../redux/store.ts";
-import {useGetTicketsUserQuery} from '../../queries/eventAttendees/TicketQuery.ts'; // Import the RTK Query hook
+import { useSelector } from "react-redux";
+import type { RootState } from "../../redux/store.ts";
+import { useGetTicketsUserQuery } from '../../queries/eventAttendees/TicketQuery.ts';
+import React from 'react'; // Import React for SyntheticEvent
 
-// Helper to generate a placeholder QR code image URL
-const generateQRCodePlaceholderUrl = (data) => {
+// --- Type Definitions ---
+// Define the structure of a Ticket
+interface Ticket {
+    id: number;
+    uniqueCode: string;
+    isScanned: boolean;
+    // Add other ticket properties as they exist in your API response
+}
+
+// Define the structure of an Event
+interface Event {
+    id: number; // Changed from string to number to match API response
+    title: string;
+    eventDate: string;
+    eventTime: string;
+    posterImageUrl?: string; // Make it optional as per your logic
+    VenueId?: number; // Changed from string to number | undefined to match API response
+    // Add other event properties
+}
+
+// Define the structure of a TicketType
+interface TicketType {
+    id: number; // Changed from string to number to match API response
+    typeName: string;
+    // Add other ticket type properties
+}
+
+// Define the combined structure returned by the API for each ticket entry
+interface TicketApiResponse {
+    ticket: Ticket;
+    event: Event;
+    ticketType: TicketType;
+}
+
+// Define the structure for a processed ticket with event details
+interface ProcessedTicket extends Ticket {
+    checkInStatus: 'Checked In' | 'Pending Check-in';
+    ticketTypeName: string;
+    quantity: number; // Assuming quantity is always 1 per unique ticket entry here
+    eventDetails: {
+        id: number; // Changed from string to number to match Event.id
+        title: string;
+        posterImageUrl: string;
+        startDate: string;
+        endDate: string;
+        VenueId?: number; // Changed from string to number | undefined to match Event.VenueId
+    };
+}
+
+// --- Helper Functions ---
+const generateQRCodePlaceholderUrl = (data: string): string => {
     const size = 150; // Size of the QR code image
     const color = '000000'; // Black text
     const bgColor = 'FFFFFF'; // White background
     return `https://placehold.co/${size}x${size}/${bgColor}/${color}?text=QR+Code%0A${encodeURIComponent(data.substring(0, 30))}...`;
 };
 
-// Helper function to format dates using native Date methods
-const formatDate = (dateString) => {
+const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid Date';
 
-    const optionsDate = { month: 'short', day: 'numeric', year: 'numeric' };
-    const optionsTime = { hour: 'numeric', minute: 'numeric', hour12: true };
+    const optionsDate: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    const optionsTime: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: 'numeric', hour12: true };
 
     const formattedDate = date.toLocaleDateString(undefined, optionsDate);
     const formattedTime = date.toLocaleTimeString(undefined, optionsTime);
@@ -46,29 +94,28 @@ const formatDate = (dateString) => {
     return `${formattedDate} ${formattedTime}`;
 };
 
-// Helper to format only the date part
-const formatOnlyDate = (dateString) => {
+const formatOnlyDate = (dateString: string): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid Date';
-    const optionsDate = { month: 'short', day: 'numeric', year: 'numeric' };
+    const optionsDate: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
     return date.toLocaleDateString(undefined, optionsDate);
 };
 
-
+// --- React Component ---
 export const Tickets = () => {
     const navigate = useNavigate();
     const user = useSelector((state: RootState) => state.user.user);
     const userId = user?.user_id; // Get userId from Redux store
 
-    // Use the RTK Query hook
+    // Use the RTK Query hook with specific types for data
     const { data: ticketsData, isLoading, error } = useGetTicketsUserQuery(userId!, {
-        skip: !userId, // Skip the query if userId is not available
+        skip: !userId,
     });
 
-    const [upcomingTickets, setUpcomingTickets] = useState([]);
-    const [pastTickets, setPastTickets] = useState([]);
-    const [message, setMessage] = useState({ type: '', text: '' });
-    const [tabValue, setTabValue] = useState(0); // 0 for Upcoming, 1 for Past
+    const [upcomingTickets, setUpcomingTickets] = useState<ProcessedTicket[]>([]);
+    const [pastTickets, setPastTickets] = useState<ProcessedTicket[]>([]);
+    const [message, setMessage] = useState<{ type: string; text: string }>({ type: '', text: '' });
+    const [tabValue, setTabValue] = useState<number>(0);
 
     useEffect(() => {
         if (!userId) {
@@ -78,14 +125,13 @@ export const Tickets = () => {
             return;
         }
 
-        // Handle loading state
         if (isLoading) {
-            setMessage({ type: '', text: '' }); // Clear messages while loading
+            setMessage({ type: '', text: '' });
             return;
         }
 
-        // Handle error state
         if (error) {
+            // Type assertion for error object
             const apiErrorMessage = (error as any)?.data?.message;
             if (apiErrorMessage && apiErrorMessage.includes("not found")) {
                 setMessage({ type: "info", text: "You currently have no tickets. Explore events and purchase your first ticket!" });
@@ -97,7 +143,6 @@ export const Tickets = () => {
             return;
         }
 
-        // Handle successful data fetch
         if (ticketsData && Array.isArray(ticketsData)) {
             if (ticketsData.length === 0) {
                 setMessage({ type: "info", text: "You currently have no tickets. Explore events and purchase your first ticket!" });
@@ -107,34 +152,35 @@ export const Tickets = () => {
             }
 
             const now = new Date();
-            const fetchedUpcomingTickets = [];
-            const fetchedPastTickets = [];
+            const fetchedUpcomingTickets: ProcessedTicket[] = [];
+            const fetchedPastTickets: ProcessedTicket[] = [];
 
-            ticketsData.forEach((item) => {
+            // Ensure ticketsData is correctly typed as TicketApiResponse[]
+            ticketsData.forEach((item: TicketApiResponse) => {
                 const ticket = item.ticket;
                 const event = item.event;
                 const ticketType = item.ticketType;
 
-                // Derive checkInStatus from isScanned
-                const checkInStatus = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
+                // Ensure checkInStatus matches the literal union type
+                const checkInStatus: 'Checked In' | 'Pending Check-in' = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
 
-                // Combine eventDate and eventTime for a robust Date object
                 const eventDateTimeString = `${event.eventDate}T${event.eventTime}`;
                 const eventDateObj = new Date(eventDateTimeString);
 
-                // Add a default posterImageUrl if missing
                 const posterImageUrl = event.posterImageUrl || `https://placehold.co/400x200/E0E0E0/000000?text=Event+Poster`;
 
-                const ticketWithEvent = {
+                const ticketWithEvent: ProcessedTicket = {
                     ...ticket,
-                    checkInStatus: checkInStatus,
-                    ticketTypeName: ticketType?.typeName || 'General Ticket', // Get typeName from ticketType
-                    quantity: 1, // Assuming quantity is 1 per unique ticket entry
+                    checkInStatus: checkInStatus, // Now strictly typed
+                    ticketTypeName: ticketType?.typeName || 'General Ticket',
+                    quantity: 1,
                     eventDetails: {
-                        ...event,
+                        id: event.id, // Ensure event.id is passed
+                        title: event.title,
                         posterImageUrl: posterImageUrl,
                         startDate: eventDateTimeString,
-                        endDate: eventDateTimeString, // Assuming endDate is derived similarly or adjusted as per API
+                        endDate: eventDateTimeString,
+                        VenueId: event.VenueId,
                     }
                 };
 
@@ -145,26 +191,25 @@ export const Tickets = () => {
                 }
             });
 
-            // Sort tickets
             fetchedUpcomingTickets.sort((a, b) => new Date(a.eventDetails.startDate).getTime() - new Date(b.eventDetails.startDate).getTime());
             fetchedPastTickets.sort((a, b) => new Date(b.eventDetails.startDate).getTime() - new Date(a.eventDetails.startDate).getTime());
 
             setUpcomingTickets(fetchedUpcomingTickets);
             setPastTickets(fetchedPastTickets);
-            setMessage({ type: '', text: '' }); // Clear message on successful data load and categorization
+            setMessage({ type: '', text: '' });
         }
-    }, [ticketsData, userId, isLoading, error]); // Add all relevant dependencies
+    }, [ticketsData, userId, isLoading, error]);
 
-    const handleTabChange = (event, newValue) => {
+    // Corrected handleTabChange signature to match MUI Tabs onChange prop, and removed unused 'event' parameter
+    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
     };
 
-    const handleViewTicketDetails = (ticketId) => {
+    const handleViewTicketDetails = (ticketId: number) => { // Changed ticketId type to number
         navigate(`/attendee/tickets/${ticketId}`);
     };
 
-
-    if (isLoading || user === null) { // Check for user being null as well
+    if (isLoading || user === null) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
                 <CircularProgress />
@@ -173,7 +218,6 @@ export const Tickets = () => {
         );
     }
 
-    // If user is null (not logged in or session expired)
     if (!user) {
         return (
             <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -246,7 +290,7 @@ export const Tickets = () => {
                                                 variant="outlined"
                                                 size="small"
                                                 sx={{ ml: 1 }}
-                                                onClick={() => handleViewTicketDetails(ticket.id)} // Use ticket.id
+                                                onClick={() => handleViewTicketDetails(ticket.id)}
                                             >
                                                 View Ticket
                                             </Button>
@@ -270,14 +314,14 @@ export const Tickets = () => {
                     <Grid container spacing={3}>
                         {pastTickets.length > 0 ? (
                             pastTickets.map(ticket => (
-                                <Grid item xs={12} md={6} key={ticket.id}> {/* Use ticket.id */}
+                                <Grid item xs={12} md={6} key={ticket.id}>
                                     <Card variant="outlined" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, p: 1, opacity: 0.8 }}>
                                         <Box sx={{ flexShrink: 0, mr: { xs: 0, sm: 2 }, mb: { xs: 2, sm: 0 }, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                             <img
                                                 src={ticket.eventDetails.posterImageUrl}
                                                 alt={`Event Poster for ${ticket.eventDetails.title}`}
                                                 style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: '8px' }}
-                                                onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/120x120/E0E0E0/000000?text=Event"; }}
+                                                onError={(e: React.SyntheticEvent<HTMLImageElement, globalThis.Event>) => { e.currentTarget.onerror = null; e.currentTarget.src="https://placehold.co/120x120/E0E0E0/000000?text=Event"; }}
                                             />
                                         </Box>
                                         <Box sx={{ flexGrow: 1 }}>
@@ -302,7 +346,7 @@ export const Tickets = () => {
                                                 variant="text"
                                                 size="small"
                                                 sx={{ ml: 1 }}
-                                                onClick={() => handleViewTicketDetails(ticket.id)} // Use ticket.id
+                                                onClick={() => handleViewTicketDetails(ticket.id)}
                                             >
                                                 View Details
                                             </Button>

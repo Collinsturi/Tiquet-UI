@@ -1,4 +1,4 @@
-import { useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -11,6 +11,7 @@ import type { RootState } from "../../redux/store.ts";
 
 // Import RTK Query hook and type
 import { useGetUserDetailsQuery, type ApplicationUser } from '../../queries/general/AuthQuery.ts';
+import React from 'react'; // Import React for SyntheticEvent
 
 export const Profile = () => {
     const user = useSelector((state: RootState) => state.user.user); // Get user from Redux store
@@ -29,9 +30,10 @@ export const Profile = () => {
     });
 
     console.log(fetchedProfileData)
-    const [userProfile, setUserProfile] = useState<ApplicationUser | null>(null);
+    const [userProfile, setUserProfile] = useState<ApplicationUser | undefined>();
+    // Changed formData type to Partial<ApplicationUser> to allow for partial objects
+    const [formData, setFormData] = useState<Partial<ApplicationUser>>({});
     const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState<ApplicationUser | {}>({});
     const [message, setMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
@@ -58,21 +60,24 @@ export const Profile = () => {
     const handleEditClick = () => {
         setIsEditing(true);
         // Ensure we're working with a deep copy to prevent direct state modification before saving
-        setFormData(JSON.parse(JSON.stringify(userProfile)));
+        // Also ensure userProfile is not undefined
+        setFormData(JSON.parse(JSON.stringify(userProfile || {})));
         setFormErrors({});
         setMessage({ type: '', text: '' });
     };
 
     const handleCancelClick = () => {
         setIsEditing(false);
-        setFormData(userProfile); // Revert to original profile data
+        // Revert to original profile data, providing an empty object if userProfile is undefined
+        setFormData(userProfile || {});
         setFormErrors({});
         setMessage({ type: '', text: '' });
     };
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => prev ? { ...prev, [name]: value } : {});
+        // Directly update formData, as it's now Partial<ApplicationUser>
+        setFormData(prev => ({ ...prev, [name]: value }));
         // Clear error for the field being edited
         if (formErrors[name]) {
             setFormErrors(prev => {
@@ -85,6 +90,7 @@ export const Profile = () => {
 
     const validateProfileForm = () => {
         const errors: { [key: string]: string } = {};
+        // Use optional chaining for formData properties
         if (!formData.firstName?.trim()) {
             errors.firstName = 'First Name is required.';
         }
@@ -93,7 +99,7 @@ export const Profile = () => {
         }
         if (!formData.email?.trim()) {
             errors.email = 'Email is required.';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        } else if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             errors.email = 'Invalid email format.';
         }
         if (formData.contactPhone && !/^\+?[0-9\s-()]{7,20}$/.test(formData.contactPhone)) {
@@ -119,7 +125,8 @@ export const Profile = () => {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             // After simulated successful save, update local state and refetch from backend
-            setUserProfile(prev => ({ ...prev, ...formData }));
+            // Ensure userProfile is updated with the new formData, and cast formData to ApplicationUser if all required fields are present
+            setUserProfile(prev => ({ ...(prev || {}), ...formData } as ApplicationUser)); // Cast to ApplicationUser if it's guaranteed to be complete
             setIsEditing(false);
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
             refetch(); // Refetch to ensure local state is in sync with server

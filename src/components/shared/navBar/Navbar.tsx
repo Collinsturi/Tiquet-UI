@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 
 export const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(true);
+    const [scrolled] = useState(true);
 
     useEffect(() => {
         const handleScroll = () => {

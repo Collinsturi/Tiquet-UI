@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { styled, useTheme } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import {
     AppBar,
     Box,
@@ -37,10 +37,26 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 
 // Redux imports for data fetching
 import {useDispatch, useSelector} from "react-redux";
-import type { RootState } from "../../redux/store.ts";
+import type { RootState } from "../../../redux/store.ts";
 import { useGetAdminDashboardSummaryQuery } from '../../../queries/admin/adminQuery.ts';
 import {logout} from "../../../queries/general/ApplicationUserSlice.ts";
 
+// Type definitions
+interface SectionItem {
+    kind?: 'header' | 'divider';
+    title?: string;
+    text?: string;
+    icon?: React.ReactNode;
+    path?: string;
+}
+
+interface RecentActivity {
+    ticketId: number;
+    buyerId: number;
+    eventId: number;
+    eventTitle: string;
+    createdAt: Date;
+}
 
 const drawerWidth = 240;
 
@@ -80,28 +96,28 @@ export const AdminLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useDispatch();
-    const theme = useTheme(); // Access the theme object
+    // const theme = useTheme(); // Access the theme object
     const [mobileOpen, setMobileOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(true); // Initial state for desktop drawer
-    const [notificationAnchorEl, setNotificationAnchorEl] = useState(null); // State for notification dropdown
-    const [profileAnchorEl, setProfileAnchorEl] = useState(null); // State for profile dropdown
+    const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null); // State for notification dropdown
+    const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(null); // State for profile dropdown
 
     // Fetch user and dashboard summary data
     const user = useSelector((state: RootState) => state.user.user);
-    const { data: dashboardSummary, isLoading: isSummaryLoading, error: summaryError } = useGetAdminDashboardSummaryQuery(user?.email, {
+    const { data: dashboardSummary, isLoading: isSummaryLoading, error: summaryError } = useGetAdminDashboardSummaryQuery(user?.email || '', {
         skip: !user?.email, // Skip query if user email is not available
     });
 
     // Extract recent activity, limiting to the most recent 5
-    const recentActivities = dashboardSummary?.recentActivity?.slice(0, 5) || [];
+    const recentActivities: RecentActivity[] = dashboardSummary?.recentActivity?.slice(0, 5) || [];
 
     const handleMobileToggle = () => setMobileOpen(!mobileOpen);
     const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
 
-    const handleNotificationClick = (event) => setNotificationAnchorEl(event.currentTarget);
+    const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => setNotificationAnchorEl(event.currentTarget);
     const handleNotificationClose = () => setNotificationAnchorEl(null);
 
-    const handleProfileClick = (event) => setProfileAnchorEl(event.currentTarget);
+    const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => setProfileAnchorEl(event.currentTarget);
     const handleProfileClose = () => setProfileAnchorEl(null);
 
     const handleLogout = () => {
@@ -112,7 +128,7 @@ export const AdminLayout = () => {
         handleProfileClose();
     };
 
-    const sections = [
+    const sections: SectionItem[] = [
         { kind: 'header', title: 'Main Menu' },
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/organizer' },
         { text: 'CheckIn Staff', icon: <HowToRegIcon />, path: '/organizer/CheckIn-Staff' }, // Updated icon
@@ -149,7 +165,7 @@ export const AdminLayout = () => {
                         src={user?.profilePicture ? user.profilePicture : "https://i.pravatar.cc/300"}
                         sx={{ border: '2px solid var(--color-my-primary)' }}
                     />
-                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>{user.firstName}</Typography> {/* Text color on bolder background */}
+                    <Typography className={"pt-2"} sx={{ color: 'var(--color-my-neutral-content)' }}>{user?.first_name || 'User'}</Typography> {/* Text color on bolder background */}
                 </div>
                 <Search sx={{ mt: 2 }}>
                     <SearchIconWrapper>
@@ -173,6 +189,11 @@ export const AdminLayout = () => {
                         return <Divider key={index} sx={{ my: 1, borderColor: 'var(--color-my-base-300)' }} />;
                     }
 
+                    // Only render if item has path and text (to satisfy TypeScript)
+                    if (!item.path || !item.text) {
+                        return null;
+                    }
+
                     return (
                         <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
                             <ListItemButton
@@ -186,7 +207,7 @@ export const AdminLayout = () => {
                                         backgroundColor: 'var(--color-my-base-300)', // Adjusted hover for list items on darker background
                                     },
                                 }}
-                                onClick={() => navigate(item.path)}
+                                onClick={() => navigate(item.path!)} // Non-null assertion since we checked above
                             >
                                 <ListItemIcon
                                     sx={{
@@ -304,7 +325,7 @@ export const AdminLayout = () => {
                             recentActivities.map((activity, index) => (
                                 <MenuItem key={index} onClick={handleNotificationClose} sx={{ color: 'var(--color-my-base-content)' }}>
                                     <Typography variant="body2">
-                                        User {activity.user} purchased {activity.ticketType} ticket for "{activity.eventTitle}" ({new Date(activity.createdAt).toLocaleString()})
+                                        User {activity.buyerId} purchased ticket for "{activity.eventTitle}" ({new Date(activity.createdAt).toLocaleString()})
                                     </Typography>
                                 </MenuItem>
                             ))

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     Box, Typography, Paper, Grid, FormControl, InputLabel, Select, MenuItem,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
     CircularProgress,
     Alert,
-    useTheme // Keep useTheme hook for spacing, breakpoints, etc.
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
@@ -23,7 +22,6 @@ import {useSelector} from "react-redux";
 import type {RootState} from "../../redux/store.ts";
 
 export const AdminCheckInStaff = () => {
-    const theme = useTheme(); // Access the theme object for spacing, etc.
     const [selectedEventId, setSelectedEventId] = useState<number | ''>('');
     const [staffDetailsModalOpen, setStaffDetailsModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
@@ -51,7 +49,7 @@ export const AdminCheckInStaff = () => {
 
     const selectedEvent = organizerEvents.find(e => e.eventId === selectedEventId);
 
-    const handleEventChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const handleEventChange = (event: any) => {
         setSelectedEventId(event.target.value as number);
     };
 
@@ -74,7 +72,7 @@ export const AdminCheckInStaff = () => {
             return;
         }
         try {
-            await unassignStaff({ eventId: selectedEventId as number, staffEmail: [staffEmail], organizerEmail: organizerEmail! }).unwrap();
+            await unassignStaff({ eventId: selectedEventId as number, staffEmail, organizerEmail: organizerEmail! }).unwrap();
             console.log(`Successfully unassigned ${staffEmail} from event ${selectedEventId}`);
         } catch (error) {
             console.error("Failed to unassign staff:", error);

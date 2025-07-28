@@ -2,7 +2,6 @@ import { CategorizedEventCard } from "./CategorizedEventCard.tsx";
 import { useGetAllEventsQuery, type APIEventResponseItem } from '../../../queries/general/EventQuery.ts';
 import { Box, CircularProgress, Alert, Typography } from '@mui/material';
 import { useMemo } from 'react';
-import React from 'react'; // Ensure React is imported if using JSX
 
 export const CategorizedEvents = () => {
     // Fetch all upcoming events (as filtered by your EventQuery's transformResponse)

@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     Box,
     Typography,
-    Paper,
     Grid,
     Button,
     Card,
     CardContent,
     CardActions,
     InputBase,
-    IconButton,
     CircularProgress,
     Alert,
     Tab,
     Tabs,
-    useTheme // Keep useTheme hook for other MUI components if needed, though direct palette access will be removed
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -25,7 +22,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useNavigate } from 'react-router-dom';
-import { styled, alpha } from '@mui/material/styles'; // alpha will be removed for direct CSS var usage
+import { styled } from '@mui/material/styles'; // alpha will be removed for direct CSS var usage
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store.ts";
 
@@ -84,7 +81,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 export const AdminEvents = () => {
     const navigate = useNavigate();
-    const theme = useTheme(); // Keep useTheme hook for spacing, breakpoints, etc.
+    // const theme = useTheme(); // Keep useTheme hook for spacing, breakpoints, etc.
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTab, setSelectedTab] = useState<'upcoming' | 'current' | 'past'>('upcoming');
 
@@ -234,7 +231,7 @@ export const AdminEvents = () => {
             {/* Tabs for Event Categories */}
             <Tabs
                 value={selectedTab}
-                onChange={(event, newValue) => setSelectedTab(newValue)}
+                onChange={(_event, newValue) => setSelectedTab(newValue)}
                 sx={{
                     mb: 3,
                     '& .MuiTabs-indicator': {

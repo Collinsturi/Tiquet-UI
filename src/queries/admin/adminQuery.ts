@@ -155,22 +155,26 @@ export const AdminQuery = createApi({
 
         getEventTicketSummary: builder.query<EventTicketSummary[], number>({
             query: (eventId) => `/event/${eventId}/summary`,
-            providesTags: (result, error, eventId) => [{ type: 'EventSummary', id: eventId }],
+            // Corrected: The 'eventId' here refers to the query argument (number)
+            providesTags: (_result, _error, eventId) => [{ type: 'EventSummary', id: eventId }],
         }),
 
         getEventScanLog: builder.query<EventScanLog, number>({
             query: (eventId) => `/event/${eventId}/scan-log`,
-            providesTags: (result, error, eventId) => [{ type: 'EventScanLog', id: eventId }],
+            // Corrected: The 'eventId' here refers to the query argument (number)
+            providesTags: (_result, _error, eventId) => [{ type: 'EventScanLog', id: eventId }],
         }),
 
         getEventScanStatus: builder.query<EventScanStatus, number>({
             query: (eventId) => `/event/${eventId}/scan-status`,
-            providesTags: (result, error, eventId) => [{ type: 'EventScanStatus', id: eventId }],
+            // Corrected: The 'eventId' here refers to the query argument (number)
+            providesTags: (_result, _error, eventId) => [{ type: 'EventScanStatus', id: eventId }],
         }),
 
         getTicketTypeDistribution: builder.query<TicketTypeDistribution[], number>({
             query: (eventId) => `/event/${eventId}/ticket-distribution`,
-            providesTags: (result, error, eventId) => [{ type: 'TicketDistribution', id: eventId }],
+            // Corrected: The 'eventId' here refers to the query argument (number)
+            providesTags: (_result, _error, eventId) => [{ type: 'TicketDistribution', id: eventId }],
         }),
 
         getOrganizerEarningsSummary: builder.query<OrganizerEarningSummary, number>({

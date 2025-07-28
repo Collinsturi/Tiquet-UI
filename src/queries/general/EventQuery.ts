@@ -7,11 +7,10 @@ import type { AssignedEvents } from "../checkInStaff/StaffScannedQuery.ts";
 export type Venue = {
     id: number;
     name: string;
-    // Your API response now has 'address' instead of 'addresses'
-    address: string; // Changed from 'addresses'
+    address: string; // Changed from 'addresses' based on common API patterns
     capacity: number;
-    createdAt?: string; // Made optional if not always present in nested venue
-    updateAt?: string;  // Made optional if not always present in nested venue
+    createdAt?: string;
+    updatedAt?: string; // Changed from 'updateAt' for consistency
 };
 
 export type Ticket = {
@@ -29,18 +28,18 @@ export type Ticket = {
 export type TicketType = {
     id: number;
     eventId: number;
-    typeName: string | null; // Changed to 'string | null' based on your JSON sample
+    typeName: string | null;
     price: number;
     quantityAvailable: number;
     quantitySold: number;
-    description?: string | null; // Added 'description' as per your JSON sample, made optional/nullable
+    description?: string | null;
 };
 
 // This type directly matches the objects in the array returned by your API
 export type APIEventResponseItem = {
     id: number;
     title: string;
-    description: string; // Lowercase 'd'
+    description: string;
     eventDate: string;
     eventTime: string;
     category: string;
@@ -49,25 +48,19 @@ export type APIEventResponseItem = {
     venueName: string;
     venueAddress: string;
     venueCapacity: number;
-    totalTicketsSold: string;
-    totalTicketsAvailable: string;
-    ticketsRemaining: string; // Added based on your provided JSON
-    venue: Venue; // Nested venue object matching the 'Venue' type above
-    ticketTypes: TicketType[]; // Array of ticket types matching the 'TicketType' type above
-    tickets?: Ticket[]; // Array of tickets (optional, as not always present or might be empty)
+    totalTicketsSold: string; // Keep as string if API returns string, convert in UI if needed for math
+    totalTicketsAvailable: string; // Keep as string
+    ticketsRemaining: string;
+    venue: Venue;
+    ticketTypes: TicketType[];
+    tickets?: Ticket[];
     posterImageUrl?: string;
     thumbnailImageUrl?: string;
     latitude?: number | null;
     longitude?: number | null;
 };
 
-
-// What your `getAllEvents` query should now return.
-// It can directly return `APIEventResponseItem[]` because each item is a complete event.
-// You might also consider renaming `NormalizedEvent` to `EventDetail` or similar
-// if it's meant to be the single source of truth for a detailed event view.
-// For the UpcomingEvents list, the `EventType` from Event.ts is still relevant.
-export type NormalizedEventForUI = { // Renamed for clarity vs. original NormalizedEvent
+export type NormalizedEventForUI = {
     id: number;
     title: string;
     description: string;
@@ -77,40 +70,38 @@ export type NormalizedEventForUI = { // Renamed for clarity vs. original Normali
     venueName: string;
     venueAddress: string;
     posterImageUrl?: string;
-    // Add other fields you need for the UI, e.g., for filters or display
 };
-
 
 export type OrganizerEventDetails = {
     eventId: number;
     title: string;
-    eventDate: string; // "YYYY-MM-DD"
-    eventTime: string; // "HH:MM:SS"
+    eventDate: string;
+    eventTime: string;
     category: string;
     venueName: string;
-    posterImageUrl: string,
-    thumbnailImageUrl: string,
+    posterImageUrl: string;
+    thumbnailImageUrl: string;
     venueAddress: string;
-    ticketsSold: string; // These are strings in your example JSON, consider making them numbers
-    ticketsScanned: string; // Consider making them numbers
-    attendanceRate: string; // Consider making it a number (float)
+    ticketsSold: string;
+    ticketsScanned: string;
+    attendanceRate: string;
 };
 
 export type CreateEventRequest = {
     category: string;
     name: string;
     description: string;
-    startDate: string; // ISO string, maps to eventDate and eventTime on backend
-    endDate: string;   // ISO string, may be used for event duration
-    address?: string; // Made optional for existing venue
-    city?: string;    // Made optional for existing venue
-    country?: string; // Made optional for existing venue
-    venueId?: number; // Optional if selecting an existing venue
+    startDate: string;
+    endDate: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    venueId?: number;
     latitude?: number | null;
     longitude?: number | null;
     posterImageUrl?: string;
     thumbnailImageUrl?: string;
-    organizerEmail: string; // Taken from logged-in user's state
+    organizerEmail: string;
     ticketTypes: NewTicketTypeInput[];
 };
 
@@ -127,7 +118,6 @@ export type CreateEventResponse = {
     eventId: number;
 };
 
-
 const staggeredBaseQuery = retry(
     fetchBaseQuery({
         baseUrl: BASE_URL,
@@ -143,25 +133,23 @@ const staggeredBaseQuery = retry(
     { maxRetries: 5 }
 );
 
-// === Event API with Pagination, Category Filter, and Realtime Support ===
 export const EventQuery = createApi({
     reducerPath: 'eventApi',
     baseQuery: staggeredBaseQuery,
     tagTypes: ['Events', 'FeaturedEventsList', 'CategorizedEventsList', 'Venues', 'DetailedOrganizerEvents', 'AssignedEvents'],
     endpoints: (builder) => ({
-        // 3. Get Event by ID and normalize (No change, as it expects similar detailed response)
-        getEventById: builder.query<APIEventResponseItem | null, number>({ // Changed return type
+        getEventById: builder.query<APIEventResponseItem | null, number>({
             query: (id) => `/events/${id}`,
             transformResponse: (response: APIEventResponseItem) => {
-                console.log("Raw API response for getEventById:", response); // For debugging
+                console.log("Raw API response for getEventById:", response);
                 return response;
             },
-            providesTags: (result, error, id) => [{ type: 'Events', id }],
-            pollingInterval: 60000,
+            // Fixed providesTags: use the result (not arg) and extract the id property
+            providesTags: (result, _error, arg) =>
+                result ? [{ type: 'Events', id: result.id }] : [{ type: 'Events', id: arg }],
         }),
 
-        // 4. All Events with Pagination and optional Category Filtering
-        getAllEvents: builder.query<APIEventResponseItem[], { page?: number; limit?: number; category?: string }>({ // Changed return type
+        getAllEvents: builder.query<APIEventResponseItem[], { page?: number; limit?: number; category?: string }>({
             query: ({ page = 1, limit = 10, category }) => {
                 const params = new URLSearchParams({
                     page: page.toString(),
@@ -172,34 +160,27 @@ export const EventQuery = createApi({
                 }
                 return `/events?${params.toString()}`;
             },
-
-            transformResponse: (response: APIEventResponseItem[]) => { // Expect array of APIEventResponseItem
-                console.log("getAllEvents transformResponse: Incoming API response:", response); // Debugging
-                // The API already returns the data in the desired format (array of events)
-                // You just need to ensure the types are correct.
-                // No grouping or complex normalization is needed here based on the JSON you provided.
-
-                // Filter for upcoming events based on eventDate
+            transformResponse: (response: APIEventResponseItem[]) => {
+                console.log("getAllEvents transformResponse: Incoming API response:", response);
                 const today = new Date();
-                today.setHours(0, 0, 0, 0); // Normalize to start of today
+                today.setHours(0, 0, 0, 0);
 
                 const upcomingEvents = response.filter(event => {
                     const eventDate = new Date(event.eventDate);
-                    // Include events that are today or in the future
                     return eventDate >= today;
                 });
 
-                console.log("getAllEvents transformResponse: Filtered upcoming events:", upcomingEvents); // Debugging
-                return upcomingEvents; // Return the filtered data directly
+                console.log("getAllEvents transformResponse: Filtered upcoming events:", upcomingEvents);
+                return upcomingEvents;
             },
+            // Corrected providesTags: map over the result to get individual event IDs
             providesTags: (result) =>
                 result
                     ? [...result.map(({ id }) => ({ type: 'Events' as const, id }))]
                     : [],
         }),
-        // ... (rest of the endpoints remain the same) ...
         getOrganizerEvents: builder.query<AssignedEvents[], string>({
-            query: (email) => BASE_URL + `/events/organizer/current/${email}`,
+            query: (email) => `/events/organizer/current/${email}`, // Removed BASE_URL prefix as it's already in fetchBaseQuery
             providesTags: ['AssignedEvents']
         }),
         getDetailedUpcomingOrganizerEvents: builder.query<OrganizerEventDetails[], string>({
@@ -229,7 +210,7 @@ export const EventQuery = createApi({
         }),
         createEvent: builder.mutation<CreateEventResponse, { CreateEventRequest: CreateEventRequest, organizerEmail: string }>({
             query: ({ CreateEventRequest: eventDataForApi, organizerEmail: apiOrganizerEmail }) => {
-                const body: any = {
+                const body: any = { // Using 'any' here for flexibility with conditional properties
                     category: eventDataForApi.category,
                     name: eventDataForApi.name,
                     description: eventDataForApi.description,
@@ -250,6 +231,7 @@ export const EventQuery = createApi({
                     body.city = eventDataForApi.city;
                     body.country = eventDataForApi.country;
                 } else {
+                    // This error should ideally be handled by form validation before calling the mutation
                     throw new Error("Either 'venueId' or 'address', 'city', and 'country' must be provided for event creation.");
                 }
 
@@ -261,7 +243,7 @@ export const EventQuery = createApi({
             },
             invalidatesTags: [
                 'Events',
-                'FeaturedEventsList',
+                'FeaturedEventsList', // Assuming these tags are used elsewhere for invalidation
                 'CategorizedEventsList',
                 'DetailedOrganizerEvents',
                 'Venues',

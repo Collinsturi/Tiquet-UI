@@ -1,15 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
-    Paper,
-    Grid,
     CircularProgress,
     Alert,
     Button,
-    Chip,
-} from '@mui/material'; // Added Box, Typography, Paper, Grid, CircularProgress, Alert, Button, Chip for MUI components
+} from '@mui/material';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import EventIcon from '@mui/icons-material/Event';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -19,27 +16,74 @@ import DownloadIcon from '@mui/icons-material/Download';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import { useSelector } from 'react-redux'; // Import useSelector
-import type { RootState } from '../../redux/store'; // Import RootState type
-import { useGetTicketByIdQuery } from '../../queries/eventAttendees/TicketQuery.ts'; // Import the RTK Query hook
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../redux/store';
+import { useGetTicketByIdQuery } from '../../queries/eventAttendees/TicketQuery.ts';
 
 // For PDF generation
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 
-// Helper to generate a placeholder QR code image URL (not used with qrcode.react directly, but good for fallbacks)
-const generateQRCodePlaceholderUrl = (data) => {
-    const size = 150; // Size of the QR code image
-    const color = '000000'; // Black text
-    const bgColor = 'FFFFFF'; // White background
-    return `https://placehold.co/${size}x${size}/${bgColor}/${color}?text=QR+Code%0A${encodeURIComponent(data.substring(0, 30))}...`;
-};
+// --- Type Definitions ---
+
+// Define the structure of the Ticket object within the API response
+// interface Ticket {
+//     id: number; // Changed to number based on error
+//     orderItemId: number;
+//     userId: number;
+//     eventId: number;
+//     ticketTypeId: number;
+//     uniqueCode: string;
+//     isScanned: boolean;
+//     scannedAt: string | null;
+//     scannedByUser: number | null;
+//     purchaseDate?: string; // Assuming this might be optional or comes from the API
+// }
+
+// Define the structure of the Event object within the API response
+// interface EventDetails {
+//     id: number; // Changed to number based on error
+//     title: string;
+//     Description: string; // Added based on error
+//     VenueId: number; // Added based on error
+//     Category: string; // Added based on error
+//     eventDate: string;
+//     eventTime: string;
+//     endDate?: string; // Optional end date
+//     endTime?: string; // Optional end time
+//     createdAt: string; // Added based on error
+//     updatedAt: string; // Added based on error
+// }
+
+// Define the structure of the TicketType object within the API response
+// interface TicketType {
+//     typeName: string;
+//     id: number; // Assuming id is a number based on previous fixes
+// }
+
+// Define the structure of the Venue object within the API response
+// interface Venue {
+//     id: number; // Assuming id is a number
+//     name: string;
+//     addresses: string; // Corrected from 'address' to 'addresses' based on error
+//     capacity: number; // Added based on error
+//     createdAt: string; // Added based on error
+//     updateAt: string; // Added based on error
+// }
+
+// Define the overall structure of the data returned by useGetTicketByIdQuery
+// interface TicketDataResponse {
+//     ticket: Ticket;
+//     event: EventDetails;
+//     ticketType: TicketType;
+//     venue: Venue;
+// }
 
 // Helper function to format dates
-const formatDateTime = (dateString) => {
+const formatDateTime = (dateString: string): string => { // Explicitly type dateString
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Invalid Date';
-    const options = {
+    const options: Intl.DateTimeFormatOptions = {
         year: 'numeric', month: 'long', day: 'numeric',
         hour: 'numeric', minute: '2-digit', hour12: true
     };
@@ -47,30 +91,34 @@ const formatDateTime = (dateString) => {
 };
 
 export const TicketDetails = () => {
-    const { ticketId } = useParams(); // Get ticketId from URL
+    // Type useParams to expect a ticketId string
+    const { ticketId } = useParams<{ ticketId: string }>();
     const navigate = useNavigate();
-    const user = useSelector((state: RootState) => state.user.user); // Get current logged-in user from Redux
+    // Type useSelector to get the user object from RootState
+    const user = useSelector((state: RootState) => state.user.user);
 
-    // Use the RTK Query hook to fetch ticket details
+    // Use the RTK Query hook, explicitly typing the data it returns
     const { data: ticketData, isLoading, error } = useGetTicketByIdQuery(parseInt(ticketId!), {
-        skip: !ticketId || isNaN(parseInt(ticketId!)), // Skip if ticketId is missing or not a number
+        // Ensure ticketId is a valid number before making the query
+        skip: !ticketId || isNaN(parseInt(ticketId)),
     });
 
-    const [message, setMessage] = useState({ type: '', text: '' });
-    const ticketRef = useRef(null); // Ref for the ticket content to be downloaded
+    const [message, setMessage] = useState<{ type: string; text: string }>({ type: '', text: '' });
+    // Type useRef to hold an HTMLDivElement
+    const ticketRef = useRef<HTMLDivElement>(null);
 
     // Effect to handle API response and set messages
     useEffect(() => {
         if (error) {
+            // Type assertion for the error object from RTK Query
             const apiErrorMessage = (error as any)?.data?.message || `Failed to load ticket details for ID: ${ticketId}. Please try again.`;
             setMessage({ type: 'error', text: apiErrorMessage });
         } else if (ticketData && Object.keys(ticketData).length === 0) {
-            // Handle case where data is empty object (e.g., API returns {} for not found)
             setMessage({ type: 'error', text: `Ticket with ID "${ticketId}" not found.` });
         } else {
             setMessage({ type: '', text: '' }); // Clear messages on successful load
         }
-    }, [ticketData, error, ticketId]);
+    }, [ticketData, error, ticketId]); // Add ticketId to dependencies
 
     const handleDownloadPdf = async () => {
         if (!ticketRef.current) {
@@ -78,19 +126,25 @@ export const TicketDetails = () => {
             return;
         }
 
+        // Ensure ticketData is available before proceeding
+        if (!ticketData) {
+            setMessage({ type: 'error', text: 'Ticket data not loaded yet. Please wait.' });
+            return;
+        }
+
         setMessage({ type: 'info', text: 'Generating PDF...' });
         try {
             const canvas = await html2canvas(ticketRef.current, {
-                scale: 2, // Increase scale for better resolution in PDF
+                scale: 2,
                 useCORS: true,
                 logging: false,
-                backgroundColor: null, // Transparent background to use PDF's background
+                backgroundColor: null,
             });
 
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 210; // A4 width in mm
-            const pageHeight = 297; // A4 height in mm
+            const imgWidth = 210;
+            const pageHeight = 297;
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
             let heightLeft = imgHeight;
             let position = 0;
@@ -105,10 +159,13 @@ export const TicketDetails = () => {
                 heightLeft -= pageHeight;
             }
 
-            pdf.save(`${ticketData.event.title.replace(/\s/g, '_')}-${ticketData.ticket.id}-ticket.pdf`);
+            // Safely access event title and ticket ID
+            const eventTitle = ticketData.event?.title?.replace(/\s/g, '_') || 'ticket';
+            const ticketIdForFilename = ticketData.ticket?.id || 'unknown';
+            pdf.save(`${eventTitle}-${ticketIdForFilename}-ticket.pdf`);
             setMessage({ type: 'success', text: 'Ticket downloaded successfully as PDF!' });
 
-        } catch (downloadError) {
+        } catch (downloadError: any) { // Type downloadError
             console.error("Error generating PDF:", downloadError);
             setMessage({ type: 'error', text: `Failed to generate PDF: ${downloadError.message || 'An unexpected error occurred.'}` });
         }
@@ -136,13 +193,13 @@ export const TicketDetails = () => {
         );
     }
 
-    // Destructure data for easier access
+    // Destructure data for easier access, now with type safety
     const { ticket, event, ticketType, venue } = ticketData;
 
     // Determine check-in status and styling
     const checkInStatus = ticket.isScanned ? 'Checked In' : 'Pending Check-in';
     let statusColorClass = '';
-    let statusIcon = null;
+    let statusIcon: JSX.Element | null = null; // Explicitly type statusIcon
     switch (checkInStatus) {
         case 'Checked In':
             statusColorClass = 'bg-[var(--color-my-success)] text-[var(--color-my-success-content)]';
@@ -160,9 +217,6 @@ export const TicketDetails = () => {
 
     // Combine event date and time for display
     const eventStartDateTime = `${event.eventDate}T${event.eventTime}`;
-    // Assuming event has an end date/time, or use start for simplicity if not provided
-    const eventEndDateTime = event.endDate && event.endTime ? `${event.endDate}T${event.endTime}` : eventStartDateTime;
-
 
     return (
         <div className="container mx-auto p-4 md:p-8 min-h-screen bg-[var(--color-my-base-200)] text-[var(--color-my-base-content)]">
@@ -218,7 +272,7 @@ export const TicketDetails = () => {
                             <Typography variant="body1"><strong>Date:</strong> {formatDateTime(eventStartDateTime)}</Typography>
                             <Typography variant="body1"><strong>Time:</strong> {new Date(eventStartDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Typography>
                             <Typography variant="body1"><strong>Location:</strong> {venue.name || 'Venue Not Specified'}</Typography>
-                            <Typography variant="body1"><strong>Address:</strong> {venue.address || 'N/A'}</Typography>
+                            <Typography variant="body1"><strong>Address:</strong> {venue.addresses || 'N/A'}</Typography> {/* Corrected to venue.addresses */}
                         </div>
                         <div>
                             <Typography variant="h6" className="font-semibold mb-2 flex items-center gap-2 text-[var(--color-my-secondary)]">

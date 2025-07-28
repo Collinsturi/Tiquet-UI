@@ -10,15 +10,19 @@ const verificationSchema = yup.object().shape({
         .required('Verification code is required'),
 });
 
+type VerificationErrors = {
+    code?: string;
+};
+
 export const EmailVerification = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const email = location.state?.email; // Get email from route state
+    const email = location.state?.email;
 
     const [verificationCode, setVerificationCode] = useState('');
-    const [errors, setErrors] = useState({});
+    const [errors, setErrors] = useState<VerificationErrors>({});
     const [message, setMessage] = useState('');
-    const [emailError, setEmailError] = useState(false); // New state for email missing error
+    const [emailError, setEmailError] = useState(false);
 
     // Initialize the verification mutation hook
     const [verifyEmail, { isLoading: isVerifying, isSuccess: isVerificationSuccess, isError: isVerificationError, error: verificationError, data: verificationData }] = useVerificationMutation();
@@ -56,8 +60,7 @@ export const EmailVerification = () => {
         }
     }, [isVerificationError, verificationError]);
 
-
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setVerificationCode(e.target.value);
         // Clear errors for the code field as user types
         if (errors.code) {
@@ -65,7 +68,7 @@ export const EmailVerification = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (emailError) { // Prevent submission if email is missing
             return;
@@ -80,12 +83,14 @@ export const EmailVerification = () => {
 
             await verifyEmail({ email: email, code: parseInt(verificationCode, 10) }).unwrap();
 
-        } catch (validationErrors) {
+        } catch (validationErrors: any) {
             // If Yup validation fails, set the errors state
-            const newErrors = {};
-            validationErrors.inner.forEach(error => {
-                newErrors[error.path] = error.message;
-            });
+            const newErrors: VerificationErrors = {};
+            if (validationErrors.inner) {
+                validationErrors.inner.forEach((error: any) => {
+                    newErrors[error.path as keyof VerificationErrors] = error.message;
+                });
+            }
             setErrors(newErrors);
             setMessage('Please correct the errors above.');
         }
@@ -125,7 +130,7 @@ export const EmailVerification = () => {
                                     name="code"
                                     value={verificationCode}
                                     onChange={handleChange}
-                                    maxLength="6"
+                                    maxLength={6}
                                     className={`w-full px-4 py-3 border ${errors.code ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg text-center tracking-widest`}
                                     placeholder="______"
                                     aria-invalid={errors.code ? "true" : "false"}
@@ -172,8 +177,9 @@ export const EmailVerification = () => {
         </div>
     );
 };
-export const EmailVerificationWrapper = () => {
-    const location = useLocation();
-    const email = location.state?.email;
-    return <EmailVerification email={email} />;
-};
+
+// export const EmailVerificationWrapper = () => {
+//     const location = useLocation();
+//     const email = location.state?.email;
+//     return <EmailVerification />;
+// };
