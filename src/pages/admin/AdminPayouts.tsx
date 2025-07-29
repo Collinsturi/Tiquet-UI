@@ -79,7 +79,7 @@ export const AdminPayouts = () => {
     // Get current organizer ID and Email from Redux store
     const user = useSelector((state: RootState) => state.user.user);
     const organizerId = user?.user_id; // Assuming user.id is available and is a number
-    // const organizerEmail = user?.email; // FIX 2: Safely access email
+    const organizerEmail = user?.email; // FIX 2: Safely access email
 
     // --- RTK Query Hooks ---
     const {
@@ -99,7 +99,7 @@ export const AdminPayouts = () => {
         refetch: refetchRevenuePerEvent
         // FIX 4: Changed organizerEmail to organizerId, assuming query expects ID.
         // Also cast organizerId to number.
-    } = useGetRevenuePerEventQuery(organizerId as number, { skip: !organizerId });
+    } = useGetRevenuePerEventQuery(organizerEmail as string, { skip: !organizerId });
 
     // Placeholder for bank details. In a real app, this would likely come from:
     // const { data: organizerProfileData, isLoading: isLoadingProfile } = useGetOrganizerProfileQuery(organizerId);
