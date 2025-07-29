@@ -230,7 +230,7 @@ export const EventAttendeesLayout = () => {
     return (
         <Box sx={{ display: 'flex' }}>
             <CssBaseline />
-            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1,  backgroundColor: 'var(--color-my-primary)', color: 'var(--color-my-primary-content)' }}>
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1,  backgroundColor: 'var(--color-my-neutral)', color: 'var(--color-my-primary-content)' }}>
                 <Toolbar>
                     {/* Hamburger button for mobile screens */}
                     <IconButton
