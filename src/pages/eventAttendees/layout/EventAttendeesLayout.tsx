@@ -148,7 +148,7 @@ export const EventAttendeesLayout = () => {
             <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', backgroundColor: 'var(--color-my-neutral)' }}> {/* Bolder color for Toolbar in drawer */}
                 {drawerOpen && (
                     <img
-                        src={"/src/assets/tiquet-logo-no-background.png"}
+                        src={"https://res.cloudinary.com/dd9wneqwy/image/upload/v1753822651/tiquet-logo-no-background_qsli2u.png"}
                         alt={"Logo"}
                         className={`h-8 w-20 ml-3 filter brightness-200'}`}
                     />
@@ -255,7 +255,7 @@ export const EventAttendeesLayout = () => {
                     </IconButton>
 
                     <img
-                        src={"/src/assets/tiquet-logo-no-background.png"}
+                        src={"https://res.cloudinary.com/dd9wneqwy/image/upload/v1753822651/tiquet-logo-no-background_qsli2u.png"}
                         alt={"Logo"}
                         className={`h-8 w-20 ml-3 filter brightness-200'}`}
                     />

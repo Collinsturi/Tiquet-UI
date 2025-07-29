@@ -39,7 +39,7 @@ export const Navbar = () => {
                 <div className="flex flex-1 items-center">
                     <NavLink to={"/"} className="btn-ghost text-xl">
                         <img
-                            src={"src/assets/tiquet-logo-no-background.png"}
+                            src={"https://res.cloudinary.com/dd9wneqwy/image/upload/v1753822651/tiquet-logo-no-background_qsli2u.png"}
                             alt={"Logo"}
                             className={`h-8 w-20 ml-3 ${scrolled ? 'filter grayscale-0' : 'filter brightness-200'}`} // Example: make logo brighter when not scrolled, normal when scrolled
                         />

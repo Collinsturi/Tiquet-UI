@@ -265,7 +265,7 @@ export const Auth = () => {
                     <h5 className={"text-center font-light text-[var(--color-my-neutral-content)]"}>
                         <NavLink to={'/'} className="inline-block transition-transform duration-300 hover:scale-105">
                             {/* Image for Tkti logo */}
-                            <img src={"/src/assets/tiquet-logo-no-background.png"} alt="Tkti Logo" className="mx-auto h-12 w-auto object-contain" />
+                            <img src={"https://res.cloudinary.com/dd9wneqwy/image/upload/v1753822651/tiquet-logo-no-background_qsli2u.png"} alt="Tkti Logo" className="mx-auto h-12 w-auto object-contain" />
                         </NavLink>
                     </h5>
                 </div>

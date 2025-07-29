@@ -25,7 +25,7 @@ export const Landing = () => {
                     {/* Left Image */}
                     <div className="w-full lg:w-1/2 flex justify-center mb-10 lg:mb-0">
                         <img
-                            src="/src/assets/amapiano_sticker.png"
+                            src="https://res.cloudinary.com/dd9wneqwy/image/upload/v1753822600/amapiano_sticker_auihgp.png"
                             alt="Amapiano Event"
                             className="w-full max-w-md object-contain"
                         />

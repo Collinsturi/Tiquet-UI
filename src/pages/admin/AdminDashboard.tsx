@@ -215,7 +215,7 @@ export const AdminDashboard = () => {
                         <AttachMoneyIcon color="success" sx={{ fontSize: 40, mr: 2 }} />
                         <CardContent>
                             <Typography variant="h6" color="text.secondary">Total Revenue</Typography>
-                            <Typography variant="h4" color="success">${totalRevenue.toLocaleString()}</Typography>
+                            <Typography variant="h4" color="success">KES {totalRevenue.toLocaleString()}</Typography>
                         </CardContent>
                     </Card>
                 </Grid>
