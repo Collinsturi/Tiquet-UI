@@ -405,18 +405,18 @@ export const AdminEventDetails = () => {
                     </Grid>
                     <Grid item xs={12} md={6}>
                         {/* Placeholder for End Date & Time - needs proper backend field */}
-                        <DateTimePicker
-                            label="End Date & Time (Backend Needs End Date Field)"
-                            value={null}
-                            disabled={true}
-                            slotProps={{
-                                textField: {
-                                    fullWidth: true,
-                                    variant: 'outlined',
-                                    helperText: "Backend 'Event' type lacks 'endDate' field"
-                                }
-                            }}
-                        />
+                        {/*<DateTimePicker*/}
+                        {/*    label="End Date & Time"*/}
+                        {/*    value={null}*/}
+                        {/*    disabled={true}*/}
+                        {/*    slotProps={{*/}
+                        {/*        textField: {*/}
+                        {/*            fullWidth: true,*/}
+                        {/*            variant: 'outlined',*/}
+                        {/*            helperText: "Backend 'Event' type lacks 'endDate' field"*/}
+                        {/*        }*/}
+                        {/*    }}*/}
+                        {/*/>*/}
                     </Grid>
 
 

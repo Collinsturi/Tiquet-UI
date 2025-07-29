@@ -169,9 +169,10 @@
                 setBuyTicketLoading(false);
                 buyTicketsModalRef.current?.close(); // Close the modal
 
+                console.log(createdOrder)
                 // Construct order details to pass to the checkout page, including the new order ID
                 const orderDetailsToPass = {
-                    orderId: createdOrder.order.id, // Use the ID from the created order
+                    orderId: createdOrder.order.order.id, // Use the ID from the created order
                     eventName: eventData.title,
                     eventDate: `${formatDateTime(`${eventData.eventDate}T${eventData.eventTime}`)}`,
                     eventLocation: eventData.venue?.address || eventData.venueAddress || 'Venue Not Specified',

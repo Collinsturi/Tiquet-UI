@@ -51,15 +51,16 @@ export type OrderItemResponse = {
 
 // Type for the main order data in the response (might include an ID and timestamps)
 export type OrderResponse = {
-    id: number;
-    userId: number;
-    totalAmount: number; // mode: 'number' in Drizzle
-    status: OrderStatus;
-    paymentMethod: PaymentMethod;
-    transactionId: string | null;
-    createdAt: string; // Or Date
-    updatedAt: string; // Or Date
-    // Add any other fields your backend returns for an order
+    order: {
+        id: number;
+        userId: number;
+        totalAmount: number; // mode: 'number' in Drizzle
+        status: OrderStatus;
+        paymentMethod: PaymentMethod;
+        transactionId: string | null;
+        createdAt: string; // Or Date
+        updatedAt: string; // Or Date
+    }
 };
 
 export type SimpleOrderItemRequest = {
