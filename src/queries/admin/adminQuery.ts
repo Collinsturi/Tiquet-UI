@@ -182,7 +182,7 @@ export const AdminQuery = createApi({
             providesTags: ['EarningsSummary'],
         }),
 
-        getRevenuePerEvent: builder.query<RevenueSummaryPerEvent[], number>({
+        getRevenuePerEvent: builder.query<RevenueSummaryPerEvent[], string>({
             query: (organizerEmail) => `/organizer/revenue/${organizerEmail}`,
             providesTags: ['RevenuePerEvent'],
         }),

@@ -99,7 +99,7 @@ export const AdminPayouts = () => {
         refetch: refetchRevenuePerEvent
         // FIX 4: Changed organizerEmail to organizerId, assuming query expects ID.
         // Also cast organizerId to number.
-    } = useGetRevenuePerEventQuery(organizerEmail as string, { skip: !organizerId });
+    } = useGetRevenuePerEventQuery(organizerEmail);
 
     // Placeholder for bank details. In a real app, this would likely come from:
     // const { data: organizerProfileData, isLoading: isLoadingProfile } = useGetOrganizerProfileQuery(organizerId);
