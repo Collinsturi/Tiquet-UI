@@ -97,9 +97,9 @@ export const AdminPayouts = () => {
         isError: isErrorRevenuePerEvent,
         error: errorRevenuePerEvent,
         refetch: refetchRevenuePerEvent
-        // FIX 4: Changed organizerEmail to organizerId, assuming query expects ID.
-        // Also cast organizerId to number.
-    } = useGetRevenuePerEventQuery(organizerEmail);
+    } = useGetRevenuePerEventQuery(organizerEmail!, {
+        skip: !organizerEmail
+    });
 
     // Placeholder for bank details. In a real app, this would likely come from:
     // const { data: organizerProfileData, isLoading: isLoadingProfile } = useGetOrganizerProfileQuery(organizerId);
