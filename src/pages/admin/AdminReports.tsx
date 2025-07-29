@@ -300,7 +300,7 @@ export const AdminReports = () => {
                                 <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.main, 0.1) }}>
                                     <AttachMoneyIcon color="success" sx={{ fontSize: 30, mb: 1 }} />
                                     <Typography variant="h6" color="text.secondary">Total Revenue</Typography>
-                                    <Typography variant="h4" color="success">${platformSummaryData.totalRevenue.toLocaleString()}</Typography>
+                                    <Typography variant="h4" color="success">KES {platformSummaryData.totalRevenue.toLocaleString()}</Typography>
                                 </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
@@ -457,7 +457,7 @@ export const AdminReports = () => {
                                         <Card elevation={1} sx={{ p: 2, backgroundColor: alpha(theme.palette.success.main, 0.1) }}>
                                             <AttachMoneyIcon color="success" sx={{ fontSize: 30, mb: 1 }} />
                                             <Typography variant="h6" color="text.secondary">Total Revenue</Typography>
-                                            <Typography variant="h4" color="success">${eventSpecificTotalRevenue.toLocaleString()}</Typography>
+                                            <Typography variant="h4" color="success">KES {eventSpecificTotalRevenue.toLocaleString()}</Typography>
                                         </Card>
                                     </Grid>
                                     <Grid item xs={12} sm={6} md={3}>
