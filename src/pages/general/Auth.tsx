@@ -6,7 +6,7 @@ import * as yup from 'yup';
 import { loginSuccess } from '../../queries/general/ApplicationUserSlice.ts';
 
 // Define your backend's base URL
-    const BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'https://tiquet-ui.vercel.app/';
+    const BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'https://tiquet-ui.vercel.app/api';
 
 export const Auth = () => {
     const [isLoginView, setIsLoginView] = useState(true);
