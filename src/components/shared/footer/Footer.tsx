@@ -7,7 +7,7 @@ export const Footer = () => {
                 {/* Company Info / Brand Section */}
                 <aside className="flex flex-col items-start sm:w-1/3">
                     <div className="flex items-center mb-4">
-                        <img src={"src/assets/tiquet-logo-no-background.png"} alt="Tiquet Logo" className={'h-10 w-24 mr-2'}/>
+                        <img src={"https://res.cloudinary.com/dd9wneqwy/image/upload/v1753822651/tiquet-logo-no-background_qsli2u.png"} alt="Tiquet Logo" className={'h-10 w-24 mr-2'}/>
                     </div>
                     <p className={"text-my-neutral-content/80 text-sm mb-4"}>
                         Tiquet is a global self-service ticketing platform for live experiences that allows <br />

@@ -268,7 +268,7 @@ export const AdminPayouts = () => {
                             <MonetizationOnIcon color="success" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Total Earnings</Typography>
-                                <Typography variant="h4" color="success">${organizerEarningsSummary.totalEarnings?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                                <Typography variant="h4" color="success">KES {organizerEarningsSummary.totalEarnings?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                             </Box>
                         </Card>
                     </Grid>
@@ -277,7 +277,7 @@ export const AdminPayouts = () => {
                             <NorthEastIcon color="warning" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Total Withdrawn</Typography>
-                                <Typography variant="h4" color="warning">${organizerEarningsSummary.totalWithdrawn?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                                <Typography variant="h4" color="warning">KES {organizerEarningsSummary.totalWithdrawn?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                             </Box>
                         </Card>
                     </Grid>
@@ -286,7 +286,7 @@ export const AdminPayouts = () => {
                             <SouthWestIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
                             <Box>
                                 <Typography variant="h6" color="text.secondary">Current Available Balance</Typography>
-                                <Typography variant="h4" color="primary">${organizerEarningsSummary.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                                <Typography variant="h4" color="primary">KES {organizerEarningsSummary.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                             </Box>
                         </Card>
                     </Grid>
@@ -335,7 +335,7 @@ export const AdminPayouts = () => {
                                 </MenuItem>
                                 {eventsForPayoutDisplay.filter(e => e.isFinalized).map((event) => (
                                     <MenuItem key={event.id} value={event.id} sx={{ color: 'var(--color-my-base-content)' }}>
-                                        {event.name} (${event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                        {event.name} (KES {event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -368,7 +368,7 @@ export const AdminPayouts = () => {
                             InputLabelProps={{
                                 sx: { color: 'var(--color-my-base-content)' }
                             }}
-                            helperText={`Available: $${organizerEarningsSummary.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            helperText={`Available: KES ${organizerEarningsSummary.availableBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             FormHelperTextProps={{
                                 sx: { color: 'var(--color-my-base-content)' }
                             }}
@@ -421,7 +421,7 @@ export const AdminPayouts = () => {
                                 eventsForPayoutDisplay.map((event) => (
                                     <TableRow key={event.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                         <TableCell sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>{event.name}</TableCell>
-                                        <TableCell align="right" sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>${event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                        <TableCell align="right" sx={{ color: 'var(--color-my-base-content)', borderColor: 'var(--color-my-base-300)' }}>KES {event.netRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                         <TableCell sx={{ borderColor: 'var(--color-my-base-300)' }}>
                                             <Alert
                                                 severity={event.isFinalized ? 'success' : 'info'}
@@ -486,7 +486,7 @@ export const AdminPayouts = () => {
                 <DialogTitle id="payout-dialog-title" sx={{ color: 'var(--color-my-primary)' }}>Confirm Payout Request</DialogTitle>
                 <DialogContent>
                     <Typography variant="body1" sx={{ mb: 2, color: 'var(--color-my-base-content)' }}>
-                        You are requesting a payout of <Typography component="span" variant="h6" sx={{ color: 'var(--color-my-primary)' }}>${parseFloat(payoutAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>.
+                        You are requesting a payout of <Typography component="span" variant="h6" sx={{ color: 'var(--color-my-primary)' }}>KES {parseFloat(payoutAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>.
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'var(--color-my-base-content)' }}>
                         This amount will be transferred to your registered bank account:
