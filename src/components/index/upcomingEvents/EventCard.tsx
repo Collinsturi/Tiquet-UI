@@ -11,11 +11,12 @@ export const EventCard: React.FC<{ event: EventType }> = ({ event }) => {
         return date.getDate();
     };
 
+    console.log("22", event);
     return (
         <div className="bg-white rounded-xl shadow-md overflow-hidden w-full max-w-md mx-auto">
             {/* Event Image */}
             <img
-                src={`https://placehold.co/512x272?text=Event+${event.id}`} // Replace with actual event image
+                src={event.posterImageUrl || `https://placehold.co/512x272?text=Event+${event.id}`}
                 alt={event.name}
                 className="w-full h-48 object-cover"
             />

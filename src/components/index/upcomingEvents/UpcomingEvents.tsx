@@ -14,6 +14,8 @@ export const UpcomingEvents = () => {
         category: selectedCategory,
     });
 
+    console.log(apiEvents);
+
     // Helper to map API data to EventType expected by EventCard
     // This function now directly takes an APIEventResponseItem
     const mapApiEventToEventType = (apiEvent: APIEventResponseItem): EventType => {
@@ -23,6 +25,7 @@ export const UpcomingEvents = () => {
             date: apiEvent.eventDate,
             location: apiEvent.venueName || apiEvent.venue.name, // Use venueName from top-level or nested
             description: apiEvent.description,
+            posterImageUrl: apiEvent.posterImageUrl
         };
     };
 
@@ -58,10 +61,9 @@ export const UpcomingEvents = () => {
         );
     }
 
-    // Map the API data to the EventType expected by EventCard
-    // The 'apiEvents' data is already an array of 'APIEventResponseItem',
-    // so we directly map each 'apiEvent' to 'EventType'.
+
     const displayedEvents: EventType[] = apiEvents?.map(mapApiEventToEventType) || [];
+
 
     return (
         <section className="py-12 bg-base-200">
@@ -94,7 +96,6 @@ export const UpcomingEvents = () => {
                             <option value="Food & Drink">Food & Drink</option>
                             <option value="Technology">Technology</option>
                             <option value="TEstCategory">TEstCategory</option>
-                            {/* Add more categories dynamically if you have an API for them */}
                         </select>
                     </div>
                 </div>
