@@ -25,7 +25,7 @@ import {
     InputAdornment,
     Card,
     FormHelperText,
-    type SelectChangeEvent, // ADD THIS IMPORT
+    type SelectChangeEvent,
 } from '@mui/material';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -34,9 +34,8 @@ import NorthEastIcon from '@mui/icons-material/NorthEast'; // For withdrawn
 import SouthWestIcon from '@mui/icons-material/SouthWest'; // For available
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import { useTheme, alpha } from '@mui/material/styles'; // Import alpha for card backgrounds
+import { useTheme, alpha } from '@mui/material/styles';
 
-// --- RTK Query Imports ---
 import {
     useGetOrganizerEarningsSummaryQuery,
     useGetRevenuePerEventQuery,

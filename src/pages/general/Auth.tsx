@@ -341,7 +341,6 @@ export const Auth = () => {
                                 placeholder="your_email@example.com"
                                 // Apply primary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-primary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-primary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.email ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
                             />
                             {/* Apply error text color */}
                             {errors.email && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.email}</p>}
@@ -358,7 +357,6 @@ export const Auth = () => {
                                 placeholder="••••••••"
                                 // Apply primary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-primary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-primary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.password ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
                             />
                             {/* Apply error text color */}
                             {errors.password && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.password}</p>}
@@ -393,7 +391,7 @@ export const Auth = () => {
                                 placeholder="First Name"
                                 // Apply secondary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.firstName ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
+
                             />
                             {/* Apply error text color */}
                             {errors.firstName && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.firstName}</p>}
@@ -410,7 +408,7 @@ export const Auth = () => {
                                 placeholder="Last Name"
                                 // Apply secondary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.lastName ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
+
                             />
                             {/* Apply error text color */}
                             {errors.lastName && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.lastName}</p>}
@@ -427,7 +425,7 @@ export const Auth = () => {
                                 placeholder="+1234567890"
                                 // Apply secondary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.contactPhone ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
+
                             />
                             {/* Apply error text color */}
                             {errors.contactPhone && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.contactPhone}</p>}
@@ -444,7 +442,7 @@ export const Auth = () => {
                                 placeholder="your_email@example.com"
                                 // Apply secondary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.email ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
+
                             />
                             {/* Apply error text color */}
                             {errors.email && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.email}</p>}
@@ -461,7 +459,7 @@ export const Auth = () => {
                                 placeholder="••••••••"
                                 // Apply secondary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.password ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
+
                             />
                             {/* Apply error text color */}
                             {errors.password && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.password}</p>}
@@ -478,7 +476,7 @@ export const Auth = () => {
                                 placeholder="••••••••"
                                 // Apply secondary border, base-content text, error border, and focus ring
                                 className={`input input-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.confirmPassword ? 'border-[var(--color-my-error)]' : ''}`}
-                                required
+
                             />
                             {/* Apply error text color */}
                             {errors.confirmPassword && <p className="text-[var(--color-my-error)] text-sm mt-1">{errors.confirmPassword}</p>}
@@ -510,7 +508,7 @@ export const Auth = () => {
                                 className={`select select-bordered w-full rounded-md border-[var(--color-my-secondary)] text-[var(--color-my-base-content)] focus:border-[var(--color-my-secondary-focus)] focus:ring focus:ring-[var(--color-my-accent)] focus:ring-opacity-50 ${errors.role ? 'border-[var(--color-my-error)]' : ''}`}
                                 value={selectedRole}
                                 onChange={(e) => setSelectedRole(e.target.value)}
-                                required
+
                             >
                                 <option value="event_attendee">Event Attendee</option>
                                 <option value="organizer">Organizer</option>
